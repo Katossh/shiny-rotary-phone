@@ -13,7 +13,7 @@ Terminal packages and dotfiles remain integrated from
 - `hosts/starforge/`: machine-specific configuration and generated hardware details.
 - `modules/nixos/`: reusable system-level modules.
 - `home/katossh/`: Home Manager configuration for the user.
-- `.github/workflows/nixos.yml`: formatting, flake evaluation, and system build checks.
+- `.github/workflows/nixos.yml`: parallel validation and system-build checks.
 
 ## Hardware profile
 
@@ -110,13 +110,68 @@ not follow the root Nixpkgs input: this preserves derivation compatibility
 with the Noctalia Cachix binary cache. The nested Nixpkgs revision is pinned
 in `flake.lock`.
 
-## Validate and build
+## CI and build caching
+
+GitHub Actions runs two independent jobs in parallel:
+
+1. **Validate Nix configuration** formats tracked Nix files and evaluates
+   flake outputs with `nix flake check --no-build`. This is the quick feedback
+   path; it does not compile the complete operating system.
+2. **Build Starforge system** builds the full
+   `nixosConfigurations.starforge.config.system.build.toplevel` closure.
+   This remains the expensive integration check.
+
+Both jobs use the committed `flake.lock`; CI does not update dependencies.
+The full build can use a public Cachix binary cache to reuse store paths
+between runs. Pull requests receive read-only cache access. Only pushes to
+`main` receive the cache write token and can publish build results.
+
+### Enable the Starforge Cachix cache
+
+Cachix is optional until configured. To enable it:
+
+1. Create a **public** cache named `starforge` at
+   [app.cachix.org](https://app.cachix.org/).
+2. In the repository, open **Settings → Secrets and variables → Actions**.
+3. Add a repository variable named `CACHIX_CACHE_NAME` with value `starforge`.
+4. In the same settings page, add a repository secret named
+   `CACHIX_AUTH_TOKEN` using a per-cache token with write access to that cache.
+   Cachix manages signing keys for managed caches; no separate signing key is
+   required.
+
+When the cache-name variable is absent, the workflow skips Cachix and still
+builds normally using the configured Nix substituters. Pull-request workflows
+never receive the write token. The cache must be public for token-free reads
+from pull requests.
+
+The first trusted build on `main` populates the cache. Subsequent CI runs can
+download matching store paths rather than rebuilding them. A changed input,
+compiler, or derivation may still require new builds.
+
+To let the workstation consume the same public cache, install the Cachix CLI
+and run:
+
+```sh
+cachix use starforge
+```
+
+Review the generated Nix configuration before applying it declaratively to
+the host.
+
+The jobs are separate checks. To make them mandatory before merging, configure
+branch protection or a repository ruleset for `main` and require both
+`Validate Nix configuration` and `Build Starforge system`.
+
+This workflow performs CI only. It never activates a NixOS generation or
+deploys to the workstation.
+
+## Validate and build locally
 
 Run these commands from the repository root:
 
 ```sh
 nix fmt
-nix flake check --show-trace
+nix flake check --no-build --no-update-lock-file --show-trace
 nix build .#nixosConfigurations.starforge.config.system.build.toplevel --no-link
 ```
 
@@ -160,7 +215,7 @@ branches at every rebuild:
 nix flake update
 git diff -- flake.lock
 nix fmt
-nix flake check --show-trace
+nix flake check --no-build --no-update-lock-file --show-trace
 ```
 
 Review Nixpkgs, Home Manager, Noctalia, and terminal-dotfiles changes before
@@ -172,8 +227,8 @@ follow a newer NixOS release; it remains `26.05` from the original install.
 - Garbage collection runs weekly and removes unreferenced store paths older
   than 14 days. Existing system generations are not automatically deleted.
 - Store optimisation runs weekly.
-- GitHub Actions checks formatting, evaluates the flake, and builds the
-  Starforge system closure for pull requests and pushes to `main`.
+- GitHub Actions validates formatting and evaluates the flake in a lightweight
+  job, then builds the complete Starforge system closure in a separate job.
 - Keep a known-good generation and a copy of the hardware configuration
   before changing bootloader, LUKS, Btrfs, or kernel settings.
 
