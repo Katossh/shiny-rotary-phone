@@ -46,7 +46,7 @@ jobs:
         run: nix flake lock --accept-flake-config && cat flake.lock
 
       - name: Check formatting
-        run: nix fmt -- $(git ls-files '*.nix') && git diff --exit-code
+        run: nix fmt -- $(git ls-files '*.nix') && git diff --exit-code -- '*.nix'
 
       - name: Evaluate flake outputs
         run: nix flake check --accept-flake-config --show-trace
