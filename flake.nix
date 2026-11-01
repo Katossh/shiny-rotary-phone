@@ -3,7 +3,11 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    noctalia.url = "github:noctalia-dev/noctalia/cachix";
+
+    noctalia = {
+      url = "github:noctalia-dev/noctalia/cachix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     terminal-dotfiles = {
       url = "github:Katossh/terminal-dotfiles";
