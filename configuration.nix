@@ -1,5 +1,4 @@
-
-{ config, lib, pkgs, inputs, ... }:
+{ pkgs, inputs, ... }:
 
 {
   imports = [
@@ -23,33 +22,28 @@
     };
   };
 
-  # Disk encryption
-  boot.initrd.luks.devices."cryptroot" = {
-    device = "/dev/disk/by-uuid/fb18dd0b-4f76-449f-9d00-67cc9d49b4ee";
-  };
-
   # Filesystem
   boot.supportedFilesystems = [ "btrfs" ];
 
   # Hardware
   boot.kernelPackages = pkgs.linuxPackages_latest;
-  
-  users.users.katossh.shell = pkgs.zsh;
+
+  # User
+  users.users.katossh = {
+    isNormalUser = true;
+    shell = pkgs.zsh;
+    extraGroups = [
+      "wheel"
+      "networkmanager"
+    ];
+  };
+
   # System identity
   networking.hostName = "starforge";
   networking.networkmanager.enable = true;
 
   time.timeZone = "Europe/Moscow";
   i18n.defaultLocale = "en_US.UTF-8";
-
-  # User
-  users.users.katossh = {
-    isNormalUser = true;
-    extraGroups = [
-      "wheel"
-      "networkmanager"
-    ];
-  };
 
   # Niri compositor
   programs.niri.enable = true;
@@ -60,6 +54,7 @@
     systemd.enable = true;
     recommendedServices.enable = true;
   };
+
   programs.firefox.enable = true;
 
   # Login manager
@@ -91,17 +86,14 @@
 
   security.rtkit.enable = true;
 
-  # XWayland compatibility
+  # XWayland compatibility and terminal
   environment.systemPackages = with pkgs; [
     xwayland-satellite
-    neovim
-    vim
     kitty
-    git
-    fastfetch
+    vim
   ];
 
-  # Noctalia binary cache
+  # Noctalia binary cache and Flakes
   nix.settings = {
     experimental-features = [
       "nix-command"
@@ -119,4 +111,3 @@
 
   system.stateVersion = "26.05";
 }
-
