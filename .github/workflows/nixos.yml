@@ -43,7 +43,7 @@ jobs:
             extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=
 
       - name: Check formatting
-        run: nix fmt -- --check
+        run: nix fmt -- $(git ls-files '*.nix') && git diff --exit-code
 
       - name: Evaluate flake outputs
         run: nix flake check --show-trace
