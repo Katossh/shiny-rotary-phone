@@ -27,6 +27,7 @@
 
   # Hardware
   boot.kernelPackages = pkgs.linuxPackages_latest;
+  hardware.enableRedistributableFirmware = true;
 
   # User
   users.users.katossh = {
