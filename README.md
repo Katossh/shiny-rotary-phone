@@ -21,6 +21,7 @@ The host profile targets an AMD Ryzen 5 7600X and its integrated Radeon RDNA2
 GPU on an AM5 platform.
 
 - AMD CPU microcode and redistributable firmware are enabled.
+- AMD P-State active mode is enabled for modern Ryzen power/performance scaling.
 - The AMDGPU kernel driver is loaded in the initrd for early KMS.
 - Mesa graphics acceleration and 32-bit graphics support are enabled.
 - Vulkan and VA-API diagnostic tools are installed.
