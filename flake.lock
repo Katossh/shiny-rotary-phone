@@ -1,0 +1,77 @@
+{
+  "nodes": {
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1793341285,
+        "narHash": "sha256-Y1CiZ4SoBUjLQyQM/pY+rS2dXD3CHLPstF0lmOc73D4=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "1c89083e451e891152365b799595cf7790a43325",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1793341285,
+        "narHash": "sha256-LOv16TsMYV2/8BUYnhSxHkOASe7es2ORbqMeLlZJ8Hc=",
+        "rev": "1c89083e451e891152365b799595cf7790a43325",
+        "type": "tarball",
+        "url": "https://releases.nixos.org/nixos/unstable/nixos-26.11pre1105037.1c89083e451e/nixexprs.tar.zst"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://channels.nixos.org/nixos-unstable/nixexprs.tar.zst"
+      }
+    },
+    "noctalia": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_2"
+      },
+      "locked": {
+        "lastModified": 1793560802,
+        "narHash": "sha256-lrY4TiIKHX4mvwWMxaGLMgkgCIt4QirUHOBymzGyUiI=",
+        "owner": "noctalia-dev",
+        "repo": "noctalia",
+        "rev": "2da165d07b75021582f9e56243651121ca815b7e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "noctalia-dev",
+        "ref": "cachix",
+        "repo": "noctalia",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "noctalia": "noctalia",
+        "terminal-dotfiles": "terminal-dotfiles"
+      }
+    },
+    "terminal-dotfiles": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793569094,
+        "narHash": "sha256-TbQSQTZF7ZhRXyuqs8fPOytIZ1JdMrxLx5D9tTz8k44=",
+        "owner": "Katossh",
+        "repo": "terminal-dotfiles",
+        "rev": "789dc72360ba2f6f6eceb60d3cf05338df806278",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Katossh",
+        "repo": "terminal-dotfiles",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
