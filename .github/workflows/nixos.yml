@@ -21,35 +21,90 @@ permissions:
   contents: read
 
 concurrency:
-  group: nixos-config-${{ github.workflow }}-${{ github.ref }}
+  group: nixos-config-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  check:
-    name: Evaluate and build Starforge
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+  validate:
+    name: Validate Nix configuration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
+            accept-flake-config = true
             extra-substituters = https://noctalia.cachix.org
             extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=
 
-      - name: Lock flake inputs
-        run: nix flake lock --accept-flake-config && cat flake.lock
-
       - name: Check formatting
-        run: nix fmt -- $(git ls-files '*.nix') && git diff --exit-code -- '*.nix'
+        run: |
+          nix fmt -- $(git ls-files '*.nix')
+          git diff --exit-code -- '*.nix'
 
-      - name: Evaluate flake outputs
-        run: nix flake check --accept-flake-config --show-trace
+      - name: Evaluate flake outputs without building
+        run: |
+          nix flake check \
+            --no-build \
+            --no-update-lock-file \
+            --accept-flake-config \
+            --show-trace
+
+  build:
+    name: Build Starforge system
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+            extra-substituters = https://noctalia.cachix.org
+            extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=
+
+      # Public cache reads are safe on pull requests. Never pass the write token
+      # to pull-request workflows, including pull requests from this repository.
+      - name: Configure Cachix (read-only)
+        if: ${{ vars.CACHIX_CACHE_NAME != '' && !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+        uses: cachix/cachix-action@v17
+        with:
+          name: ${{ vars.CACHIX_CACHE_NAME }}
+          skipPush: true
+
+      # Only trusted pushes to main receive the per-cache write token.
+      - name: Configure Cachix (publish from main)
+        if: ${{ vars.CACHIX_CACHE_NAME != '' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: cachix/cachix-action@v17
+        with:
+          name: ${{ vars.CACHIX_CACHE_NAME }}
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Explain disabled Cachix cache
+        if: ${{ vars.CACHIX_CACHE_NAME == '' }}
+        run: |
+          echo "::notice::Cachix is not configured. Create a public cache and set the CACHIX_CACHE_NAME repository variable to enable it."
 
       - name: Build the Starforge system closure
-        run: nix build --accept-flake-config .#nixosConfigurations.starforge.config.system.build.toplevel --no-link --print-build-logs
+        run: |
+          nix build \
+            --no-update-lock-file \
+            --accept-flake-config \
+            .#nixosConfigurations.starforge.config.system.build.toplevel \
+            --no-link \
+            --print-build-logs
