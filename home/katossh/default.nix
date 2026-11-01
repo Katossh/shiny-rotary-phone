@@ -23,4 +23,7 @@
     enable = true;
     createDirectories = true;
   };
+
+  # Ensure the directory targeted by Niri's screenshot-path exists.
+  home.file."Pictures/Screenshots/.keep".text = "";
 }

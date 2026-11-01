@@ -69,6 +69,12 @@
           "msg"
           "settings-toggle"
         ];
+        "Super+Alt+L".spawn = [
+          "noctalia"
+          "msg"
+          "session"
+          "lock"
+        ];
         "Mod+O"."toggle-overview" = { };
         "Mod+Q"."close-window" = { };
         "Alt+F4"."close-window" = { };
@@ -140,7 +146,10 @@
         "Ctrl+Print".screenshot-screen = { };
         "Alt+Print".screenshot-window = { };
 
-        "Mod+Escape"."toggle-keyboard-shortcuts-inhibit"._props."allow-inhibiting" = false;
+        "Mod+Escape" = {
+          _props."allow-inhibiting" = false;
+          "toggle-keyboard-shortcuts-inhibit" = { };
+        };
 
         "Mod+Shift+E".quit = { };
         "Mod+Shift+P"."power-off-monitors" = { };
