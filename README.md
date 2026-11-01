@@ -18,8 +18,8 @@ NixOS configuration for the `starforge` host.
 The flake exports the host as `nixos`, so use that attribute (not the machine hostname):
 
 ```sh
-nix flake check
 nix fmt
+nix flake check
 sudo nixos-rebuild build --flake '.#nixos'
 sudo nixos-rebuild test --flake '.#nixos'
 ```
