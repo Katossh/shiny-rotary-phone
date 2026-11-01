@@ -16,6 +16,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nixos-hardware = {
+      url = "github:NixOS/nixos-hardware";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Keep Noctalia's own pinned nixpkgs: this is required for Cachix hits.
     noctalia.url = "github:noctalia-dev/noctalia/cachix";
 

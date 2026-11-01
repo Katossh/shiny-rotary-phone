@@ -40,7 +40,8 @@
         "nixpkgs": "nixpkgs",
         "noctalia": "noctalia",
         "terminal-dotfiles": "terminal-dotfiles",
-        "home-manager": "home-manager"
+        "home-manager": "home-manager",
+        "nixos-hardware": "nixos-hardware"
       }
     },
     "terminal-dotfiles": {
@@ -90,6 +91,26 @@
       "original": {
         "type": "tarball",
         "url": "https://channels.nixos.org/nixos-unstable/nixexprs.tar.zst"
+      }
+    },
+    "nixos-hardware": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793355509,
+        "narHash": "sha256-/Zs18x+IW4LuVH0rKxra0WPRgsk0DQsi0Bwkf8sOC5c=",
+        "owner": "NixOS",
+        "repo": "nixos-hardware",
+        "rev": "04c6b94fa104bc23650983a4513aea196794d321",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixos-hardware",
+        "type": "github"
       }
     }
   },

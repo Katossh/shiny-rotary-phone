@@ -3,8 +3,9 @@
 Declarative NixOS configuration for the `starforge` workstation.
 
 The repository manages the operating system, Niri desktop, Noctalia shell,
-and user-level desktop settings. Terminal packages and dotfiles remain
-integrated from [terminal-dotfiles](https://github.com/Katossh/terminal-dotfiles).
+virtual machines, host security baseline, and user-level desktop settings.
+Terminal packages and dotfiles remain integrated from
+[terminal-dotfiles](https://github.com/Katossh/terminal-dotfiles).
 
 ## Repository layout
 
@@ -13,6 +14,87 @@ integrated from [terminal-dotfiles](https://github.com/Katossh/terminal-dotfiles
 - `modules/nixos/`: reusable system-level modules.
 - `home/katossh/`: Home Manager configuration for the user.
 - `.github/workflows/nixos.yml`: formatting, flake evaluation, and system build checks.
+
+## Hardware profile
+
+The host profile targets an AMD Ryzen 5 7600X and its integrated Radeon RDNA2
+GPU on an AM5 platform.
+
+- AMD CPU microcode and redistributable firmware are enabled.
+- AMD P-State active mode is enabled for modern Ryzen power/performance scaling.
+- The AMDGPU kernel driver is loaded in the initrd for early KMS.
+- Mesa graphics acceleration and 32-bit graphics support are enabled.
+- Vulkan and VA-API diagnostic tools are installed.
+- `amdgpu_top`, `lm_sensors`, `nvme-cli`, `smartmontools`, `pciutils`,
+  and `usbutils` provide hardware monitoring and diagnostics.
+- Bluetooth, NetworkManager, UPower, and power-profiles-daemon remain enabled.
+- `fwupd` is enabled for firmware updates on devices supported by LVFS.
+
+The motherboard's Wi-Fi and Bluetooth devices still depend on the exact
+wireless module fitted to the board revision. Redistributable firmware and
+the in-kernel drivers are enabled; verify the detected chipset with
+`lspci -nnk` and `lsusb` after installation.
+
+## Virtualisation
+
+The host uses AMD KVM with QEMU and libvirt:
+
+- `kvm-amd` is retained in the generated hardware configuration.
+- `virtualisation.libvirtd` provides the system VM daemon.
+- QEMU guests run as the dedicated unprivileged `qemu-libvirtd` account.
+- `swtpm` is enabled for virtual TPM 2.0 devices, useful for Windows 11 guests.
+- OVMF/UEFI firmware is supplied by the QEMU/libvirt module.
+- Virt-manager provides the graphical manager.
+- SPICE USB redirection is enabled.
+- The desktop user belongs to the `libvirtd` group.
+
+Before creating VMs, enable CPU virtualisation (SVM) in the motherboard UEFI.
+IOMMU is only needed for device passthrough; it is not required for ordinary
+KVM guests. GPU passthrough is deliberately not configured because the
+integrated GPU is also driving the host desktop.
+
+The default libvirt NAT network may need to be enabled once:
+
+```sh
+sudo virsh net-autostart default
+sudo virsh net-start default
+```
+
+Useful checks:
+
+```sh
+ls -l /dev/kvm
+virsh -c qemu:///system list --all
+```
+
+Because QEMU runs unprivileged, direct USB/PCI device assignment may require
+additional per-device permissions. Do not solve that by running all QEMU
+processes as root; add narrowly scoped access for the specific device instead.
+
+## Security baseline
+
+- The NixOS firewall is explicitly enabled, with no extra inbound ports opened.
+- The existing iptables-based firewall backend is retained for compatibility
+  with libvirt networking; nftables can be evaluated separately.
+- Kernel image protection is enabled.
+- Auditd records privileged command execution for both 64-bit and 32-bit
+  processes.
+- Kernel pointer and dmesg exposure are restricted; ptrace is limited to the
+  normal parent/child model; unprivileged BPF is disabled.
+- Filesystem protections for symlinks, hardlinks, FIFOs, and regular files
+  are explicitly enabled.
+- IPv4/IPv6 redirect acceptance and IPv4 source routing are disabled.
+- Sudo requires a password and its authentication timestamp is limited to
+  five minutes.
+- Nix builds remain sandboxed; only root and wheel members may use the daemon,
+  while only root is a trusted Nix user.
+- Existing LUKS full-disk encryption and encrypted Btrfs layout are preserved.
+
+This is a practical workstation baseline, not a claim of complete isolation.
+AppArmor policy enforcement, Secure Boot, TPM-backed disk unlock, container
+isolation, and device-specific USB restrictions need separate validation
+before enabling them. Kernel-module locking is intentionally omitted because
+this machine must load hardware, networking, Bluetooth, and KVM modules.
 
 ## Desktop
 
@@ -51,8 +133,8 @@ sudo nixos-rebuild test --flake .#starforge
 ```
 
 Check the Niri session, Noctalia shell, networking, Bluetooth, audio, portals,
-screenshots, media keys, and display controls. Only after those checks pass,
-make the generation the default:
+screenshots, media keys, display controls, Vulkan/VA-API, sensors, and a test VM.
+Only after those checks pass, make the generation the default:
 
 ```sh
 sudo nixos-rebuild switch --flake .#starforge
