@@ -42,11 +42,14 @@ jobs:
             extra-substituters = https://noctalia.cachix.org
             extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=
 
+      - name: Lock flake inputs
+        run: nix flake lock --accept-flake-config && cat flake.lock
+
       - name: Check formatting
         run: nix fmt -- $(git ls-files '*.nix') && git diff --exit-code
 
       - name: Evaluate flake outputs
-        run: nix flake check --show-trace
+        run: nix flake check --accept-flake-config --show-trace
 
       - name: Build the Starforge system closure
-        run: nix build .#nixosConfigurations.starforge.config.system.build.toplevel --no-link --print-build-logs
+        run: nix build --accept-flake-config .#nixosConfigurations.starforge.config.system.build.toplevel --no-link --print-build-logs
