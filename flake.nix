@@ -25,24 +25,26 @@
     };
   };
 
-  outputs = inputs@{
-    nixpkgs,
-    home-manager,
-    ...
-  }: {
-    formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt;
+  outputs =
+    inputs@{
+      nixpkgs,
+      home-manager,
+      ...
+    }:
+    {
+      formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt;
 
-    nixosConfigurations.starforge = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
+      nixosConfigurations.starforge = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
 
-      specialArgs = {
-        inherit inputs;
+        specialArgs = {
+          inherit inputs;
+        };
+
+        modules = [
+          home-manager.nixosModules.home-manager
+          ./hosts/starforge
+        ];
       };
-
-      modules = [
-        home-manager.nixosModules.home-manager
-        ./hosts/starforge
-      ];
     };
-  };
 }

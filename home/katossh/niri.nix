@@ -10,7 +10,9 @@
       layout = {
         gaps = 8;
         "center-focused-column" = "never";
-        "default-column-width" = { proportion = 0.5; };
+        "default-column-width" = {
+          proportion = 0.5;
+        };
         "preset-column-widths" = {
           _children = [
             { proportion = 0.33333; }
@@ -27,7 +29,10 @@
           on = { };
           softness = 30;
           spread = 5;
-          offset._props = { x = 0; y = 5; };
+          offset._props = {
+            x = 0;
+            y = 5;
+          };
           color = "#0007";
         };
       };
@@ -42,15 +47,28 @@
         ];
       };
 
-      "screenshot-path" =
-        "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png";
+      "screenshot-path" = "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png";
 
       binds = {
         "Mod+Shift+Slash"."show-hotkey-overlay" = { };
         "Mod+Return".spawn = [ "kitty" ];
-        "Mod+Space".spawn = [ "noctalia" "msg" "panel-toggle" "launcher" ];
-        "Mod+S".spawn = [ "noctalia" "msg" "panel-toggle" "control-center" ];
-        "Mod+Comma".spawn = [ "noctalia" "msg" "settings-toggle" ];
+        "Mod+Space".spawn = [
+          "noctalia"
+          "msg"
+          "panel-toggle"
+          "launcher"
+        ];
+        "Mod+S".spawn = [
+          "noctalia"
+          "msg"
+          "panel-toggle"
+          "control-center"
+        ];
+        "Mod+Comma".spawn = [
+          "noctalia"
+          "msg"
+          "settings-toggle"
+        ];
         "Mod+O"."toggle-overview" = { };
         "Mod+Q"."close-window" = { };
         "Alt+F4"."close-window" = { };
@@ -122,8 +140,7 @@
         "Ctrl+Print".screenshot-screen = { };
         "Alt+Print".screenshot-window = { };
 
-        "Mod+Escape"."toggle-keyboard-shortcuts-inhibit"._props."allow-inhibiting" =
-          false;
+        "Mod+Escape"."toggle-keyboard-shortcuts-inhibit"._props."allow-inhibiting" = false;
 
         "Mod+Shift+E".quit = { };
         "Mod+Shift+P"."power-off-monitors" = { };
@@ -131,32 +148,73 @@
         "XF86AudioRaiseVolume" = {
           _props."allow-when-locked" = true;
           spawn = [
-            "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%+" "-l" "1.0"
+            "wpctl"
+            "set-volume"
+            "@DEFAULT_AUDIO_SINK@"
+            "5%+"
+            "-l"
+            "1.0"
           ];
         };
         "XF86AudioLowerVolume" = {
           _props."allow-when-locked" = true;
-          spawn = [ "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%-" ];
+          spawn = [
+            "wpctl"
+            "set-volume"
+            "@DEFAULT_AUDIO_SINK@"
+            "5%-"
+          ];
         };
         "XF86AudioMute" = {
           _props."allow-when-locked" = true;
-          spawn = [ "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle" ];
+          spawn = [
+            "wpctl"
+            "set-mute"
+            "@DEFAULT_AUDIO_SINK@"
+            "toggle"
+          ];
         };
         "XF86AudioMicMute" = {
           _props."allow-when-locked" = true;
-          spawn = [ "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle" ];
+          spawn = [
+            "wpctl"
+            "set-mute"
+            "@DEFAULT_AUDIO_SOURCE@"
+            "toggle"
+          ];
         };
-        "XF86AudioPlay".spawn = [ "playerctl" "play-pause" ];
-        "XF86AudioPause".spawn = [ "playerctl" "play-pause" ];
-        "XF86AudioStop".spawn = [ "playerctl" "stop" ];
-        "XF86AudioPrev".spawn = [ "playerctl" "previous" ];
-        "XF86AudioNext".spawn = [ "playerctl" "next" ];
+        "XF86AudioPlay".spawn = [
+          "playerctl"
+          "play-pause"
+        ];
+        "XF86AudioPause".spawn = [
+          "playerctl"
+          "play-pause"
+        ];
+        "XF86AudioStop".spawn = [
+          "playerctl"
+          "stop"
+        ];
+        "XF86AudioPrev".spawn = [
+          "playerctl"
+          "previous"
+        ];
+        "XF86AudioNext".spawn = [
+          "playerctl"
+          "next"
+        ];
 
         "XF86MonBrightnessUp".spawn = [
-          "brightnessctl" "--class=backlight" "set" "+5%"
+          "brightnessctl"
+          "--class=backlight"
+          "set"
+          "+5%"
         ];
         "XF86MonBrightnessDown".spawn = [
-          "brightnessctl" "--class=backlight" "set" "5%-"
+          "brightnessctl"
+          "--class=backlight"
+          "set"
+          "5%-"
         ];
       };
     };
