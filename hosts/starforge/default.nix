@@ -10,8 +10,10 @@
     ../../modules/nixos/hardware.nix
     ../../modules/nixos/networking.nix
     ../../modules/nixos/nix.nix
+    ../../modules/nixos/security.nix
     ../../modules/nixos/terminal.nix
     ../../modules/nixos/users.nix
+    ../../modules/nixos/virtualisation.nix
   ];
 
   home-manager = {
