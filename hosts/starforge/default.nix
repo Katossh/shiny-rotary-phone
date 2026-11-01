@@ -4,6 +4,11 @@
   imports = [
     ./hardware-configuration.nix
 
+    # AMD Ryzen 7000 Raphael iGPU, common AMDGPU support, and AMD P-State.
+    inputs.nixos-hardware.nixosModules.common-cpu-amd-raphael-igpu
+    inputs.nixos-hardware.nixosModules.common-cpu-amd-pstate
+    inputs.nixos-hardware.nixosModules.common-gpu-amd
+
     ../../modules/nixos/audio.nix
     ../../modules/nixos/boot.nix
     ../../modules/nixos/desktop.nix
