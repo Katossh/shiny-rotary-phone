@@ -1,0 +1,31 @@
+{ inputs, ... }:
+
+{
+  imports = [
+    ./hardware-configuration.nix
+
+    ../../modules/nixos/audio.nix
+    ../../modules/nixos/boot.nix
+    ../../modules/nixos/desktop.nix
+    ../../modules/nixos/hardware.nix
+    ../../modules/nixos/networking.nix
+    ../../modules/nixos/nix.nix
+    ../../modules/nixos/terminal.nix
+    ../../modules/nixos/users.nix
+  ];
+
+  home-manager = {
+    useGlobalPkgs = true;
+    useUserPackages = true;
+    backupFileExtension = "hm-backup";
+
+    extraSpecialArgs = {
+      inherit inputs;
+    };
+
+    users.katossh = import ../../home/katossh;
+  };
+
+  # Preserve compatibility defaults from the original installation.
+  system.stateVersion = "26.05";
+}

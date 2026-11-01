@@ -1,0 +1,52 @@
+name: NixOS configuration
+
+on:
+  pull_request:
+    paths:
+      - "**/*.nix"
+      - "flake.nix"
+      - "flake.lock"
+      - ".github/workflows/nixos.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.nix"
+      - "flake.nix"
+      - "flake.lock"
+      - ".github/workflows/nixos.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nixos-config-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Evaluate and build Starforge
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            extra-substituters = https://noctalia.cachix.org
+            extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=
+
+      - name: Check formatting
+        run: nix fmt -- --check
+
+      - name: Evaluate flake outputs
+        run: nix flake check --show-trace
+
+      - name: Build the Starforge system closure
+        run: nix build .#nixosConfigurations.starforge.config.system.build.toplevel --no-link --print-build-logs
