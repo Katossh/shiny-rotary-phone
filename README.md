@@ -162,10 +162,58 @@ processes as root; add narrowly scoped access for the specific device instead.
   disabled until keys are manually created and enrolled and the boot path is tested.
 
 This is a practical workstation baseline, not a claim of complete isolation.
-AppArmor policy enforcement, TPM-backed disk unlock, container isolation,
-and device-specific USB restrictions need separate validation before enabling
-them. Kernel-module locking is intentionally omitted because this machine must
-load hardware, networking, Bluetooth, and KVM modules.
+The AppArmor LSM is enabled, with the initial curl policy deliberately in
+complain mode; it is not yet a general application sandbox. TPM-backed disk
+unlock, container isolation, and device-specific USB restrictions need
+separate validation before enabling them. Kernel-module locking is
+intentionally omitted because this machine must load hardware, networking,
+Bluetooth, and KVM modules.
+
+### AppArmor rollout
+
+AppArmor is enabled through the NixOS module. It adds the AppArmor kernel
+parameter, registers the LSM, installs the policy loader service, and provides
+the AppArmor management utilities. A reboot is required before the kernel LSM
+becomes active.
+
+One host-specific policy is currently loaded for the Nixpkgs `curl` binary.
+It starts in **complain** mode: operations that the policy does not explicitly
+allow are logged but not blocked. This gives us real workload data before
+enforcement. It does not mean that Firefox, the desktop, every system service,
+or arbitrary user processes are already confined.
+
+After deploying this module and rebooting, verify the LSM and policy loader:
+
+```sh
+cat /sys/kernel/security/lsm
+sudo aa-status
+sudo systemctl status apparmor.service
+readlink -f "$(command -v curl)"
+```
+
+Inspect complain-mode events from the current boot:
+
+```sh
+sudo journalctl -k -b | grep 'apparmor='
+```
+
+To review logged access patterns interactively, use:
+
+```sh
+sudo journalctl -b --since today --grep='apparmor=' | sudo aa-logprof
+```
+
+Do not switch the curl policy to `enforce` merely because the profile loads.
+First exercise the real commands and download destinations you use, review the
+logs, update the policy, and test the enforced version. Keep
+`killUnconfinedConfinables` disabled so profile changes do not automatically
+send SIGTERM to running desktop processes.
+
+NixOS provides the AppArmor LSM and policy-loading module, but its AppArmor
+integration is not yet as complete as on distributions with mature,
+distribution-maintained application policy sets. Treat each additional profile
+as a separate, workload-tested change rather than assuming that installing
+the upstream profile package automatically confines applications.
 
 ## Desktop
 
