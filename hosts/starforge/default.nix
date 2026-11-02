@@ -14,6 +14,7 @@
     ../../modules/nixos/audio.nix
     ../../modules/nixos/boot.nix
     ../../modules/nixos/desktop.nix
+    ../../modules/nixos/development.nix
     ../../modules/nixos/hardware.nix
     ../../modules/nixos/networking.nix
     ../../modules/nixos/nix.nix

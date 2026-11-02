@@ -4,6 +4,10 @@
   programs.niri.enable = true;
   programs.firefox.enable = true;
 
+  environment.systemPackages = [
+    pkgs.brave
+  ];
+
   services.greetd = {
     enable = true;
     settings.default_session = {
