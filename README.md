@@ -291,6 +291,40 @@ not follow the root Nixpkgs input: this preserves derivation compatibility
 with the Noctalia Cachix binary cache. The nested Nixpkgs revision is pinned
 in `flake.lock`.
 
+## Container runtime
+
+Starforge uses rootless Podman for OCI containers:
+
+- The desktop user receives subordinate UID/GID ranges for user namespaces.
+- Containers run as the regular `katossh` user; no membership in the
+  privileged `podman` group is required.
+- The Docker CLI compatibility alias, rootful Docker-compatible socket, and
+  network API socket remain disabled.
+- `podman-compose` is installed as an external Compose provider.
+- Automatic pruning is disabled so container resources are not removed
+  unexpectedly.
+
+Podman is daemonless for normal local CLI use, but containers still share the
+host kernel. Treat them as a packaging and process-isolation boundary, not as
+a substitute for a VM when running untrusted code. Avoid `--privileged`,
+host PID/network namespaces, the host root filesystem, and broad writable
+bind mounts. Prefer rootless operation, read-only mounts, dropped capabilities,
+and explicit resource limits.
+
+Useful checks and examples:
+
+```sh
+podman info
+podman run --rm docker.io/library/alpine:latest id
+podman-compose version
+podman compose up -d
+podman ps --all
+```
+
+Use Quadlet or user systemd units for long-running workloads rather than
+enabling a rootful Docker-compatible daemon. Do not expose the Podman API
+socket to the network.
+
 ## CI and build caching
 
 GitHub Actions runs two independent jobs in parallel:
@@ -414,6 +448,80 @@ follow a newer NixOS release; it remains `26.05` from the original install.
   before changing bootloader, LUKS, Btrfs, or kernel settings.
 - Keep the previous GRUB UEFI boot entry until Limine and Secure Boot have
   both passed real reboot tests.
+
+### Restic backup and recovery
+
+The configuration defines a manual Restic backup profile for `/home/katossh`
+and `/etc/nixos`. It excludes disposable caches, Podman image layers, and the
+desktop trash, but keeps named container volumes because they may hold
+persistent application data. The Nix store is not backed up because it is
+reproducible from the flake and its lock file. Libvirt VM disk images are not
+included; shut down a guest and back up its image separately when that data
+needs protection.
+
+The profile deliberately has **no systemd timer** until a real backup
+destination is selected and tested. The service is manual-only, so backups
+cannot run on a timer before a storage target is chosen. The repository
+location and encryption password are read from root-only files outside the
+Nix store:
+
+- `/etc/starforge/restic-repository`: one-line Restic repository location
+  (for example, a mounted external disk path or a remote repository URL).
+- `/etc/starforge/restic-password`: repository password; losing it makes the
+  encrypted backup unrecoverable.
+
+Create root-only files without putting the password or repository location
+in Git or the Nix store. Generate the password with a password manager, keep
+an independent recovery copy outside this workstation, and then enter it into
+the file:
+
+```sh
+sudo install -d -m 0700 /etc/starforge
+sudo install -m 0600 /dev/null /etc/starforge/restic-password
+sudoedit /etc/starforge/restic-password
+sudo install -m 0600 /dev/null /etc/starforge/restic-repository
+sudoedit /etc/starforge/restic-repository
+```
+
+The repository file contains one line: the selected local path or remote
+repository URL. For a removable disk, mount it and verify the actual mount
+with `findmnt` before initializing or running a backup. The current service
+does not hard-code a mountpoint because the destination has not been selected.
+
+Initialize the repository once, then run the manual backup service:
+
+```sh
+sudo env RESTIC_REPOSITORY_FILE=/etc/starforge/restic-repository \
+  RESTIC_PASSWORD_FILE=/etc/starforge/restic-password restic init
+sudo systemctl start restic-backups-starforge.service
+sudo systemctl status restic-backups-starforge.service
+```
+
+The retention policy keeps 7 daily, 4 weekly, 12 monthly, and 2 yearly
+snapshots. The service prunes according to that policy when it is manually
+run. Verify repository integrity periodically and perform an actual test
+restore; a successful backup job alone does not prove recoverability:
+
+```sh
+sudo env RESTIC_REPOSITORY_FILE=/etc/starforge/restic-repository \
+  RESTIC_PASSWORD_FILE=/etc/starforge/restic-password restic snapshots
+sudo env RESTIC_REPOSITORY_FILE=/etc/starforge/restic-repository \
+  RESTIC_PASSWORD_FILE=/etc/starforge/restic-password restic check
+sudo env RESTIC_REPOSITORY_FILE=/etc/starforge/restic-repository \
+  RESTIC_PASSWORD_FILE=/etc/starforge/restic-password restic restore latest \
+  --target /tmp/starforge-restore-test
+```
+
+Inspect the restored files before deleting the temporary restore directory.
+Keep at least one backup copy disconnected from the workstation when it is not
+being updated. A single local copy on another partition is not a disaster
+recovery strategy.
+
+The profile is intentionally manual until the backup disk or remote endpoint,
+mount dependency, secret provisioning, and restore procedure are verified.
+Only then should a persistent timer be enabled. The password file is a
+temporary host-local secret mechanism; a later sops-nix/agenix rollout can
+manage it declaratively without committing the plaintext password.
 
 The old pre-dotfiles configuration is retained as a historical snapshot in
 `archive/configuration.nix.before-dotfiles`; it is not imported by the flake.
