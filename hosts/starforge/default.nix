@@ -11,7 +11,6 @@
 
     ../../modules/nixos/apparmor.nix
     ../../modules/nixos/backup.nix
-    ../../modules/nixos/iommu.nix
     ../../modules/nixos/audio.nix
     ../../modules/nixos/boot.nix
     ../../modules/nixos/desktop.nix
