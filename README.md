@@ -100,10 +100,9 @@ until the Secure Boot configuration has been tested. Secure Boot support is
 firmware-dependent; a successful build alone does not prove that the machine
 will boot with enforcement enabled.
 
-Windows C: was confirmed fully decrypted at the time this configuration was
-prepared. Windows encryption is deferred until after the new boot chain and
-Secure Boot have been validated. The existing NixOS LUKS/Btrfs arrangement
-is unchanged.
+Starforge does not configure Windows volume encryption. Windows encryption
+can be enabled separately after the new boot chain and Secure Boot have been
+validated. The existing NixOS LUKS/Btrfs arrangement is unchanged.
 
 ## Virtualisation
 
@@ -159,8 +158,8 @@ processes as root; add narrowly scoped access for the specific device instead.
 - Nix builds remain sandboxed; only root and wheel members may use the daemon,
   while only root is a trusted Nix user.
 - Existing LUKS full-disk encryption and encrypted Btrfs layout are preserved.
-- Limine is configured for Secure Boot, but enforcement remains disabled until
-  keys are manually created, enrolled, and the dual-boot path is tested.
+- Limine's built-in Secure Boot support is available, but enforcement remains
+  disabled until keys are manually created and enrolled and the boot path is tested.
 
 This is a practical workstation baseline, not a claim of complete isolation.
 AppArmor policy enforcement, TPM-backed disk unlock, container isolation,
