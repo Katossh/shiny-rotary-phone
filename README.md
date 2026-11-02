@@ -35,6 +35,76 @@ wireless module fitted to the board revision. Redistributable firmware and
 the in-kernel drivers are enabled; verify the detected chipset with
 `lspci -nnk` and `lsusb` after installation.
 
+## Bootloader and Windows dual boot
+
+Starforge uses Limine in UEFI mode. Limine is selected here because it supports
+direct EFI chainloading from another partition by GPT partition GUID, allowing
+Windows Boot Manager to remain on its own EFI partition without relying on an
+unsigned UEFI Shell intermediary.
+
+The current disk layout is intentionally preserved:
+
+- NixOS keeps using the existing 1 GB FAT32 `/boot` partition
+  (currently `/dev/nvme0n1p5`, filesystem UUID `FD77-5C81`).
+- Windows keeps its existing 200 MB EFI System Partition
+  (`/dev/nvme0n1p1`).
+- The Windows entry targets the Windows ESP by its GPT partition GUID:
+  `68a6f3c1-1eee-4845-8c3e-7108cec34c4a`, loading
+  `/EFI/Microsoft/Boot/bootmgfw.efi`.
+
+The NixOS `/boot` partition is FAT32 and is already used by a working UEFI
+boot entry, although its GPT type is currently reported as `Linux filesystem`
+rather than `EFI System`. This configuration deliberately does not rewrite
+the partition table or create another Windows-visible EFI System Partition.
+Do not change its GPT type or resize either EFI-related partition as part of
+this bootloader migration.
+
+The initial Limine migration does **not** enable Secure Boot. First verify that
+both NixOS and Windows boot from the Limine menu, while keeping the existing
+`NixOS-boot` GRUB firmware entry as a fallback. Do not delete the old GRUB
+files or firmware entry until the new boot path has been tested successfully.
+
+### Enable Secure Boot after boot testing
+
+Secure Boot is deliberately a second stage. Once both operating systems boot
+successfully through Limine and a recovery route is available:
+
+1. Create the local Secure Boot keys as root:
+
+   ```sh
+   sudo sbctl create-keys
+   ```
+
+2. Enter UEFI Setup Mode using the motherboard firmware's Secure Boot controls.
+   Do not enable Secure Boot enforcement yet.
+3. Enroll the custom keys while retaining Microsoft and firmware vendor keys:
+
+   ```sh
+   sudo sbctl enroll-keys --microsoft --firmware-builtin
+   ```
+
+4. Change `boot.loader.limine.secureBoot.enable` to `true` in
+   `modules/nixos/boot.nix`, rebuild, and check:
+
+   ```sh
+   sudo sbctl status
+   sudo sbctl verify
+   ```
+
+5. Enable Secure Boot in UEFI firmware and verify that both Limine/NixOS and
+   Windows Boot Manager still start.
+
+Do not use automatic key enrollment for this host. Keep the existing NixOS
+LUKS recovery passphrase available and retain the old GRUB firmware entry
+until the Secure Boot configuration has been tested. Secure Boot support is
+firmware-dependent; a successful build alone does not prove that the machine
+will boot with enforcement enabled.
+
+Windows C: was confirmed fully decrypted at the time this configuration was
+prepared. Windows encryption is deferred until after the new boot chain and
+Secure Boot have been validated. The existing NixOS LUKS/Btrfs arrangement
+is unchanged.
+
 ## Virtualisation
 
 The host uses AMD KVM with QEMU and libvirt:
@@ -89,12 +159,14 @@ processes as root; add narrowly scoped access for the specific device instead.
 - Nix builds remain sandboxed; only root and wheel members may use the daemon,
   while only root is a trusted Nix user.
 - Existing LUKS full-disk encryption and encrypted Btrfs layout are preserved.
+- Limine is configured for Secure Boot, but enforcement remains disabled until
+  keys are manually created, enrolled, and the dual-boot path is tested.
 
 This is a practical workstation baseline, not a claim of complete isolation.
-AppArmor policy enforcement, Secure Boot, TPM-backed disk unlock, container
-isolation, and device-specific USB restrictions need separate validation
-before enabling them. Kernel-module locking is intentionally omitted because
-this machine must load hardware, networking, Bluetooth, and KVM modules.
+AppArmor policy enforcement, TPM-backed disk unlock, container isolation,
+and device-specific USB restrictions need separate validation before enabling
+them. Kernel-module locking is intentionally omitted because this machine must
+load hardware, networking, Bluetooth, and KVM modules.
 
 ## Desktop
 
@@ -195,8 +267,8 @@ Only after those checks pass, make the generation the default:
 sudo nixos-rebuild switch --flake .#starforge
 ```
 
-Keep the previous generation available in GRUB. To roll back from a running
-system, use:
+Keep the previous generation available in the firmware boot menu. To roll back
+from a running system, use:
 
 ```sh
 sudo nixos-rebuild switch --rollback
@@ -228,9 +300,11 @@ follow a newer NixOS release; it remains `26.05` from the original install.
   than 14 days. Existing system generations are not automatically deleted.
 - Store optimisation runs weekly.
 - GitHub Actions validates formatting and evaluates the flake in a lightweight
-  job, then builds the complete Starforge system closure in a separate job.
+  job, then builds the complete system closure in a separate job.
 - Keep a known-good generation and a copy of the hardware configuration
   before changing bootloader, LUKS, Btrfs, or kernel settings.
+- Keep the previous GRUB UEFI boot entry until Limine and Secure Boot have
+  both passed real reboot tests.
 
 The old pre-dotfiles configuration is retained as a historical snapshot in
 `archive/configuration.nix.before-dotfiles`; it is not imported by the flake.
