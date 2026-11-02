@@ -29,6 +29,29 @@ GPU on an AM5 platform.
   and `usbutils` provide hardware monitoring and diagnostics.
 - Bluetooth, NetworkManager, UPower, and power-profiles-daemon remain enabled.
 - `fwupd` is enabled for firmware updates on devices supported by LVFS.
+- `smartd` automatically monitors detected SMART-capable storage devices.
+  Warnings are written to the journal and broadcast with the NixOS default
+  wall notification handler.
+- A monthly Btrfs scrub checks the filesystem mounted at `/`. The home, nix,
+  and log subvolumes are on the same Btrfs filesystem, so they do not need
+  separate scrub jobs.
+
+Check storage health with:
+
+```sh
+sudo systemctl status smartd
+sudo journalctl -u smartd
+sudo btrfs scrub status /
+```
+
+A Btrfs scrub verifies checksums, but this host currently has a single NVMe
+device rather than redundant Btrfs copies. It can detect corruption; it cannot
+reconstruct a damaged block without a good redundant copy or backup.
+
+Periodic discard/TRIM is not enabled for the LUKS-backed filesystem. The
+current LUKS mapping does not pass discard requests through; enabling that
+would be a separate encryption-policy decision because discard information
+reveals allocation patterns.
 
 The motherboard's Wi-Fi and Bluetooth devices still depend on the exact
 wireless module fitted to the board revision. Redistributable firmware and
@@ -122,18 +145,18 @@ IOMMU is only needed for device passthrough; it is not required for ordinary
 KVM guests. GPU passthrough is deliberately not configured because the
 integrated GPU is also driving the host desktop.
 
-The default libvirt NAT network may need to be enabled once:
-
-```sh
-sudo virsh net-autostart default
-sudo virsh net-start default
-```
+The default libvirt NAT network is configured to start automatically
+after libvirtd on each boot. The libvirtd service receives `dnsmasq` in its
+runtime PATH for DHCP and DNS on that network. The bridge remains subject to
+the host firewall; it is not added to `trustedInterfaces`.
 
 Useful checks:
 
 ```sh
 ls -l /dev/kvm
 virsh -c qemu:///system list --all
+virsh -c qemu:///system net-list --all
+systemctl status libvirt-default-network.service
 ```
 
 Because QEMU runs unprivileged, direct USB/PCI device assignment may require
@@ -214,6 +237,45 @@ integration is not yet as complete as on distributions with mature,
 distribution-maintained application policy sets. Treat each additional profile
 as a separate, workload-tested change rather than assuming that installing
 the upstream profile package automatically confines applications.
+
+### USBGuard device management
+
+USBGuard starts after the initial udev device enumeration has settled. Its
+bootstrap policy is intentionally conservative without guessing the IDs of
+your keyboard, mouse, hubs, Bluetooth adapter, or other host-specific devices:
+
+- Devices already connected when USBGuard starts keep their existing
+  authorization state.
+- Devices inserted after the daemon starts are blocked unless an explicit
+  rule allows them.
+- Unknown devices default to block.
+- Only root can use the USBGuard IPC interface.
+
+Inspect the initial state and blocked devices:
+
+```sh
+sudo usbguard list-devices --tree
+sudo usbguard list-devices --blocked
+sudo journalctl -u usbguard -b
+```
+
+To approve a trusted newly inserted device and persist that decision:
+
+```sh
+sudo usbguard allow-device --permanent <device-id>
+```
+
+The device ID is the first numeric field in `usbguard list-devices`, not the
+USB vendor:product ID. Persistent rules are stored locally in
+`/var/lib/usbguard/rules.conf` and are deliberately not committed to Git,
+because they contain hardware-specific identifiers.
+
+After reviewing the actual device inventory, a complete initial policy can
+also be generated with `sudo usbguard generate-policy`. Review the generated
+rules before installing them. Only after a complete allowlist exists should
+`presentDevicePolicy` be changed from `keep` to `apply-policy`; otherwise
+devices already connected at boot could be blocked. Keep a working input
+device available while testing policy changes.
 
 ## Desktop
 
