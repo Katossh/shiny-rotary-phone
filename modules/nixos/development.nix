@@ -1,12 +1,11 @@
 { lib, pkgs, ... }:
 
 {
-  # VS Code is proprietary; permit only its package, not all unfree software.
+  # VS Code is proprietary; permit only its actual Nixpkgs package name.
   nixpkgs.config.allowUnfreePredicate =
     pkg:
     builtins.elem (lib.getName pkg) [
-      "vscode"
-      "vscode-fhs"
+      "code"
     ];
 
   environment.systemPackages = with pkgs; [
