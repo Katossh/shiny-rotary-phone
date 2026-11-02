@@ -35,6 +35,7 @@
     # Fail early if the host-local repository/password files have not yet been
     # provisioned. The repository itself may be local or remote.
     backupPrepareCommand = ''
+      set -eu
       test -s /etc/starforge/restic-repository
       test -s /etc/starforge/restic-password
     '';
