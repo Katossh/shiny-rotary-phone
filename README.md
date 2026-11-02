@@ -163,6 +163,38 @@ Because QEMU runs unprivileged, direct USB/PCI device assignment may require
 additional per-device permissions. Do not solve that by running all QEMU
 processes as root; add narrowly scoped access for the specific device instead.
 
+### AMD IOMMU
+
+The host enables the AMD IOMMU driver for DMA remapping and future PCI device
+passthrough. Enable **IOMMU / AMD-Vi** in the motherboard UEFI. This is separate
+from **SVM**, which enables CPU virtualization for KVM.
+
+The kernel receives `amd_iommu=on`. No PCI device is bound to VFIO, no device
+IDs are reserved, and no GPU is detached from the host. This is deliberate:
+the Radeon iGPU currently drives the desktop, and there is no dedicated device
+selected for passthrough. Do not add `vfio-pci.ids` or early VFIO module
+binding until a specific device and its complete IOMMU group have been
+identified.
+
+After enabling the UEFI setting, reboot and inspect IOMMU initialization and
+device groups:
+
+```sh
+sudo dmesg | grep -Ei 'AMD-Vi|IOMMU'
+find /sys/kernel/iommu_groups/ -type l | sort
+lspci -nnk
+```
+
+An IOMMU group is the practical isolation unit for PCI passthrough: inspect all
+devices in the target group before assigning any of them to a guest. A usable
+IOMMU group does not by itself mean that a device is safe to detach from the
+host. Keep the integrated GPU and any devices needed for boot, storage,
+networking, or input on the host.
+
+The configuration does not set `iommu=pt` or force isolation overrides.
+Those options change DMA mapping behavior and should be selected only after
+the actual passthrough workload and hardware topology are known.
+
 ## Security baseline
 
 - The NixOS firewall is explicitly enabled, with no extra inbound ports opened.
@@ -186,9 +218,10 @@ processes as root; add narrowly scoped access for the specific device instead.
 
 This is a practical workstation baseline, not a claim of complete isolation.
 The AppArmor LSM is enabled, with the initial curl policy deliberately in
-complain mode; it is not yet a general application sandbox. TPM-backed disk
-unlock, container isolation, and device-specific USB restrictions need
-separate validation before enabling them. Kernel-module locking is
+complain mode; it is not yet a general application sandbox. TPM-backed disk unlock and device-specific USB restrictions still need
+separate validation. IOMMU is enabled as a base facility, but actual PCI
+passthrough remains unconfigured until a suitable device and IOMMU group are
+reviewed. Kernel-module locking is
 intentionally omitted because this machine must load hardware, networking,
 Bluetooth, and KVM modules.
 
@@ -290,40 +323,6 @@ Noctalia is pinned to its `cachix` branch. Its Nixpkgs input deliberately does
 not follow the root Nixpkgs input: this preserves derivation compatibility
 with the Noctalia Cachix binary cache. The nested Nixpkgs revision is pinned
 in `flake.lock`.
-
-## Container runtime
-
-Starforge uses rootless Podman for OCI containers:
-
-- The desktop user receives subordinate UID/GID ranges for user namespaces.
-- Containers run as the regular `katossh` user; no membership in the
-  privileged `podman` group is required.
-- The Docker CLI compatibility alias, rootful Docker-compatible socket, and
-  network API socket remain disabled.
-- `podman-compose` is installed as an external Compose provider.
-- Automatic pruning is disabled so container resources are not removed
-  unexpectedly.
-
-Podman is daemonless for normal local CLI use, but containers still share the
-host kernel. Treat them as a packaging and process-isolation boundary, not as
-a substitute for a VM when running untrusted code. Avoid `--privileged`,
-host PID/network namespaces, the host root filesystem, and broad writable
-bind mounts. Prefer rootless operation, read-only mounts, dropped capabilities,
-and explicit resource limits.
-
-Useful checks and examples:
-
-```sh
-podman info
-podman run --rm docker.io/library/alpine:latest id
-podman-compose version
-podman compose up -d
-podman ps --all
-```
-
-Use Quadlet or user systemd units for long-running workloads rather than
-enabling a rootful Docker-compatible daemon. Do not expose the Podman API
-socket to the network.
 
 ## CI and build caching
 
@@ -452,9 +451,7 @@ follow a newer NixOS release; it remains `26.05` from the original install.
 ### Restic backup and recovery
 
 The configuration defines a manual Restic backup profile for `/home/katossh`
-and `/etc/nixos`. It excludes disposable caches, Podman image layers, and the
-desktop trash, but keeps named container volumes because they may hold
-persistent application data. The Nix store is not backed up because it is
+and `/etc/nixos`. It excludes disposable caches and the desktop trash. The Nix store is not backed up because it is
 reproducible from the flake and its lock file. Libvirt VM disk images are not
 included; shut down a guest and back up its image separately when that data
 needs protection.
