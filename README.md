@@ -360,8 +360,16 @@ Cachix is optional until configured. To enable it:
 
 When the cache-name variable is absent, the workflow skips Cachix and still
 builds normally using the configured Nix substituters. Pull-request workflows
-never receive the write token. The cache must be public for token-free reads
-from pull requests.
+never receive or use the write token; they use the public cache in read-only
+mode. On pushes to `main`, the workflow checks whether the write token exists
+before enabling publishing. If the secret is missing, it emits a warning and
+continues with read-only cache access instead of failing the build. The cache
+must be public for token-free reads from pull requests.
+
+The cache name is not a secret. Keep `CACHIX_AUTH_TOKEN` only in GitHub
+Actions secrets; never commit it to the repository or place it in the Nix
+store. Use a per-cache token limited to write access for the `starforge`
+cache.
 
 The first trusted build on `main` populates the cache. Subsequent CI runs can
 download matching store paths rather than rebuilding them. A changed input,
