@@ -9,6 +9,28 @@
     allowedUDPPorts = [ ];
   };
 
+  # USBGuard starts from a conservative bootstrap policy:
+  # - devices already present keep their current authorization state;
+  # - newly inserted devices are blocked unless explicitly approved;
+  # - unknown devices default to block.
+  #
+  # The rule file remains host-local and writable at
+  # /var/lib/usbguard/rules.conf so root can persist approved device rules.
+  services.usbguard = {
+    enable = true;
+    implicitPolicyTarget = "block";
+    presentDevicePolicy = "keep";
+    presentControllerPolicy = "keep";
+    insertedDevicePolicy = "block";
+  };
+
+  # Wait until the initial udev coldplug has settled before USBGuard snapshots
+  # present devices. This avoids racing the initial keyboard/mouse enumeration.
+  systemd.services.usbguard = {
+    wants = [ "systemd-udev-settle.service" ];
+    after = [ "systemd-udev-settle.service" ];
+  };
+
   security = {
     protectKernelImage = true;
 

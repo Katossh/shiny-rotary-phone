@@ -21,6 +21,21 @@
   # Firmware updates are offered only for devices supported by LVFS/fwupd.
   services.fwupd.enable = true;
 
+  # Monitor available SMART-capable storage devices. Alerts go to the journal
+  # and wall by the NixOS smartd defaults.
+  services.smartd = {
+    enable = true;
+    autodetect = true;
+  };
+
+  # Monthly checksum scrub of the single Btrfs filesystem. All configured
+  # subvolumes live on the same filesystem, so scrubbing / avoids duplicate work.
+  services.btrfs.autoScrub = {
+    enable = true;
+    fileSystems = [ "/" ];
+    interval = "monthly";
+  };
+
   # Hardware diagnostics for the CPU, NVMe storage, buses, and graphics stack.
   environment.systemPackages = with pkgs; [
     amdgpu_top
