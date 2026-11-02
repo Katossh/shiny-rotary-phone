@@ -163,6 +163,43 @@ Because QEMU runs unprivileged, direct USB/PCI device assignment may require
 additional per-device permissions. Do not solve that by running all QEMU
 processes as root; add narrowly scoped access for the specific device instead.
 
+### AMD IOMMU
+
+The host is prepared for AMD IOMMU-backed PCI device passthrough. Enable
+**IOMMU / AMD-Vi** in the motherboard UEFI. This is separate from **SVM**,
+which enables CPU virtualization for KVM.
+
+The current upstream AMD IOMMU driver detects the hardware through the ACPI
+IVRS table and initializes when firmware exposes it. No extra
+`amd_iommu=on` argument is added: the current upstream kernel parameter list
+does not define `on` as a valid value for `amd_iommu=`. Do not use
+`amd_iommu=force_enable` to bypass firmware or platform detection.
+
+No PCI device is bound to VFIO, no device IDs are reserved, and no GPU is
+detached from the host. This is deliberate: the Radeon iGPU currently drives
+the desktop, and there is no dedicated device selected for passthrough. Do
+not add `vfio-pci.ids` or early VFIO module binding until a specific device
+and its complete IOMMU group have been identified.
+
+After enabling the UEFI setting, reboot and inspect IOMMU initialization and
+device groups:
+
+```sh
+sudo dmesg | grep -Ei 'AMD-Vi|IOMMU'
+find /sys/kernel/iommu_groups/ -type l | sort
+lspci -nnk
+```
+
+An IOMMU group is the practical isolation unit for PCI passthrough: inspect all
+devices in the target group before assigning any of them to a guest. A usable
+IOMMU group does not by itself mean that a device is safe to detach from the
+host. Keep the integrated GPU and any devices needed for boot, storage,
+networking, or input on the host.
+
+The configuration does not set `iommu=pt` or force isolation overrides.
+Those options change DMA mapping behavior and should be selected only after
+the actual passthrough workload and hardware topology are known.
+
 ## Security baseline
 
 - The NixOS firewall is explicitly enabled, with no extra inbound ports opened.
@@ -186,9 +223,10 @@ processes as root; add narrowly scoped access for the specific device instead.
 
 This is a practical workstation baseline, not a claim of complete isolation.
 The AppArmor LSM is enabled, with the initial curl policy deliberately in
-complain mode; it is not yet a general application sandbox. TPM-backed disk
-unlock, container isolation, and device-specific USB restrictions need
-separate validation before enabling them. Kernel-module locking is
+complain mode; it is not yet a general application sandbox. TPM-backed disk unlock and device-specific USB restrictions still need
+separate validation. IOMMU is enabled as a base facility, but actual PCI
+passthrough remains unconfigured until a suitable device and IOMMU group are
+reviewed. Kernel-module locking is
 intentionally omitted because this machine must load hardware, networking,
 Bluetooth, and KVM modules.
 
@@ -414,6 +452,78 @@ follow a newer NixOS release; it remains `26.05` from the original install.
   before changing bootloader, LUKS, Btrfs, or kernel settings.
 - Keep the previous GRUB UEFI boot entry until Limine and Secure Boot have
   both passed real reboot tests.
+
+### Restic backup and recovery
+
+The configuration defines a manual Restic backup profile for `/home/katossh`
+and `/etc/nixos`. It excludes disposable caches and the desktop trash. The Nix store is not backed up because it is
+reproducible from the flake and its lock file. Libvirt VM disk images are not
+included; shut down a guest and back up its image separately when that data
+needs protection.
+
+The profile deliberately has **no systemd timer** until a real backup
+destination is selected and tested. The service is manual-only, so backups
+cannot run on a timer before a storage target is chosen. The repository
+location and encryption password are read from root-only files outside the
+Nix store:
+
+- `/etc/starforge/restic-repository`: one-line Restic repository location
+  (for example, a mounted external disk path or a remote repository URL).
+- `/etc/starforge/restic-password`: repository password; losing it makes the
+  encrypted backup unrecoverable.
+
+Create root-only files without putting the password or repository location
+in Git or the Nix store. Generate the password with a password manager, keep
+an independent recovery copy outside this workstation, and then enter it into
+the file:
+
+```sh
+sudo install -d -m 0700 /etc/starforge
+sudo install -m 0600 /dev/null /etc/starforge/restic-password
+sudoedit /etc/starforge/restic-password
+sudo install -m 0600 /dev/null /etc/starforge/restic-repository
+sudoedit /etc/starforge/restic-repository
+```
+
+The repository file contains one line: the selected local path or remote
+repository URL. For a removable disk, mount it and verify the actual mount
+with `findmnt` before initializing or running a backup. The current service
+does not hard-code a mountpoint because the destination has not been selected.
+
+Initialize the repository once, then run the manual backup service:
+
+```sh
+sudo env RESTIC_REPOSITORY_FILE=/etc/starforge/restic-repository \
+  RESTIC_PASSWORD_FILE=/etc/starforge/restic-password restic init
+sudo systemctl start restic-backups-starforge.service
+sudo systemctl status restic-backups-starforge.service
+```
+
+The retention policy keeps 7 daily, 4 weekly, 12 monthly, and 2 yearly
+snapshots. The service prunes according to that policy when it is manually
+run. Verify repository integrity periodically and perform an actual test
+restore; a successful backup job alone does not prove recoverability:
+
+```sh
+sudo env RESTIC_REPOSITORY_FILE=/etc/starforge/restic-repository \
+  RESTIC_PASSWORD_FILE=/etc/starforge/restic-password restic snapshots
+sudo env RESTIC_REPOSITORY_FILE=/etc/starforge/restic-repository \
+  RESTIC_PASSWORD_FILE=/etc/starforge/restic-password restic check
+sudo env RESTIC_REPOSITORY_FILE=/etc/starforge/restic-repository \
+  RESTIC_PASSWORD_FILE=/etc/starforge/restic-password restic restore latest \
+  --target /tmp/starforge-restore-test
+```
+
+Inspect the restored files before deleting the temporary restore directory.
+Keep at least one backup copy disconnected from the workstation when it is not
+being updated. A single local copy on another partition is not a disaster
+recovery strategy.
+
+The profile is intentionally manual until the backup disk or remote endpoint,
+mount dependency, secret provisioning, and restore procedure are verified.
+Only then should a persistent timer be enabled. The password file is a
+temporary host-local secret mechanism; a later sops-nix/agenix rollout can
+manage it declaratively without committing the plaintext password.
 
 The old pre-dotfiles configuration is retained as a historical snapshot in
 `archive/configuration.nix.before-dotfiles`; it is not imported by the flake.
