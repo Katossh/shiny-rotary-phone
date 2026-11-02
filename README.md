@@ -165,16 +165,21 @@ processes as root; add narrowly scoped access for the specific device instead.
 
 ### AMD IOMMU
 
-The host enables the AMD IOMMU driver for DMA remapping and future PCI device
-passthrough. Enable **IOMMU / AMD-Vi** in the motherboard UEFI. This is separate
-from **SVM**, which enables CPU virtualization for KVM.
+The host is prepared for AMD IOMMU-backed PCI device passthrough. Enable
+**IOMMU / AMD-Vi** in the motherboard UEFI. This is separate from **SVM**,
+which enables CPU virtualization for KVM.
 
-The kernel receives `amd_iommu=on`. No PCI device is bound to VFIO, no device
-IDs are reserved, and no GPU is detached from the host. This is deliberate:
-the Radeon iGPU currently drives the desktop, and there is no dedicated device
-selected for passthrough. Do not add `vfio-pci.ids` or early VFIO module
-binding until a specific device and its complete IOMMU group have been
-identified.
+The current upstream AMD IOMMU driver detects the hardware through the ACPI
+IVRS table and initializes when firmware exposes it. No extra
+`amd_iommu=on` argument is added: the current upstream kernel parameter list
+does not define `on` as a valid value for `amd_iommu=`. Do not use
+`amd_iommu=force_enable` to bypass firmware or platform detection.
+
+No PCI device is bound to VFIO, no device IDs are reserved, and no GPU is
+detached from the host. This is deliberate: the Radeon iGPU currently drives
+the desktop, and there is no dedicated device selected for passthrough. Do
+not add `vfio-pci.ids` or early VFIO module binding until a specific device
+and its complete IOMMU group have been identified.
 
 After enabling the UEFI setting, reboot and inspect IOMMU initialization and
 device groups:
