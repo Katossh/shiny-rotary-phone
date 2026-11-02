@@ -14,14 +14,9 @@
     ];
 
     # These are reproducible or disposable and can otherwise dominate backup
-    # size. Persistent Podman volumes remain included; only disposable image
-    # and container layers are excluded. User files and Git repositories remain.
+    # size. User files and Git repositories remain.
     exclude = [
       "/home/katossh/.cache"
-      "/home/katossh/.local/share/containers/storage/overlay"
-      "/home/katossh/.local/share/containers/storage/overlay-containers"
-      "/home/katossh/.local/share/containers/storage/overlay-images"
-      "/home/katossh/.local/share/containers/storage/overlay-layers"
       "/home/katossh/.local/share/Trash"
     ];
 
