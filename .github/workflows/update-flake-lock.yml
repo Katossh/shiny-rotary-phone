@@ -69,7 +69,8 @@ jobs:
           if git diff --quiet -- flake.lock; then
             echo "No flake input updates are available."
             if [[ -n "$existing_branch" ]]; then
-              gh pr close "$branch" --comment "The main branch already contains the current flake inputs; closing this now-empty update PR."
+              pr_number="$(gh pr view "$branch" --json number --jq .number)"
+              gh pr close "$pr_number" --comment "The main branch already contains the current flake inputs; closing this now-empty update PR."
             fi
             exit 0
           fi
