@@ -13,19 +13,18 @@ _:
   # outbound connections; this host does not accept SSH sessions.
   services.openssh.enable = false;
 
-  # USBGuard starts from a conservative bootstrap policy:
-  # - devices already present keep their current authorization state;
-  # - newly inserted devices are blocked unless explicitly approved;
-  # - unknown devices default to block.
+  # USBGuard keeps existing device state and evaluates rules for new devices.
+  # Unknown devices are allowed by default; explicit local block rules still
+  # apply. This avoids locking out ordinary USB peripherals on this workstation.
   #
   # The rule file remains host-local and writable at
   # /var/lib/usbguard/rules.conf so root can persist approved device rules.
   services.usbguard = {
     enable = true;
-    implicitPolicyTarget = "block";
+    implicitPolicyTarget = "allow";
     presentDevicePolicy = "keep";
     presentControllerPolicy = "keep";
-    insertedDevicePolicy = "block";
+    insertedDevicePolicy = "apply-policy";
     IPCAllowedUsers = [ "root" ];
     IPCAllowedGroups = [ ];
   };

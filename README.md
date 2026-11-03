@@ -325,41 +325,28 @@ the upstream profile package automatically confines applications.
 
 ### USBGuard device management
 
-USBGuard starts after the initial udev device enumeration has settled. Its
-bootstrap policy is intentionally conservative without guessing the IDs of
-your keyboard, mouse, hubs, Bluetooth adapter, or other host-specific devices:
+USBGuard starts after the initial udev device enumeration has settled.
+Its policy is deliberately permissive for ordinary workstation use:
 
-- Devices already connected when USBGuard starts keep their existing
-  authorization state.
-- Devices inserted after the daemon starts are blocked unless an explicit
-  rule allows them.
-- Unknown devices default to block.
+- Devices already connected when USBGuard starts keep their current state.
+- Newly inserted devices are evaluated against the local rule file.
+- Devices without an explicit matching rule are allowed by default.
+- Explicit local block rules continue to deny matching devices.
 - Only root can use the USBGuard IPC interface.
 
-Inspect the initial state and blocked devices:
+Inspect the current device and rule state with:
 
 ```sh
 sudo usbguard list-devices --tree
 sudo usbguard list-devices --blocked
+sudo usbguard list-rules
 sudo journalctl -u usbguard -b
 ```
 
-To approve a trusted newly inserted device and persist that decision:
-
-```sh
-sudo usbguard allow-device --permanent <device-id>
-```
-
-The device ID is the first numeric field in `usbguard list-devices`, not the
-USB vendor:product ID. Persistent rules are stored locally in
-`/var/lib/usbguard/rules.conf` and are deliberately not committed to Git,
-because they contain hardware-specific identifiers.
-
-No host-specific allowlist is generated or installed by this configuration.
-The current USBGuard policy is deliberately left unchanged in this update:
-there is no automatic approval of a guessed device inventory and no
-`apply-policy` switch for devices present at boot. Keep a working input
-device available when manually changing USBGuard rules.
+Persistent rules remain host-local in `/var/lib/usbguard/rules.conf` and are
+not committed to Git because they contain hardware-specific identifiers.
+There is no generated host-specific allowlist and devices connected at boot
+are not re-authorized by a strict startup policy.
 
 ## Desktop
 
