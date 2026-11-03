@@ -254,7 +254,7 @@ the actual passthrough workload and hardware topology are known.
 - The NixOS firewall is explicitly enabled, with no extra inbound TCP or UDP
   ports opened.
 - The OpenSSH server is explicitly disabled; this machine does not accept
-  inbound SSH sessions. The SSH client remains available for outbound use.
+  inbound SSH sessions. This does not prevent outbound SSH when a client is installed.
 - The existing iptables-based firewall backend is retained for compatibility
   with libvirt networking; nftables can be evaluated separately.
 - Kernel image protection is enabled.
