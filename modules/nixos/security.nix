@@ -9,6 +9,10 @@ _:
     allowedUDPPorts = [ ];
   };
 
+  # Disable the inbound SSH daemon. The OpenSSH client remains usable for
+  # outbound connections; this host does not accept SSH sessions.
+  services.openssh.enable = false;
+
   # USBGuard starts from a conservative bootstrap policy:
   # - devices already present keep their current authorization state;
   # - newly inserted devices are blocked unless explicitly approved;
@@ -22,6 +26,8 @@ _:
     presentDevicePolicy = "keep";
     presentControllerPolicy = "keep";
     insertedDevicePolicy = "block";
+    IPCAllowedUsers = [ "root" ];
+    IPCAllowedGroups = [ ];
   };
 
   # Wait until the initial udev coldplug has settled before USBGuard snapshots
@@ -38,6 +44,8 @@ _:
       wheelNeedsPassword = true;
       extraConfig = ''
         Defaults timestamp_timeout=5
+        Defaults passwd_tries=3
+        Defaults use_pty
       '';
     };
 
