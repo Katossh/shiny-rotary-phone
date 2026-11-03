@@ -131,7 +131,7 @@ let
           name = file.name;
           value.source = file.source;
         })
-        (lib.filter (file: file.namespace == namespace) managedFiles)
+        (lib.filter (file: file.namespace == namespace || (namespace == "home" && file.namespace == "localbin")) managedFiles)
     );
 
   homeFiles = toFileAttrs "home";
