@@ -1,0 +1,91 @@
+name: Update Nix flake inputs
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: update-flake-lock
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Check for Nix input updates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+            extra-substituters = https://noctalia.cachix.org
+            extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=
+
+      - name: Update lock file and open a review PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          existing_branch="$(
+            gh pr list --state open --base main --json headRefName,headRepositoryOwner |
+              jq -r --arg owner "$GITHUB_REPOSITORY_OWNER" '
+                [.[] | select(
+                  .headRepositoryOwner.login == $owner and
+                  (.headRefName | startswith("automation/update-flake-lock-"))
+                )] | first | .headRefName // empty
+              '
+          )"
+
+          git fetch origin main
+          if [[ -n "$existing_branch" ]]; then
+            branch="$existing_branch"
+            git fetch origin "$branch"
+            git switch --force-create "$branch" "origin/$branch"
+            git reset --hard origin/main
+          else
+            branch="automation/update-flake-lock-$GITHUB_RUN_ID"
+            git switch --create "$branch" origin/main
+          fi
+
+          nix flake update
+
+          if git diff --quiet -- flake.lock; then
+            echo "No flake input updates are available."
+            if [[ -n "$existing_branch" ]]; then
+              gh pr close "$branch" --comment "The main branch already contains the current flake inputs; closing this now-empty update PR."
+            fi
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add flake.lock
+          git commit -m "chore: update Nix flake inputs"
+          git push --force-with-lease --set-upstream origin "$branch"
+
+          if gh pr view "$branch" --json number >/dev/null 2>&1; then
+            gh pr edit "$branch"               --title "chore: update Nix flake inputs"               --body "Automated weekly refresh of flake inputs. Review the updated revisions and changelogs; the NixOS validation and full system build are dispatched separately. This PR is not merged automatically."
+          else
+            gh pr create               --base main               --head "$branch"               --title "chore: update Nix flake inputs"               --body "Automated weekly refresh of flake inputs. Review the updated revisions and changelogs; the NixOS validation and full system build are dispatched separately. This PR is not merged automatically."
+          fi
+
+          # GITHUB_TOKEN-created PRs do not automatically trigger pull_request
+          # workflows. Dispatch CI against the exact update branch explicitly.
+          gh workflow run nixos.yml --ref "$branch"

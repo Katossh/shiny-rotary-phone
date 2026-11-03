@@ -7,6 +7,7 @@ on:
       - "flake.nix"
       - "flake.lock"
       - ".github/workflows/nixos.yml"
+      - ".github/workflows/update-flake-lock.yml"
   push:
     branches:
       - main
@@ -15,6 +16,7 @@ on:
       - "flake.nix"
       - "flake.lock"
       - ".github/workflows/nixos.yml"
+      - ".github/workflows/update-flake-lock.yml"
   workflow_dispatch:
 
 permissions:
@@ -152,4 +154,5 @@ jobs:
             --accept-flake-config \
             .#nixosConfigurations.starforge.config.system.build.toplevel \
             --no-link \
+            --fallback \
             --print-build-logs

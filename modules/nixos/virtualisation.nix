@@ -60,6 +60,27 @@ in
     '';
   };
 
+  # Give the system libvirt socket to this user directly instead of adding
+  # them to the broadly privileged libvirtd group. Polkit still checks the
+  # active local session before granting management operations.
+  systemd.sockets.libvirtd.socketConfig = {
+    SocketUser = "katossh";
+    SocketGroup = "root";
+    SocketMode = "0600";
+  };
+
+  # Grant libvirt management only to the interactive local workstation user.
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if (action.id == "org.libvirt.unix.manage" &&
+          subject.user == "katossh" &&
+          subject.active == true &&
+          subject.local == true) {
+        return polkit.Result.YES;
+      }
+    });
+  '';
+
   programs.virt-manager.enable = true;
   virtualisation.spiceUSBRedirection.enable = true;
 }
