@@ -38,6 +38,17 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+
+      # The helper only talks to the local libvirt UNIX socket. Keep /etc
+      # writable for libvirt's autostart symlink, but isolate everything else.
+      ProtectSystem = "full";
+      ProtectHome = true;
+      PrivateTmp = true;
+      NoNewPrivileges = true;
+      ProtectKernelTunables = true;
+      ProtectKernelModules = true;
+      ProtectControlGroups = true;
+      RestrictAddressFamilies = [ "AF_UNIX" ];
     };
 
     script = ''
