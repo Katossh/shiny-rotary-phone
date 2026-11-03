@@ -1,4 +1,4 @@
-{ ... }:
+_:
 
 {
   # The four subvolumes share one encrypted Btrfs filesystem. Keep compression
