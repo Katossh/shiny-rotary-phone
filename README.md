@@ -333,7 +333,7 @@ in `flake.lock`.
 
 GitHub Actions runs two independent jobs in parallel:
 
-1. **Validate Nix configuration** formats tracked Nix files, runs
+1. **Validate Nix configuration** formats maintained Nix files, runs
    `statix` and `deadnix` using the flake's pinned development shell, and
    evaluates flake outputs with `nix flake check --no-build`. This is the
    quick feedback path; it does not compile the complete operating system.
@@ -400,14 +400,16 @@ deploys to the workstation.
 ## Static analysis
 
 The flake provides a development shell with `statix` and `deadnix` from the
-locked Nixpkgs revision. The checks cover maintained Nix files and deliberately
-exclude the NixOS-generated `hosts/starforge/hardware-configuration.nix`,
-which is owned by `nixos-generate-config` and is still evaluated by the
-flake checks and full system build. Run them locally before opening a PR:
+locked Nixpkgs revision. Formatting and static analysis cover maintained Nix
+files and deliberately exclude the NixOS-generated
+`hosts/starforge/hardware-configuration.nix`, which is owned by
+`nixos-generate-config` and is still evaluated by the flake checks and full
+system build. Run them locally before opening a PR:
 
 ```sh
-nix develop
 mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/starforge/hardware-configuration.nix")
+nix fmt -- "${nix_files[@]}"
+nix develop
 statix check "${nix_files[@]}"
 deadnix --fail "${nix_files[@]}"
 ```
@@ -417,7 +419,8 @@ deadnix --fail "${nix_files[@]}"
 Run these commands from the repository root:
 
 ```sh
-nix fmt
+mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/starforge/hardware-configuration.nix")
+nix fmt -- "${nix_files[@]}"
 nix flake check --no-build --no-update-lock-file --show-trace
 nix build .#nixosConfigurations.starforge.config.system.build.toplevel --no-link
 ```
