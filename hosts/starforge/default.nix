@@ -18,6 +18,7 @@
     ../../modules/nixos/hardware.nix
     ../../modules/nixos/networking.nix
     ../../modules/nixos/storage.nix
+    ../../modules/nixos/snapshots.nix
     ../../modules/nixos/memory.nix
     ../../modules/nixos/nix.nix
     ../../modules/nixos/security.nix

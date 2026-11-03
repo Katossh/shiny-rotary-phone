@@ -23,42 +23,62 @@ in
     };
   };
 
-  # Make dnsmasq available to the libvirtd daemon for DHCP and DNS on the
-  # default NAT network, without adding it to the interactive system profile.
-  systemd.services.libvirtd.path = [ pkgs.dnsmasq ];
+  # Keep the default NAT network available after boot, while assigning the
+  # libvirt system socket only to the workstation account.
+  systemd = {
+    services = {
+      libvirtd.path = [ pkgs.dnsmasq ];
 
-  # Keep the default NAT network available after boot rather than requiring
-  # one-time manual virsh net-start and net-autostart commands.
-  systemd.services.libvirt-default-network = {
-    description = "Start and autostart the libvirt default NAT network";
-    wantedBy = [ "multi-user.target" ];
-    requires = [ "libvirtd.service" ];
-    after = [ "libvirtd.service" ];
+      libvirt-default-network = {
+        description = "Start and autostart the libvirt default NAT network";
+        wantedBy = [ "multi-user.target" ];
+        requires = [ "libvirtd.service" ];
+        after = [ "libvirtd.service" ];
 
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
 
-      # The helper only talks to the local libvirt UNIX socket. Keep /etc
-      # writable for libvirt's autostart symlink, but isolate everything else.
-      ProtectSystem = "full";
-      ProtectHome = true;
-      PrivateTmp = true;
-      NoNewPrivileges = true;
-      ProtectKernelTunables = true;
-      ProtectKernelModules = true;
-      ProtectControlGroups = true;
-      RestrictAddressFamilies = [ "AF_UNIX" ];
+          # The helper only talks to the local libvirt UNIX socket. Keep /etc
+          # writable for libvirt's autostart symlink, but isolate everything else.
+          ProtectSystem = "full";
+          ProtectHome = true;
+          PrivateTmp = true;
+          NoNewPrivileges = true;
+          ProtectKernelTunables = true;
+          ProtectKernelModules = true;
+          ProtectControlGroups = true;
+          RestrictAddressFamilies = [ "AF_UNIX" ];
+        };
+
+        script = ''
+          ${virsh} -c qemu:///system net-autostart default
+
+          if ! ${virsh} -c qemu:///system net-list --name | ${pkgs.gnugrep}/bin/grep -Fxq default; then
+            ${virsh} -c qemu:///system net-start default
+          fi
+        '';
+      };
     };
 
-    script = ''
-      ${virsh} -c qemu:///system net-autostart default
-
-      if ! ${virsh} -c qemu:///system net-list --name | ${pkgs.gnugrep}/bin/grep -Fxq default; then
-        ${virsh} -c qemu:///system net-start default
-      fi
-    '';
+    sockets.libvirtd.socketConfig = {
+      SocketUser = "katossh";
+      SocketGroup = "root";
+      SocketMode = "0600";
+    };
   };
+
+  # Grant libvirt management only to the interactive local workstation user.
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if (action.id == "org.libvirt.unix.manage" &&
+          subject.user == "katossh" &&
+          subject.active == true &&
+          subject.local == true) {
+        return polkit.Result.YES;
+      }
+    });
+  '';
 
   programs.virt-manager.enable = true;
   virtualisation.spiceUSBRedirection.enable = true;

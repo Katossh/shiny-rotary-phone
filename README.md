@@ -61,6 +61,32 @@ Changing mount options does not recompress existing data; existing files are
 compressed only when rewritten. autodefrag is intentionally omitted to avoid
 unnecessary write amplification on a copy-on-write filesystem.
 
+### Btrfs snapshots
+
+Snapper maintains hourly read-only snapshots of the root and home subvolumes.
+The retention limits are 6 hourly, 7 daily, 4 weekly, and 6 monthly snapshots.
+The separate `/nix` and `/var/log` subvolumes are not included in the root
+snapshot. Snapshots share the same physical NVMe device and are not a backup.
+
+A small oneshot service creates `/.snapshots` and `/home/.snapshots` as
+dedicated Btrfs subvolumes after local filesystems are mounted. It refuses to
+replace an existing ordinary directory at either path. Snapper's timers wait
+for this preparation service.
+
+Inspect and create snapshots with:
+
+```sh
+sudo snapper -c root list
+sudo snapper -c home list
+sudo snapper -c home create --description "before large change"
+```
+
+Restore individual files from the corresponding
+`/.snapshots/<number>/snapshot/` or
+`/home/.snapshots/<number>/snapshot/` tree. Do not treat snapshots as
+protection against SSD failure, filesystem-wide corruption, or accidental
+deletion of the entire filesystem; keep Restic backups separately.
+
 The motherboard's Wi-Fi and Bluetooth devices still depend on the exact
 wireless module fitted to the board revision. Redistributable firmware and
 the in-kernel drivers are enabled; verify the detected chipset with
@@ -90,88 +116,49 @@ the partition table or create another Windows-visible EFI System Partition.
 Do not change its GPT type or resize either EFI-related partition as part of
 this bootloader migration.
 
-The Limine boot path must be tested with Secure Boot disabled before key
-enrollment. Boot both NixOS and Windows from the Limine menu and retain the
-existing `NixOS-boot` GRUB firmware entry as a recovery route. Do not rewrite
-the partition table, resize either EFI-related partition, or delete the old
-GRUB files during this process.
+The Limine boot path is being kept separate from Secure Boot for now.
+Boot both NixOS and Windows through Limine with firmware Secure Boot disabled,
+and retain the existing `NixOS-boot` GRUB entry as a recovery route. Do not
+rewrite the partition table, resize either EFI-related partition, or delete
+the old GRUB files during this process.
 
-### Secure Boot activation
+### Secure Boot (deferred)
 
-The NixOS configuration now sets
-`boot.loader.limine.secureBoot.enable = true`. Applying that generation
-requires the machine's Secure Boot keys to have already been created and
-enrolled. Key handling is deliberately manual and is never performed by a
-rebuild.
+Secure Boot signing and enforcement are **not enabled** in the NixOS
+configuration. No Secure Boot keys are generated or enrolled by this
+repository, and no firmware settings should be changed as part of this
+configuration update. The Limine EFI boot path remains in its current
+non-Secure-Boot state.
 
-1. Confirm that both operating systems boot through Limine with Secure Boot
-   enforcement disabled. Keep the LUKS recovery passphrase available and have
-   local physical access to the machine.
-2. Create the custom keys as root:
+This can be revisited after the Limine/Windows chainload path has been tested
+on the workstation and a recovery procedure has been confirmed. The existing
+LUKS/Btrfs arrangement is unchanged.
 
-   ```sh
-   sudo sbctl create-keys
-   ```
-
-3. Enter UEFI Setup Mode using the motherboard firmware's documented
-   **Reset to Setup Mode** action. Do not enable Secure Boot enforcement yet.
-   Avoid clearing the forbidden-signature database (`dbx`).
-4. Enroll the custom keys while retaining Microsoft and firmware-vendor
-   certificates. The Microsoft certificate is required for the Windows
-   Boot Manager chainload entry:
-
-   ```sh
-   sudo sbctl enroll-keys --microsoft --firmware-builtin
-   ```
-
-5. Keep Secure Boot enforcement disabled while booting back into NixOS, then
-   apply the signed Limine configuration:
-
-   ```sh
-   sudo nixos-rebuild switch --flake /etc/nixos#starforge
-   sudo sbctl status
-   sudo sbctl verify
-   ```
-
-   Some firmware automatically enables Secure Boot after key enrollment. If
-   that happens, temporarily disable enforcement again until the signed
-   generation has been installed.
-6. Enable Secure Boot in UEFI firmware, boot through Limine, and verify both
-   NixOS and Windows Boot Manager.
-
-When Secure Boot is enabled, the old GRUB fallback may be rejected because it
-was not signed with the enrolled keys. Keep its firmware entry and files as a
-fallback for recovery with Secure Boot temporarily disabled; do not mistake
-that unsigned fallback for a Secure-Boot-compatible boot path.
-
-Nixpkgs' Limine module signs the Limine EFI executable with `sbctl`, enrolls
-and validates the Limine configuration checksums, and requires checksum
-mismatches to stop boot. The module also signs the fwupd EFI updater when
-fwupd is enabled. A successful build does not prove firmware enforcement or
-Windows chainloading works: both must be tested on the actual machine.
-
-Starforge does not configure Windows volume encryption. Windows encryption
-can be enabled separately after the new boot chain and Secure Boot have been
-validated. The existing NixOS LUKS/Btrfs arrangement is unchanged.
+Starforge does not configure Windows volume encryption.
 
 ## Memory and session protection
 
 - Zram swap uses Zstandard and has a maximum logical capacity of 50% of physical
   RAM. This is a capacity limit, not a permanently reserved 16 GB allocation
   on this 32 GB host.
-- systemd-oomd monitors machine.slice with a 75% memory-pressure limit.
-  User slices are deliberately excluded, so OOMD does not target the interactive
-  desktop session. If pressure remains high, an eligible VM cgroup can be
-  terminated to preserve host responsiveness. This is an emergency kill, not a
-  guest ACPI shutdown; avoid overcommitting VM memory when guest data is
-  important.
+- systemd-oomd monitors machine.slice with a 75% memory-pressure limit held
+  for 30 seconds. User slices are deliberately excluded, so OOMD does not
+  target the interactive desktop session. If pressure remains high, an eligible
+  VM cgroup can be terminated to preserve host responsiveness. This is an
+  emergency kill, not a guest ACPI shutdown; avoid overcommitting VM memory
+  when guest data is important.
 - Noctalia locks the session after 10 minutes of inactivity and powers displays
-  off after 15 minutes. It locks before suspend/hibernate and has no
-  passwordless post-lock grace period. Active idle inhibitors, such as video
-  playback, are respected.
+  off after 15 minutes. It locks before suspend and has no passwordless
+  post-lock grace period. Active idle inhibitors, such as video playback, are
+  respected.
+- Hibernation, hybrid sleep, and suspend-then-hibernate are disabled because
+  this host currently has zram only and no persistent swap/resume target.
+  Suspend-to-RAM remains available. Add and test persistent swap before
+  considering hibernation.
 
-Useful checks: zramctl, swapon --show, systemctl status systemd-oomd,
-oomctl, and findmnt -no OPTIONS / /home /nix /var/log.
+Useful checks: `zramctl`, `swapon --show`, `systemctl status systemd-oomd`,
+`oomctl`, `systemd-cgls /machine.slice`, and
+`systemctl show machine.slice -p ManagedOOMMemoryPressure -p ManagedOOMMemoryPressureLimit -p ManagedOOMMemoryPressureDurationSec`.
 
 ## Virtualisation
 
@@ -186,7 +173,8 @@ The host uses AMD KVM with QEMU and libvirt:
 - SPICE USB redirection is enabled.
 - virtiofsd is installed as a vhost-user backend, enabling VirtioFS host-directory sharing in VM definitions.
 - Host shutdown requests a guest ACPI shutdown rather than saving guest RAM state; up to two guests are asked to stop concurrently.
-- The desktop user belongs to the `libvirtd` group.
+- Libvirt management is granted through Polkit to the active local
+  `katossh` session; the user no longer needs broad `libvirtd` group membership.
 
 Before creating VMs, enable CPU virtualisation (SVM) in the motherboard UEFI.
 IOMMU is only needed for device passthrough; it is not required for ordinary
@@ -273,8 +261,8 @@ the actual passthrough workload and hardware topology are known.
   devices during startup, and blocks newly inserted devices unless approved.
 - AppArmor is enabled; the curl pilot policy remains in complain mode pending
   review of real workload logs.
-- Limine Secure Boot signing and checksum/config validation are enabled in
-  NixOS. Key creation, enrollment, and firmware enforcement remain manual.
+- Secure Boot is deferred. No keys are generated or enrolled, and the
+  firmware enforcement state is left untouched.
 - Existing LUKS full-disk encryption and encrypted Btrfs layout are preserved.
 
 This is a workstation baseline, not a claim of complete isolation. The
@@ -337,42 +325,28 @@ the upstream profile package automatically confines applications.
 
 ### USBGuard device management
 
-USBGuard starts after the initial udev device enumeration has settled. Its
-bootstrap policy is intentionally conservative without guessing the IDs of
-your keyboard, mouse, hubs, Bluetooth adapter, or other host-specific devices:
+USBGuard starts after the initial udev device enumeration has settled.
+Its policy is deliberately permissive for ordinary workstation use:
 
-- Devices already connected when USBGuard starts keep their existing
-  authorization state.
-- Devices inserted after the daemon starts are blocked unless an explicit
-  rule allows them.
-- Unknown devices default to block.
+- Devices already connected when USBGuard starts keep their current state.
+- Newly inserted devices are evaluated against the local rule file.
+- Devices without an explicit matching rule are allowed by default.
+- Explicit local block rules continue to deny matching devices.
 - Only root can use the USBGuard IPC interface.
 
-Inspect the initial state and blocked devices:
+Inspect the current device and rule state with:
 
 ```sh
 sudo usbguard list-devices --tree
 sudo usbguard list-devices --blocked
+sudo usbguard list-rules
 sudo journalctl -u usbguard -b
 ```
 
-To approve a trusted newly inserted device and persist that decision:
-
-```sh
-sudo usbguard allow-device --permanent <device-id>
-```
-
-The device ID is the first numeric field in `usbguard list-devices`, not the
-USB vendor:product ID. Persistent rules are stored locally in
-`/var/lib/usbguard/rules.conf` and are deliberately not committed to Git,
-because they contain hardware-specific identifiers.
-
-After reviewing the actual device inventory, a complete initial policy can
-also be generated with `sudo usbguard generate-policy`. Review the generated
-rules before installing them. Only after a complete allowlist exists should
-`presentDevicePolicy` be changed from `keep` to `apply-policy`; otherwise
-devices already connected at boot could be blocked. Keep a working input
-device available while testing policy changes.
+Persistent rules remain host-local in `/var/lib/usbguard/rules.conf` and are
+not committed to Git because they contain hardware-specific identifiers.
+There is no generated host-specific allowlist and devices connected at boot
+are not re-authorized by a strict startup policy.
 
 ## Desktop
 
@@ -381,7 +355,7 @@ device available while testing policy changes.
 - Noctalia is configured through its Home Manager module and validates its TOML.
 - Noctalia uses the Catppuccin built-in palette and JetBrainsMono Nerd Font.
 - The session locks after ten idle minutes, turns displays off after fifteen,
-  and locks before suspend/hibernate with no passwordless grace period.
+  and locks before suspend with no passwordless grace period.
 - Kitty and Zsh configuration remain owned by terminal-dotfiles to avoid
   competing Home Manager definitions.
 
@@ -402,10 +376,12 @@ GitHub Actions runs two independent jobs in parallel:
    `nixosConfigurations.starforge.config.system.build.toplevel` closure.
    This remains the expensive integration check.
 
-Both jobs use the committed `flake.lock`; CI does not update dependencies.
-The full build can use a public Cachix binary cache to reuse store paths
-between runs. Pull requests receive read-only cache access. Only pushes to
-`main` receive the cache write token and can publish build results.
+Both jobs use the committed `flake.lock`; normal CI does not update
+dependencies. The full build uses Nix's `--fallback` option so a temporary
+binary-cache transfer failure can fall back to building an unavailable
+substitute from source. It can also use a public Cachix binary cache to reuse
+store paths between runs. Pull requests receive read-only cache access. Only
+pushes to `main` receive the cache write token and can publish build results.
 
 ### Enable the Starforge Cachix cache
 
@@ -452,11 +428,12 @@ to require both `Validate Nix configuration` and `Build Starforge system`
 before merging. Review approvals can remain at zero if solo maintenance is
 preferred; required checks and required reviews are separate controls.
 
-GitHub Actions dependencies are checked weekly by Dependabot. Updates arrive
-as pull requests and are not merged automatically.
+GitHub Actions dependencies are checked weekly by Dependabot. A separate
+weekly workflow runs `nix flake update`, opens or refreshes a reviewable PR,
+and manually dispatches the NixOS validation/build workflow for that branch.
+It never merges updates automatically.
 
-This workflow performs CI only. It never activates a NixOS generation or
-deploys to the workstation.
+CI never activates a NixOS generation or deploys to the workstation.
 
 ## Static analysis
 
@@ -544,22 +521,22 @@ follow a newer NixOS release; it remains `26.05` from the original install.
   job, then builds the complete system closure in a separate job.
 - Keep a known-good generation and a copy of the hardware configuration
   before changing bootloader, LUKS, Btrfs, or kernel settings.
-- Keep the previous GRUB UEFI boot entry until Limine and Secure Boot have
-  both passed real reboot tests.
+- Keep the previous GRUB UEFI boot entry until Limine and Windows chainloading
+  have passed real reboot tests. Secure Boot is not part of this rollout.
 
 ### Restic backup and recovery
 
-The configuration defines a manual Restic backup profile for `/home/katossh`
-and `/etc/nixos`. It excludes disposable caches and the desktop trash. The Nix store is not backed up because it is
-reproducible from the flake and its lock file. Libvirt VM disk images are not
-included; shut down a guest and back up its image separately when that data
-needs protection.
+The Restic profile backs up `/home/katossh` and `/etc/nixos`, excluding
+disposable caches and the desktop trash. The Nix store is reproducible from
+the flake and lock file, so it is not backed up. Libvirt VM disk images are
+not included; shut down a guest and back up its image separately when needed.
 
-The profile deliberately has **no systemd timer** until a real backup
-destination is selected and tested. The service is manual-only, so backups
-cannot run on a timer before a storage target is chosen. The repository
-location and encryption password are read from root-only files outside the
-Nix store:
+A daily systemd timer is now configured with a randomized 30-minute delay.
+Until both repository and password files exist, an `ExecCondition` skips the
+service cleanly. A local repository path is accepted only when it resolves to
+a mounted filesystem on a different block device from the system root. Remote
+Restic URLs are not subject to that local mount check. The repository location
+and encryption password are read from root-only files outside the Nix store:
 
 - `/etc/starforge/restic-repository`: one-line Restic repository location
   (for example, a mounted external disk path or a remote repository URL).
@@ -580,23 +557,28 @@ sudoedit /etc/starforge/restic-repository
 ```
 
 The repository file contains one line: the selected local path or remote
-repository URL. For a removable disk, mount it and verify the actual mount
-with `findmnt` before initializing or running a backup. The current service
-does not hard-code a mountpoint because the destination has not been selected.
+repository URL. For a local destination, mount the external filesystem first;
+the backup service refuses a local repository on the root filesystem or on
+the same block device as root. Verify the mount with `findmnt` before
+initializing the repository. Choose and provision the destination before
+expecting successful backups.
 
-Initialize the repository once, then run the manual backup service:
+Initialize the repository once, then run a first backup manually to verify the
+destination and credentials. After that, the daily timer handles routine runs:
 
 ```sh
 sudo env RESTIC_REPOSITORY_FILE=/etc/starforge/restic-repository \
   RESTIC_PASSWORD_FILE=/etc/starforge/restic-password restic init
 sudo systemctl start restic-backups-starforge.service
 sudo systemctl status restic-backups-starforge.service
+systemctl list-timers restic-backups-starforge.timer
 ```
 
 The retention policy keeps 7 daily, 4 weekly, 12 monthly, and 2 yearly
-snapshots. The service prunes according to that policy when it is manually
-run. Verify repository integrity periodically and perform an actual test
-restore; a successful backup job alone does not prove recoverability:
+snapshots. Restic prunes according to this policy after a successful backup.
+The service does not run a data-integrity check on every daily backup; run
+`restic check` periodically and perform an actual test restore. A successful
+backup job alone does not prove recoverability:
 
 ```sh
 sudo env RESTIC_REPOSITORY_FILE=/etc/starforge/restic-repository \
@@ -613,11 +595,12 @@ Keep at least one backup copy disconnected from the workstation when it is not
 being updated. A single local copy on another partition is not a disaster
 recovery strategy.
 
-The profile is intentionally manual until the backup disk or remote endpoint,
-mount dependency, secret provisioning, and restore procedure are verified.
-Only then should a persistent timer be enabled. The password file is a
-temporary host-local secret mechanism; a later sops-nix/agenix rollout can
-manage it declaratively without committing the plaintext password.
+The timer is enabled declaratively but remains inactive until the two
+host-local credential files are provisioned. The destination, mount dependency,
+initial repository creation, and restore procedure still require a one-time
+local setup. The password file is a temporary host-local secret mechanism; a
+later sops-nix/agenix rollout can manage it without committing plaintext
+secrets.
 
 The old pre-dotfiles configuration is retained as a historical snapshot in
 `archive/configuration.nix.before-dotfiles`; it is not imported by the flake.

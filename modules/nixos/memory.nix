@@ -20,5 +20,15 @@ _:
     MemoryAccounting = true;
     ManagedOOMMemoryPressure = "kill";
     ManagedOOMMemoryPressureLimit = "75%";
+    ManagedOOMMemoryPressureDurationSec = "30s";
   };
+
+  # zram is not a hibernation target. Disable hibernation modes until a
+  # persistent swap target and a tested resume configuration are available.
+  environment.etc."systemd/sleep.conf.d/20-starforge.conf".text = ''
+    [Sleep]
+    AllowHibernation=no
+    AllowHybridSleep=no
+    AllowSuspendThenHibernate=no
+  '';
 }

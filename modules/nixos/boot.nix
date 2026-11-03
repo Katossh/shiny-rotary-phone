@@ -33,14 +33,9 @@
             path: guid(68a6f3c1-1eee-4845-8c3e-7108cec34c4a):/EFI/Microsoft/Boot/bootmgfw.efi
         '';
 
-        # Limine Secure Boot signing and config/checksum validation are enabled.
-        # Create and enroll the host keys manually before applying this
-        # generation. Never create or enroll keys automatically during rebuild.
-        secureBoot = {
-          enable = true;
-          autoGenerateKeys = false;
-          autoEnrollKeys.enable = false;
-        };
+        # Secure Boot remains explicitly disabled until the boot path and
+        # recovery procedure have been tested on the physical workstation.
+        secureBoot.enable = false;
       };
 
       timeout = 5;
@@ -52,5 +47,4 @@
     kernelPackages = pkgs.linuxPackages;
   };
 
-  environment.systemPackages = [ pkgs.sbctl ];
 }
