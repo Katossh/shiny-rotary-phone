@@ -55,7 +55,9 @@ jobs:
         run: |
           nix develop --no-update-lock-file --command bash -euo pipefail -c '
             mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/starforge/hardware-configuration.nix")
-            statix check "${nix_files[@]}"
+            for nix_file in "${nix_files[@]}"; do
+              statix check "$nix_file"
+            done
             deadnix --fail "${nix_files[@]}"
           '
 
