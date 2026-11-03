@@ -36,8 +36,8 @@
   # Snapper requires a dedicated .snapshots Btrfs subvolume inside each
   # configured subvolume. Create it once after local filesystems are mounted.
   # Existing non-subvolume directories are never replaced automatically.
-  systemd = {
-    services.starforge-snapshot-subvolumes = {
+  systemd.services = {
+    starforge-snapshot-subvolumes = {
       description = "Prepare Btrfs subvolumes required by Snapper";
       wantedBy = [ "multi-user.target" ];
       requires = [ "local-fs.target" ];
@@ -74,12 +74,12 @@
     };
 
     # Both Snapper jobs must wait until their snapshot destinations exist.
-    services.snapper-timeline = {
+    snapper-timeline = {
       requires = [ "starforge-snapshot-subvolumes.service" ];
       after = [ "starforge-snapshot-subvolumes.service" ];
     };
 
-    services.snapper-cleanup = {
+    snapper-cleanup = {
       requires = [ "starforge-snapshot-subvolumes.service" ];
       after = [ "starforge-snapshot-subvolumes.service" ];
     };
