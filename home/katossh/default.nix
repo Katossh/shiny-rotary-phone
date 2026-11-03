@@ -4,6 +4,7 @@
   imports = [
     ./niri.nix
     ./noctalia.nix
+    ./terminal-dotfiles.nix
   ];
 
   home = {
