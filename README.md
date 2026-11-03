@@ -333,9 +333,10 @@ in `flake.lock`.
 
 GitHub Actions runs two independent jobs in parallel:
 
-1. **Validate Nix configuration** formats tracked Nix files and evaluates
-   flake outputs with `nix flake check --no-build`. This is the quick feedback
-   path; it does not compile the complete operating system.
+1. **Validate Nix configuration** formats maintained Nix files, runs
+   `statix` and `deadnix` using the flake's pinned development shell, and
+   evaluates flake outputs with `nix flake check --no-build`. This is the
+   quick feedback path; it does not compile the complete operating system.
 2. **Build Starforge system** builds the full
    `nixosConfigurations.starforge.config.system.build.toplevel` closure.
    This remains the expensive integration check.
@@ -385,19 +386,43 @@ cachix use starforge
 Review the generated Nix configuration before applying it declaratively to
 the host.
 
-The jobs are separate checks. To make them mandatory before merging, configure
-branch protection or a repository ruleset for `main` and require both
-`Validate Nix configuration` and `Build Starforge system`.
+The jobs are separate checks. Configure the repository ruleset for `main`
+to require both `Validate Nix configuration` and `Build Starforge system`
+before merging. Review approvals can remain at zero if solo maintenance is
+preferred; required checks and required reviews are separate controls.
+
+GitHub Actions dependencies are checked weekly by Dependabot. Updates arrive
+as pull requests and are not merged automatically.
 
 This workflow performs CI only. It never activates a NixOS generation or
 deploys to the workstation.
+
+## Static analysis
+
+The flake provides a development shell with `statix` and `deadnix` from the
+locked Nixpkgs revision. Formatting and static analysis cover maintained Nix
+files and deliberately exclude the NixOS-generated
+`hosts/starforge/hardware-configuration.nix`, which is owned by
+`nixos-generate-config` and is still evaluated by the flake checks and full
+system build. Run them locally before opening a PR:
+
+```sh
+mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/starforge/hardware-configuration.nix")
+nix fmt -- "${nix_files[@]}"
+nix develop
+for nix_file in "${nix_files[@]}"; do
+  statix check "$nix_file"
+done
+deadnix --fail "${nix_files[@]}"
+```
 
 ## Validate and build locally
 
 Run these commands from the repository root:
 
 ```sh
-nix fmt
+mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/starforge/hardware-configuration.nix")
+nix fmt -- "${nix_files[@]}"
 nix flake check --no-build --no-update-lock-file --show-trace
 nix build .#nixosConfigurations.starforge.config.system.build.toplevel --no-link
 ```

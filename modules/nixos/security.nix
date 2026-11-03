@@ -1,4 +1,4 @@
-{ ... }:
+_:
 
 {
   # Keep the host firewall enabled and do not expose services by default.
