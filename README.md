@@ -401,8 +401,9 @@ deploys to the workstation.
 
 The flake provides a development shell with `statix` and `deadnix` from the
 locked Nixpkgs revision. The checks cover maintained Nix files and deliberately
-exclude the NixOS-generated `hosts/starforge/hardware-configuration.nix`.
-Run them locally before opening a PR:
+exclude the NixOS-generated `hosts/starforge/hardware-configuration.nix`,
+which is owned by `nixos-generate-config` and is still evaluated by the
+flake checks and full system build. Run them locally before opening a PR:
 
 ```sh
 nix develop
