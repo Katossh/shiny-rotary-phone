@@ -410,7 +410,9 @@ system build. Run them locally before opening a PR:
 mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/starforge/hardware-configuration.nix")
 nix fmt -- "${nix_files[@]}"
 nix develop
-statix check "${nix_files[@]}"
+for nix_file in "${nix_files[@]}"; do
+  statix check "$nix_file"
+done
 deadnix --fail "${nix_files[@]}"
 ```
 
