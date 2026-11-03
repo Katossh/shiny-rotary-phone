@@ -33,8 +33,9 @@
             path: guid(68a6f3c1-1eee-4845-8c3e-7108cec34c4a):/EFI/Microsoft/Boot/bootmgfw.efi
         '';
 
-        # Secure Boot is deliberately deferred until the boot path and recovery
-        # procedure have been tested on the physical workstation.
+        # Secure Boot remains explicitly disabled until the boot path and
+        # recovery procedure have been tested on the physical workstation.
+        secureBoot.enable = false;
       };
 
       timeout = 5;

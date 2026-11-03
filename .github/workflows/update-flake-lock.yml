@@ -80,10 +80,11 @@ jobs:
           git commit -m "chore: update Nix flake inputs"
           git push --force-with-lease --set-upstream origin "$branch"
 
+          pr_body="Automated weekly refresh of flake inputs. Review the updated revisions and changelogs. The NixOS validation and full system build are dispatched separately; this PR is never merged automatically."
           if gh pr view "$branch" --json number >/dev/null 2>&1; then
-            gh pr edit "$branch"               --title "chore: update Nix flake inputs"               --body "Automated weekly refresh of flake inputs. Review the updated revisions and changelogs; the NixOS validation and full system build are dispatched separately. This PR is not merged automatically."
+            gh pr edit "$branch" --title "chore: update Nix flake inputs" --body "$pr_body"
           else
-            gh pr create               --base main               --head "$branch"               --title "chore: update Nix flake inputs"               --body "Automated weekly refresh of flake inputs. Review the updated revisions and changelogs; the NixOS validation and full system build are dispatched separately. This PR is not merged automatically."
+            gh pr create --base main --head "$branch" --title "chore: update Nix flake inputs" --body "$pr_body"
           fi
 
           # GITHUB_TOKEN-created PRs do not automatically trigger pull_request

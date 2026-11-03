@@ -355,12 +355,11 @@ USB vendor:product ID. Persistent rules are stored locally in
 `/var/lib/usbguard/rules.conf` and are deliberately not committed to Git,
 because they contain hardware-specific identifiers.
 
-After reviewing the actual device inventory, a complete initial policy can
-also be generated with `sudo usbguard generate-policy`. Review the generated
-rules before installing them. Only after a complete allowlist exists should
-`presentDevicePolicy` be changed from `keep` to `apply-policy`; otherwise
-devices already connected at boot could be blocked. Keep a working input
-device available while testing policy changes.
+No host-specific allowlist is generated or installed by this configuration.
+The current USBGuard policy is deliberately left unchanged in this update:
+there is no automatic approval of a guessed device inventory and no
+`apply-policy` switch for devices present at boot. Keep a working input
+device available when manually changing USBGuard rules.
 
 ## Desktop
 
@@ -369,7 +368,7 @@ device available while testing policy changes.
 - Noctalia is configured through its Home Manager module and validates its TOML.
 - Noctalia uses the Catppuccin built-in palette and JetBrainsMono Nerd Font.
 - The session locks after ten idle minutes, turns displays off after fifteen,
-  and locks before suspend/hibernate with no passwordless grace period.
+  and locks before suspend with no passwordless grace period.
 - Kitty and Zsh configuration remain owned by terminal-dotfiles to avoid
   competing Home Manager definitions.
 
