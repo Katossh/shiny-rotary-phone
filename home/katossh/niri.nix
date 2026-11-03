@@ -63,7 +63,7 @@ _:
       "layer-rule" = {
         _children = [
           {
-            match._props.namespace = "^noctalia-(bar-[^\" ]+|notification|dock|panel|attached-panel|osd)$";
+            match._props.namespace = "^noctalia-(bar-[^\"]+|notification|dock|panel|attached-panel|osd)$";
             "background-effect".xray = false;
           }
           {
