@@ -237,16 +237,28 @@ _:
         # Use Noctalia IPC so volume changes display its OSD.
         "XF86AudioRaiseVolume" = {
           _props."allow-when-locked" = true;
-          spawn = [ "noctalia" "msg" "volume-up" ];
+          spawn = [
+            "noctalia"
+            "msg"
+            "volume-up"
+          ];
         };
         "XF86AudioLowerVolume" = {
           _props."allow-when-locked" = true;
-          spawn = [ "noctalia" "msg" "volume-down" ];
+          spawn = [
+            "noctalia"
+            "msg"
+            "volume-down"
+          ];
         };
         "XF86AudioMute" = {
           _props."allow-when-locked" = true;
           _props.repeat = false;
-          spawn = [ "noctalia" "msg" "volume-mute" ];
+          spawn = [
+            "noctalia"
+            "msg"
+            "volume-mute"
+          ];
         };
         "XF86AudioMicMute" = {
           _props."allow-when-locked" = true;
@@ -281,11 +293,19 @@ _:
         # Noctalia handles brightness and displays the matching OSD.
         "XF86MonBrightnessUp" = {
           _props."allow-when-locked" = true;
-          spawn = [ "noctalia" "msg" "brightness-up" ];
+          spawn = [
+            "noctalia"
+            "msg"
+            "brightness-up"
+          ];
         };
         "XF86MonBrightnessDown" = {
           _props."allow-when-locked" = true;
-          spawn = [ "noctalia" "msg" "brightness-down" ];
+          spawn = [
+            "noctalia"
+            "msg"
+            "brightness-down"
+          ];
         };
       };
     };
