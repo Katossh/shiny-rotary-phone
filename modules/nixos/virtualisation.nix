@@ -9,10 +9,17 @@ in
   virtualisation.libvirtd = {
     enable = true;
 
+    # Ask guests to shut down cleanly when the host is powering off.
+    onShutdown = "shutdown";
+    parallelShutdown = 2;
+
     qemu = {
       package = pkgs.qemu_kvm;
       runAsRoot = false;
       swtpm.enable = true;
+
+      # Enables VirtioFS-backed host directory sharing in guest definitions.
+      vhostUserPackages = [ pkgs.virtiofsd ];
     };
   };
 

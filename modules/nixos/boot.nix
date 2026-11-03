@@ -45,7 +45,7 @@
     supportedFilesystems = [ "btrfs" ];
 
     # Keep the original kernel policy during the structural refactor.
-    kernelPackages = pkgs.linuxPackages_latest;
+    kernelPackages = pkgs.linuxPackages;
   };
 
   environment.systemPackages = [ pkgs.sbctl ];

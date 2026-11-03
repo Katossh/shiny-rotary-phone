@@ -17,6 +17,8 @@
     ../../modules/nixos/development.nix
     ../../modules/nixos/hardware.nix
     ../../modules/nixos/networking.nix
+    ../../modules/nixos/storage.nix
+    ../../modules/nixos/memory.nix
     ../../modules/nixos/nix.nix
     ../../modules/nixos/security.nix
     ../../modules/nixos/terminal.nix

@@ -22,6 +22,7 @@ GPU on an AM5 platform.
 
 - AMD CPU microcode and redistributable firmware are enabled.
 - AMD P-State active mode is enabled for modern Ryzen power/performance scaling.
+- The host uses pkgs.linuxPackages, Nixpkgs' default supported LTS kernel set, rather than the newest mainline kernel alias.
 - The AMDGPU kernel driver is loaded in the initrd for early KMS.
 - Mesa graphics acceleration and 32-bit graphics support are enabled.
 - Vulkan and VA-API diagnostic tools are installed.
@@ -52,6 +53,13 @@ Periodic discard/TRIM is not enabled for the LUKS-backed filesystem. The
 current LUKS mapping does not pass discard requests through; enabling that
 would be a separate encryption-policy decision because discard information
 reveals allocation patterns.
+
+All Btrfs data subvolumes (/, /home, /nix, and /var/log) use
+compress=zstd:1 and noatime. Level-1 Zstandard compression is a conservative
+choice that keeps CPU overhead low while compressing newly written extents.
+Changing mount options does not recompress existing data; existing files are
+compressed only when rewritten. autodefrag is intentionally omitted to avoid
+unnecessary write amplification on a copy-on-write filesystem.
 
 The motherboard's Wi-Fi and Bluetooth devices still depend on the exact
 wireless module fitted to the board revision. Redistributable firmware and
@@ -127,6 +135,25 @@ Starforge does not configure Windows volume encryption. Windows encryption
 can be enabled separately after the new boot chain and Secure Boot have been
 validated. The existing NixOS LUKS/Btrfs arrangement is unchanged.
 
+## Memory and session protection
+
+- Zram swap uses Zstandard and has a maximum logical capacity of 50% of physical
+  RAM. This is a capacity limit, not a permanently reserved 16 GB allocation
+  on this 32 GB host.
+- systemd-oomd monitors machine.slice with a 75% memory-pressure limit.
+  User slices are deliberately excluded, so OOMD does not target the interactive
+  desktop session. If pressure remains high, an eligible VM cgroup can be
+  terminated to preserve host responsiveness. This is an emergency kill, not a
+  guest ACPI shutdown; avoid overcommitting VM memory when guest data is
+  important.
+- Noctalia locks the session after 10 minutes of inactivity and powers displays
+  off after 15 minutes. It locks before suspend/hibernate and has no
+  passwordless post-lock grace period. Active idle inhibitors, such as video
+  playback, are respected.
+
+Useful checks: zramctl, swapon --show, systemctl status systemd-oomd,
+oomctl, and findmnt -no OPTIONS / /home /nix /var/log.
+
 ## Virtualisation
 
 The host uses AMD KVM with QEMU and libvirt:
@@ -138,6 +165,8 @@ The host uses AMD KVM with QEMU and libvirt:
 - OVMF/UEFI firmware is supplied by the QEMU/libvirt module.
 - Virt-manager provides the graphical manager.
 - SPICE USB redirection is enabled.
+- virtiofsd is installed as a vhost-user backend, enabling VirtioFS host-directory sharing in VM definitions.
+- Host shutdown requests a guest ACPI shutdown rather than saving guest RAM state; up to two guests are asked to stop concurrently.
 - The desktop user belongs to the `libvirtd` group.
 
 Before creating VMs, enable CPU virtualisation (SVM) in the motherboard UEFI.
@@ -156,6 +185,7 @@ Useful checks:
 ls -l /dev/kvm
 virsh -c qemu:///system list --all
 virsh -c qemu:///system net-list --all
+cat /sys/module/kvm_amd/parameters/nested
 systemctl status libvirt-default-network.service
 ```
 
