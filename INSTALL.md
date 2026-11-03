@@ -50,6 +50,32 @@ git pull --ff-only
 sudo ./install.sh
 ~~~
 
+## Terminal environment
+
+Starforge pins [terminal-dotfiles](https://github.com/Katossh/terminal-dotfiles) as a
+non-flake input. Home Manager reads its `manifest/configs.tsv` and links the
+declared terminal configurations into the user's XDG config directories and
+home directory. The dotfiles repository remains the single source of truth;
+the files are not copied into Starforge.
+
+The NixOS terminal module also reads `manifest/packages.tsv` to install the
+declared terminal packages. Home Manager supplies the user-level integration:
+Zsh startup files, Oh My Zsh and its plugins, Kitty's generated palette, the
+tmux palette adapter, and the executable helper scripts (excluding the
+imperative `dots` installer).
+
+Do not run `dots install` on Starforge: Home Manager owns the managed paths.
+Existing files that collide with Home Manager targets are preserved using the
+configured `.hm-backup` suffix.
+
+To update the terminal environment, update the pinned input, review the lock
+file change, and rebuild:
+
+~~~sh
+nix flake lock --update-input terminal-dotfiles
+sudo nixos-rebuild switch --flake .#starforge
+~~~
+
 ## Fresh installation from the NixOS ISO
 
 This path reinstalls the Starforge profile onto its **existing disk layout**.
