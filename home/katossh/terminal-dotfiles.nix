@@ -93,7 +93,7 @@ let
     else
       map (relative: {
         inherit namespace relative;
-        component = entry.component;
+        inherit (entry) component;
         name = makeName relative;
         source = if relative == "" then sourceRoot else sourceRoot + "/${relative}";
       }) relativeFiles;
@@ -109,7 +109,7 @@ let
   expandedFiles = lib.concatMap expandManifestEntry selectedManifest;
 
   managedFiles = lib.filter (
-    file: !(file.component == "zshenv") && !(file.component == "zsh" && file.relative == ".zshrc")
+    file: file.component != "zshenv" && (file.component != "zsh" || file.relative != ".zshrc")
   ) expandedFiles;
 
   fileKeys = map (file: "${file.namespace}:${file.name}") managedFiles;
@@ -125,7 +125,7 @@ let
     builtins.listToAttrs (
       map
         (file: {
-          name = file.name;
+          inherit (file) name;
           value.source = file.source;
         })
         (
