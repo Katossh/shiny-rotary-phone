@@ -83,9 +83,9 @@ sudo snapper -c home create --description "before large change"
 
 Restore individual files from the corresponding
 `/.snapshots/<number>/snapshot/` or
-`/home/.snapshots/<number>/snapshot/` tree. Do not treat snapshots as
-protection against SSD failure, filesystem-wide corruption, or accidental
-deletion of the entire filesystem; keep Restic backups separately.
+`/home/.snapshots/<number>/snapshot/` tree. Snapshots share the same physical
+NVMe device and are only rollback points; this repository does not configure
+an independent backup destination.
 
 The motherboard's Wi-Fi and Bluetooth devices still depend on the exact
 wireless module fitted to the board revision. Redistributable firmware and
@@ -258,71 +258,61 @@ the actual passthrough workload and hardware topology are known.
 - Nix builds remain sandboxed; only root and wheel members may use the daemon,
   while only root is a trusted Nix user.
 - USBGuard allows IPC control only to root, preserves currently connected
-  devices during startup, and blocks newly inserted devices unless approved.
-- AppArmor is enabled; the curl pilot policy remains in complain mode pending
-  review of real workload logs.
+  devices during startup, and allows newly inserted devices unless an explicit
+  local rule blocks them.
+- AppArmor enforces a dedicated profile for the system `curl` executable;
+  browsers and other desktop applications are not yet confined.
 - Secure Boot is deferred. No keys are generated or enrolled, and the
   firmware enforcement state is left untouched.
 - Existing LUKS full-disk encryption and encrypted Btrfs layout are preserved.
 
 This is a workstation baseline, not a claim of complete isolation. The
 Noctalia session is configured to lock after ten minutes of inactivity, turn
-the displays off after fifteen minutes, and lock before suspend/hibernate.
+the displays off after fifteen minutes, and lock before suspend.
 TPM-backed LUKS unlocking remains a separate, not-yet-provisioned stage:
 the passphrase path is retained until PCR policy and recovery are tested.
-The USBGuard bootstrap policy still needs a host-specific allowlist before
-changing the startup policy for devices already connected at boot. IOMMU is
+IOMMU is
 enabled as a base facility, but actual PCI passthrough remains unconfigured
 until a suitable device and its complete IOMMU group are reviewed. Kernel
 module locking remains intentionally omitted because this workstation needs
 runtime hardware, networking, Bluetooth, and KVM modules.
 
-### AppArmor rollout
+### AppArmor
 
-AppArmor is enabled through the NixOS module. It adds the AppArmor kernel
-parameter, registers the LSM, installs the policy loader service, and provides
-the AppArmor management utilities. A reboot is required before the kernel LSM
-becomes active.
+AppArmor is enabled through the NixOS module. It activates the AppArmor LSM,
+loads declared policies at boot, and provides the management utilities. A
+reboot is required the first time this LSM is enabled.
 
-One host-specific policy is currently loaded for the Nixpkgs `curl` binary.
-It starts in **complain** mode: operations that the policy does not explicitly
-allow are logged but not blocked. This gives us real workload data before
-enforcement. It does not mean that Firefox, the desktop, every system service,
-or arbitrary user processes are already confined.
+The Nixpkgs `curl` executable now runs under an **enforced** profile. It can
+read the immutable Nix store, use DNS and ordinary IPv4/IPv6 TCP/UDP networking,
+and read or write files in the invoking user's home directory. It is explicitly
+denied access to the contents of `.ssh`, `.gnupg`, `.aws`, GitHub CLI
+credentials, and Google Cloud credentials. Writes outside the home and
+temporary directories are denied by default. This is a targeted profile, not
+a claim that the browser, editor, or every desktop process is confined.
 
-After deploying this module and rebooting, verify the LSM and policy loader:
+After deploying and rebooting, verify the loaded profile and exercise normal
+curl operations:
 
 ```sh
-cat /sys/kernel/security/lsm
 sudo aa-status
 sudo systemctl status apparmor.service
 readlink -f "$(command -v curl)"
+curl -I https://example.com
+curl -o "$HOME/Downloads/apparmor-test.txt" https://example.com
 ```
 
-Inspect complain-mode events from the current boot:
+Check for denied operations:
 
 ```sh
-sudo journalctl -k -b | grep 'apparmor='
+sudo journalctl -k -b --grep='apparmor="DENIED"'
 ```
 
-To review logged access patterns interactively, use:
-
-```sh
-sudo journalctl -b --since today --grep='apparmor=' | sudo aa-logprof
-```
-
-Do not switch the curl policy to `enforce` merely because the profile loads.
-First exercise the real commands and download destinations you use, review the
-logs, update the policy, and test the enforced version. Keep
-`killUnconfinedConfinables` disabled so profile changes do not automatically
-send SIGTERM to running desktop processes.
-
-NixOS provides the AppArmor LSM and policy-loading module, but its AppArmor
-integration is not yet as complete as on distributions with mature,
-distribution-maintained application policy sets. Treat each additional profile
-as a separate, workload-tested change rather than assuming that installing
-the upstream profile package automatically confines applications.
-
+The profile deliberately protects credential directories even though it
+allows other home-directory files. Do not add exceptions for those paths just
+to silence denials; review the affected command and adjust only when the
+access is genuinely required. `killUnconfinedConfinables` remains disabled so
+profile changes do not send signals to already-running desktop processes.
 ### USBGuard device management
 
 USBGuard starts after the initial udev device enumeration has settled.
@@ -523,84 +513,3 @@ follow a newer NixOS release; it remains `26.05` from the original install.
   before changing bootloader, LUKS, Btrfs, or kernel settings.
 - Keep the previous GRUB UEFI boot entry until Limine and Windows chainloading
   have passed real reboot tests. Secure Boot is not part of this rollout.
-
-### Restic backup and recovery
-
-The Restic profile backs up `/home/katossh` and `/etc/nixos`, excluding
-disposable caches and the desktop trash. The Nix store is reproducible from
-the flake and lock file, so it is not backed up. Libvirt VM disk images are
-not included; shut down a guest and back up its image separately when needed.
-
-A daily systemd timer is now configured with a randomized 30-minute delay.
-Until both repository and password files exist, an `ExecCondition` skips the
-service cleanly. A local repository path is accepted only when it resolves to
-a mounted filesystem on a different block device from the system root. Remote
-Restic URLs are not subject to that local mount check. The repository location
-and encryption password are read from root-only files outside the Nix store:
-
-- `/etc/starforge/restic-repository`: one-line Restic repository location
-  (for example, a mounted external disk path or a remote repository URL).
-- `/etc/starforge/restic-password`: repository password; losing it makes the
-  encrypted backup unrecoverable.
-
-Create root-only files without putting the password or repository location
-in Git or the Nix store. Generate the password with a password manager, keep
-an independent recovery copy outside this workstation, and then enter it into
-the file:
-
-```sh
-sudo install -d -m 0700 /etc/starforge
-sudo install -m 0600 /dev/null /etc/starforge/restic-password
-sudoedit /etc/starforge/restic-password
-sudo install -m 0600 /dev/null /etc/starforge/restic-repository
-sudoedit /etc/starforge/restic-repository
-```
-
-The repository file contains one line: the selected local path or remote
-repository URL. For a local destination, mount the external filesystem first;
-the backup service refuses a local repository on the root filesystem or on
-the same block device as root. Verify the mount with `findmnt` before
-initializing the repository. Choose and provision the destination before
-expecting successful backups.
-
-Initialize the repository once, then run a first backup manually to verify the
-destination and credentials. After that, the daily timer handles routine runs:
-
-```sh
-sudo env RESTIC_REPOSITORY_FILE=/etc/starforge/restic-repository \
-  RESTIC_PASSWORD_FILE=/etc/starforge/restic-password restic init
-sudo systemctl start restic-backups-starforge.service
-sudo systemctl status restic-backups-starforge.service
-systemctl list-timers restic-backups-starforge.timer
-```
-
-The retention policy keeps 7 daily, 4 weekly, 12 monthly, and 2 yearly
-snapshots. Restic prunes according to this policy after a successful backup.
-The service does not run a data-integrity check on every daily backup; run
-`restic check` periodically and perform an actual test restore. A successful
-backup job alone does not prove recoverability:
-
-```sh
-sudo env RESTIC_REPOSITORY_FILE=/etc/starforge/restic-repository \
-  RESTIC_PASSWORD_FILE=/etc/starforge/restic-password restic snapshots
-sudo env RESTIC_REPOSITORY_FILE=/etc/starforge/restic-repository \
-  RESTIC_PASSWORD_FILE=/etc/starforge/restic-password restic check
-sudo env RESTIC_REPOSITORY_FILE=/etc/starforge/restic-repository \
-  RESTIC_PASSWORD_FILE=/etc/starforge/restic-password restic restore latest \
-  --target /tmp/starforge-restore-test
-```
-
-Inspect the restored files before deleting the temporary restore directory.
-Keep at least one backup copy disconnected from the workstation when it is not
-being updated. A single local copy on another partition is not a disaster
-recovery strategy.
-
-The timer is enabled declaratively but remains inactive until the two
-host-local credential files are provisioned. The destination, mount dependency,
-initial repository creation, and restore procedure still require a one-time
-local setup. The password file is a temporary host-local secret mechanism; a
-later sops-nix/agenix rollout can manage it without committing plaintext
-secrets.
-
-The old pre-dotfiles configuration is retained as a historical snapshot in
-`archive/configuration.nix.before-dotfiles`; it is not imported by the flake.
