@@ -53,8 +53,9 @@ jobs:
       - name: Run Nix static analysis
         run: |
           nix develop --no-update-lock-file --command bash -euo pipefail -c '
-            statix check .
-            deadnix --fail .
+            mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/starforge/hardware-configuration.nix")
+            statix check "${nix_files[@]}"
+            deadnix --fail "${nix_files[@]}"
           '
 
       - name: Evaluate flake outputs without building

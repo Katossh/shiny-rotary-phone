@@ -14,57 +14,51 @@
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  boot = {
-    initrd = {
-      availableKernelModules = [
-        "nvme"
-        "xhci_pci"
-        "ahci"
-        "usbhid"
-        "sd_mod"
-      ];
-      kernelModules = [ ];
-      luks.devices."cryptroot".device =
-        "/dev/disk/by-uuid/fb18dd0b-4f76-449f-9d00-67cc9d49b4ee";
-    };
+  boot.initrd.availableKernelModules = [
+    "nvme"
+    "xhci_pci"
+    "ahci"
+    "usbhid"
+    "sd_mod"
+  ];
+  boot.initrd.kernelModules = [ ];
+  boot.kernelModules = [ "kvm-amd" ];
+  boot.extraModulePackages = [ ];
 
-    kernelModules = [ "kvm-amd" ];
-    extraModulePackages = [ ];
+  fileSystems."/" = {
+    device = "/dev/mapper/cryptroot";
+    fsType = "btrfs";
+    options = [ "subvol=@root" ];
   };
 
-  fileSystems = {
-    "/" = {
-      device = "/dev/mapper/cryptroot";
-      fsType = "btrfs";
-      options = [ "subvol=@root" ];
-    };
+  boot.initrd.luks.devices."cryptroot".device =
+    "/dev/disk/by-uuid/fb18dd0b-4f76-449f-9d00-67cc9d49b4ee";
 
-    "/home" = {
-      device = "/dev/mapper/cryptroot";
-      fsType = "btrfs";
-      options = [ "subvol=@home" ];
-    };
+  fileSystems."/home" = {
+    device = "/dev/mapper/cryptroot";
+    fsType = "btrfs";
+    options = [ "subvol=@home" ];
+  };
 
-    "/nix" = {
-      device = "/dev/mapper/cryptroot";
-      fsType = "btrfs";
-      options = [ "subvol=@nix" ];
-    };
+  fileSystems."/nix" = {
+    device = "/dev/mapper/cryptroot";
+    fsType = "btrfs";
+    options = [ "subvol=@nix" ];
+  };
 
-    "/var/log" = {
-      device = "/dev/mapper/cryptroot";
-      fsType = "btrfs";
-      options = [ "subvol=@var-log" ];
-    };
+  fileSystems."/var/log" = {
+    device = "/dev/mapper/cryptroot";
+    fsType = "btrfs";
+    options = [ "subvol=@var-log" ];
+  };
 
-    "/boot" = {
-      device = "/dev/disk/by-uuid/FD77-5C81";
-      fsType = "vfat";
-      options = [
-        "fmask=0022"
-        "dmask=0022"
-      ];
-    };
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-uuid/FD77-5C81";
+    fsType = "vfat";
+    options = [
+      "fmask=0022"
+      "dmask=0022"
+    ];
   };
 
   swapDevices = [ ];

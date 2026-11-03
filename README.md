@@ -400,12 +400,15 @@ deploys to the workstation.
 ## Static analysis
 
 The flake provides a development shell with `statix` and `deadnix` from the
-locked Nixpkgs revision. Run the checks locally before opening a PR:
+locked Nixpkgs revision. The checks cover maintained Nix files and deliberately
+exclude the NixOS-generated `hosts/starforge/hardware-configuration.nix`.
+Run them locally before opening a PR:
 
 ```sh
 nix develop
-statix check .
-deadnix --fail .
+mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/starforge/hardware-configuration.nix")
+statix check "${nix_files[@]}"
+deadnix --fail "${nix_files[@]}"
 ```
 
 ## Validate and build locally
