@@ -39,6 +39,19 @@
       interval = "monthly";
     };
 
+    # Grant the active local desktop user access to these HID interfaces.
+    # Required for browser-based device configuration (e.g. ATK Hub WebHID).
+    udev.extraRules = ''
+      # VXE R1 Pro receiver.
+      KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="373b", ATTRS{idProduct}=="1272", TAG+="uaccess"
+
+      # VXE NordicMouse 1K receiver.
+      KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3554", ATTRS{idProduct}=="f58a", TAG+="uaccess"
+
+      # LEKU NUT65 keyboard.
+      KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="342d", ATTRS{idProduct}=="e51a", TAG+="uaccess"
+    '';
+
     # Used by Noctalia's network, Bluetooth, battery, and power UI.
     upower.enable = true;
     power-profiles-daemon.enable = true;
