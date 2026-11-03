@@ -44,7 +44,7 @@
 
     supportedFilesystems = [ "btrfs" ];
 
-    # Keep the original kernel policy during the structural refactor.
+    # Use Nixpkgs' default maintained LTS kernel set instead of latest mainline.
     kernelPackages = pkgs.linuxPackages;
   };
 
