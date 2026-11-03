@@ -36,11 +36,23 @@
       home-manager,
       ...
     }:
+    let
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
+    in
     {
-      formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt;
+      formatter.${system} = pkgs.nixfmt;
+
+      # Keep Nix analysis tools on the same locked Nixpkgs revision as the host.
+      devShells.${system}.default = pkgs.mkShell {
+        packages = with pkgs; [
+          deadnix
+          statix
+        ];
+      };
 
       nixosConfigurations.starforge = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
+        inherit system;
 
         specialArgs = {
           inherit inputs;

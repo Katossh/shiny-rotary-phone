@@ -32,12 +32,12 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
@@ -49,6 +49,13 @@ jobs:
         run: |
           nix fmt -- $(git ls-files '*.nix')
           git diff --exit-code -- '*.nix'
+
+      - name: Run Nix static analysis
+        run: |
+          nix develop --no-update-lock-file --command bash -euo pipefail -c '
+            statix check .
+            deadnix --fail .
+          '
 
       - name: Evaluate flake outputs without building
         run: |
@@ -65,7 +72,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
@@ -75,7 +82,7 @@ jobs:
       # Keep the tool cache and swap so subsequent JavaScript actions and the
       # build runtime retain their normal execution environment.
       - name: Free disk space for NixOS build
-        uses: endersonmenezes/free-disk-space@v4
+        uses: endersonmenezes/free-disk-space@8b8cd4e2277836962939a8f3b4ea0ee4bc006156 # v4
         with:
           remove_android: true
           remove_dotnet: true
@@ -88,7 +95,7 @@ jobs:
         run: df -h /
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
@@ -116,7 +123,7 @@ jobs:
       # main when the optional publishing token has not been configured.
       - name: Configure Cachix (read-only)
         if: ${{ vars.CACHIX_CACHE_NAME != '' && steps.cachix_token.outputs.available != 'true' }}
-        uses: cachix/cachix-action@v17
+        uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
         with:
           name: ${{ vars.CACHIX_CACHE_NAME }}
           skipPush: true
@@ -124,7 +131,7 @@ jobs:
       # Only trusted pushes to main with an explicitly configured token publish.
       - name: Configure Cachix (publish from main)
         if: ${{ vars.CACHIX_CACHE_NAME != '' && steps.cachix_token.outputs.available == 'true' }}
-        uses: cachix/cachix-action@v17
+        uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
         with:
           name: ${{ vars.CACHIX_CACHE_NAME }}
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}

@@ -333,9 +333,10 @@ in `flake.lock`.
 
 GitHub Actions runs two independent jobs in parallel:
 
-1. **Validate Nix configuration** formats tracked Nix files and evaluates
-   flake outputs with `nix flake check --no-build`. This is the quick feedback
-   path; it does not compile the complete operating system.
+1. **Validate Nix configuration** formats tracked Nix files, runs
+   `statix` and `deadnix` using the flake's pinned development shell, and
+   evaluates flake outputs with `nix flake check --no-build`. This is the
+   quick feedback path; it does not compile the complete operating system.
 2. **Build Starforge system** builds the full
    `nixosConfigurations.starforge.config.system.build.toplevel` closure.
    This remains the expensive integration check.
@@ -385,12 +386,27 @@ cachix use starforge
 Review the generated Nix configuration before applying it declaratively to
 the host.
 
-The jobs are separate checks. To make them mandatory before merging, configure
-branch protection or a repository ruleset for `main` and require both
-`Validate Nix configuration` and `Build Starforge system`.
+The jobs are separate checks. Configure the repository ruleset for `main`
+to require both `Validate Nix configuration` and `Build Starforge system`
+before merging. Review approvals can remain at zero if solo maintenance is
+preferred; required checks and required reviews are separate controls.
+
+GitHub Actions dependencies are checked weekly by Dependabot. Updates arrive
+as pull requests and are not merged automatically.
 
 This workflow performs CI only. It never activates a NixOS generation or
 deploys to the workstation.
+
+## Static analysis
+
+The flake provides a development shell with `statix` and `deadnix` from the
+locked Nixpkgs revision. Run the checks locally before opening a PR:
+
+```sh
+nix develop
+statix check .
+deadnix --fail .
+```
 
 ## Validate and build locally
 
