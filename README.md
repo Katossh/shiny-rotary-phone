@@ -15,6 +15,10 @@ Terminal packages and dotfiles remain integrated from
 - `home/katossh/`: Home Manager configuration for the user.
 - `.github/workflows/nixos.yml`: parallel validation and system-build checks.
 
+## Installation
+
+Use [`install.sh`](./install.sh) for one-command deployment. See [`INSTALL.md`](./INSTALL.md) for existing-system updates and a fresh install from the NixOS ISO. The script validates Starforge's fixed LUKS/Btrfs/UEFI identifiers and never partitions or formats disks.
+
 ## Hardware profile
 
 The host profile targets an AMD Ryzen 5 7600X and its integrated Radeon RDNA2
