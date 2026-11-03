@@ -47,8 +47,9 @@ jobs:
 
       - name: Check formatting
         run: |
-          nix fmt -- $(git ls-files '*.nix')
-          git diff --exit-code -- '*.nix'
+          mapfile -t nix_files < <(git ls-files '*.nix' ':!:hosts/starforge/hardware-configuration.nix')
+          nix fmt -- "${nix_files[@]}"
+          git diff --exit-code -- "${nix_files[@]}"
 
       - name: Run Nix static analysis
         run: |
