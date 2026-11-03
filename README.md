@@ -22,6 +22,7 @@ GPU on an AM5 platform.
 
 - AMD CPU microcode and redistributable firmware are enabled.
 - AMD P-State active mode is enabled for modern Ryzen power/performance scaling.
+- The host uses pkgs.linuxPackages, Nixpkgs' default supported LTS kernel set, rather than the newest mainline kernel alias.
 - The AMDGPU kernel driver is loaded in the initrd for early KMS.
 - Mesa graphics acceleration and 32-bit graphics support are enabled.
 - Vulkan and VA-API diagnostic tools are installed.
@@ -53,6 +54,13 @@ current LUKS mapping does not pass discard requests through; enabling that
 would be a separate encryption-policy decision because discard information
 reveals allocation patterns.
 
+All Btrfs data subvolumes (/, /home, /nix, and /var/log) use
+compress=zstd:1 and noatime. Level-1 Zstandard compression is a conservative
+choice that keeps CPU overhead low while compressing newly written extents.
+Changing mount options does not recompress existing data; existing files are
+compressed only when rewritten. autodefrag is intentionally omitted to avoid
+unnecessary write amplification on a copy-on-write filesystem.
+
 The motherboard's Wi-Fi and Bluetooth devices still depend on the exact
 wireless module fitted to the board revision. Redistributable firmware and
 the in-kernel drivers are enabled; verify the detected chipset with
@@ -82,50 +90,88 @@ the partition table or create another Windows-visible EFI System Partition.
 Do not change its GPT type or resize either EFI-related partition as part of
 this bootloader migration.
 
-The initial Limine migration does **not** enable Secure Boot. First verify that
-both NixOS and Windows boot from the Limine menu, while keeping the existing
-`NixOS-boot` GRUB firmware entry as a fallback. Do not delete the old GRUB
-files or firmware entry until the new boot path has been tested successfully.
+The Limine boot path must be tested with Secure Boot disabled before key
+enrollment. Boot both NixOS and Windows from the Limine menu and retain the
+existing `NixOS-boot` GRUB firmware entry as a recovery route. Do not rewrite
+the partition table, resize either EFI-related partition, or delete the old
+GRUB files during this process.
 
-### Enable Secure Boot after boot testing
+### Secure Boot activation
 
-Secure Boot is deliberately a second stage. Once both operating systems boot
-successfully through Limine and a recovery route is available:
+The NixOS configuration now sets
+`boot.loader.limine.secureBoot.enable = true`. Applying that generation
+requires the machine's Secure Boot keys to have already been created and
+enrolled. Key handling is deliberately manual and is never performed by a
+rebuild.
 
-1. Create the local Secure Boot keys as root:
+1. Confirm that both operating systems boot through Limine with Secure Boot
+   enforcement disabled. Keep the LUKS recovery passphrase available and have
+   local physical access to the machine.
+2. Create the custom keys as root:
 
    ```sh
    sudo sbctl create-keys
    ```
 
-2. Enter UEFI Setup Mode using the motherboard firmware's Secure Boot controls.
-   Do not enable Secure Boot enforcement yet.
-3. Enroll the custom keys while retaining Microsoft and firmware vendor keys:
+3. Enter UEFI Setup Mode using the motherboard firmware's documented
+   **Reset to Setup Mode** action. Do not enable Secure Boot enforcement yet.
+   Avoid clearing the forbidden-signature database (`dbx`).
+4. Enroll the custom keys while retaining Microsoft and firmware-vendor
+   certificates. The Microsoft certificate is required for the Windows
+   Boot Manager chainload entry:
 
    ```sh
    sudo sbctl enroll-keys --microsoft --firmware-builtin
    ```
 
-4. Change `boot.loader.limine.secureBoot.enable` to `true` in
-   `modules/nixos/boot.nix`, rebuild, and check:
+5. Keep Secure Boot enforcement disabled while booting back into NixOS, then
+   apply the signed Limine configuration:
 
    ```sh
+   sudo nixos-rebuild switch --flake /etc/nixos#starforge
    sudo sbctl status
    sudo sbctl verify
    ```
 
-5. Enable Secure Boot in UEFI firmware and verify that both Limine/NixOS and
-   Windows Boot Manager still start.
+   Some firmware automatically enables Secure Boot after key enrollment. If
+   that happens, temporarily disable enforcement again until the signed
+   generation has been installed.
+6. Enable Secure Boot in UEFI firmware, boot through Limine, and verify both
+   NixOS and Windows Boot Manager.
 
-Do not use automatic key enrollment for this host. Keep the existing NixOS
-LUKS recovery passphrase available and retain the old GRUB firmware entry
-until the Secure Boot configuration has been tested. Secure Boot support is
-firmware-dependent; a successful build alone does not prove that the machine
-will boot with enforcement enabled.
+When Secure Boot is enabled, the old GRUB fallback may be rejected because it
+was not signed with the enrolled keys. Keep its firmware entry and files as a
+fallback for recovery with Secure Boot temporarily disabled; do not mistake
+that unsigned fallback for a Secure-Boot-compatible boot path.
+
+Nixpkgs' Limine module signs the Limine EFI executable with `sbctl`, enrolls
+and validates the Limine configuration checksums, and requires checksum
+mismatches to stop boot. The module also signs the fwupd EFI updater when
+fwupd is enabled. A successful build does not prove firmware enforcement or
+Windows chainloading works: both must be tested on the actual machine.
 
 Starforge does not configure Windows volume encryption. Windows encryption
 can be enabled separately after the new boot chain and Secure Boot have been
 validated. The existing NixOS LUKS/Btrfs arrangement is unchanged.
+
+## Memory and session protection
+
+- Zram swap uses Zstandard and has a maximum logical capacity of 50% of physical
+  RAM. This is a capacity limit, not a permanently reserved 16 GB allocation
+  on this 32 GB host.
+- systemd-oomd monitors machine.slice with a 75% memory-pressure limit.
+  User slices are deliberately excluded, so OOMD does not target the interactive
+  desktop session. If pressure remains high, an eligible VM cgroup can be
+  terminated to preserve host responsiveness. This is an emergency kill, not a
+  guest ACPI shutdown; avoid overcommitting VM memory when guest data is
+  important.
+- Noctalia locks the session after 10 minutes of inactivity and powers displays
+  off after 15 minutes. It locks before suspend/hibernate and has no
+  passwordless post-lock grace period. Active idle inhibitors, such as video
+  playback, are respected.
+
+Useful checks: zramctl, swapon --show, systemctl status systemd-oomd,
+oomctl, and findmnt -no OPTIONS / /home /nix /var/log.
 
 ## Virtualisation
 
@@ -138,6 +184,8 @@ The host uses AMD KVM with QEMU and libvirt:
 - OVMF/UEFI firmware is supplied by the QEMU/libvirt module.
 - Virt-manager provides the graphical manager.
 - SPICE USB redirection is enabled.
+- virtiofsd is installed as a vhost-user backend, enabling VirtioFS host-directory sharing in VM definitions.
+- Host shutdown requests a guest ACPI shutdown rather than saving guest RAM state; up to two guests are asked to stop concurrently.
 - The desktop user belongs to the `libvirtd` group.
 
 Before creating VMs, enable CPU virtualisation (SVM) in the motherboard UEFI.
@@ -156,6 +204,7 @@ Useful checks:
 ls -l /dev/kvm
 virsh -c qemu:///system list --all
 virsh -c qemu:///system net-list --all
+cat /sys/module/kvm_amd/parameters/nested
 systemctl status libvirt-default-network.service
 ```
 
@@ -202,7 +251,10 @@ the actual passthrough workload and hardware topology are known.
 
 ## Security baseline
 
-- The NixOS firewall is explicitly enabled, with no extra inbound ports opened.
+- The NixOS firewall is explicitly enabled, with no extra inbound TCP or UDP
+  ports opened.
+- The OpenSSH server is explicitly disabled; this machine does not accept
+  inbound SSH sessions. This does not prevent outbound SSH when a client is installed.
 - The existing iptables-based firewall backend is retained for compatibility
   with libvirt networking; nftables can be evaluated separately.
 - Kernel image protection is enabled.
@@ -213,22 +265,29 @@ the actual passthrough workload and hardware topology are known.
 - Filesystem protections for symlinks, hardlinks, FIFOs, and regular files
   are explicitly enabled.
 - IPv4/IPv6 redirect acceptance and IPv4 source routing are disabled.
-- Sudo requires a password and its authentication timestamp is limited to
-  five minutes.
+- Sudo requires a password, forces a pseudo-terminal, limits password retries
+  to three, and limits credential caching to five minutes.
 - Nix builds remain sandboxed; only root and wheel members may use the daemon,
   while only root is a trusted Nix user.
+- USBGuard allows IPC control only to root, preserves currently connected
+  devices during startup, and blocks newly inserted devices unless approved.
+- AppArmor is enabled; the curl pilot policy remains in complain mode pending
+  review of real workload logs.
+- Limine Secure Boot signing and checksum/config validation are enabled in
+  NixOS. Key creation, enrollment, and firmware enforcement remain manual.
 - Existing LUKS full-disk encryption and encrypted Btrfs layout are preserved.
-- Limine's built-in Secure Boot support is available, but enforcement remains
-  disabled until keys are manually created and enrolled and the boot path is tested.
 
-This is a practical workstation baseline, not a claim of complete isolation.
-The AppArmor LSM is enabled, with the initial curl policy deliberately in
-complain mode; it is not yet a general application sandbox. TPM-backed disk unlock and device-specific USB restrictions still need
-separate validation. IOMMU is enabled as a base facility, but actual PCI
-passthrough remains unconfigured until a suitable device and IOMMU group are
-reviewed. Kernel-module locking is
-intentionally omitted because this machine must load hardware, networking,
-Bluetooth, and KVM modules.
+This is a workstation baseline, not a claim of complete isolation. The
+Noctalia session is configured to lock after ten minutes of inactivity, turn
+the displays off after fifteen minutes, and lock before suspend/hibernate.
+TPM-backed LUKS unlocking remains a separate, not-yet-provisioned stage:
+the passphrase path is retained until PCR policy and recovery are tested.
+The USBGuard bootstrap policy still needs a host-specific allowlist before
+changing the startup policy for devices already connected at boot. IOMMU is
+enabled as a base facility, but actual PCI passthrough remains unconfigured
+until a suitable device and its complete IOMMU group are reviewed. Kernel
+module locking remains intentionally omitted because this workstation needs
+runtime hardware, networking, Bluetooth, and KVM modules.
 
 ### AppArmor rollout
 
@@ -321,6 +380,8 @@ device available while testing policy changes.
 - Home Manager owns and validates the generated Niri KDL configuration.
 - Noctalia is configured through its Home Manager module and validates its TOML.
 - Noctalia uses the Catppuccin built-in palette and JetBrainsMono Nerd Font.
+- The session locks after ten idle minutes, turns displays off after fifteen,
+  and locks before suspend/hibernate with no passwordless grace period.
 - Kitty and Zsh configuration remain owned by terminal-dotfiles to avoid
   competing Home Manager definitions.
 

@@ -9,10 +9,17 @@ in
   virtualisation.libvirtd = {
     enable = true;
 
+    # Ask guests to shut down cleanly when the host is powering off.
+    onShutdown = "shutdown";
+    parallelShutdown = 2;
+
     qemu = {
       package = pkgs.qemu_kvm;
       runAsRoot = false;
       swtpm.enable = true;
+
+      # Enables VirtioFS-backed host directory sharing in guest definitions.
+      vhostUserPackages = [ pkgs.virtiofsd ];
     };
   };
 
@@ -31,6 +38,17 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+
+      # The helper only talks to the local libvirt UNIX socket. Keep /etc
+      # writable for libvirt's autostart symlink, but isolate everything else.
+      ProtectSystem = "full";
+      ProtectHome = true;
+      PrivateTmp = true;
+      NoNewPrivileges = true;
+      ProtectKernelTunables = true;
+      ProtectKernelModules = true;
+      ProtectControlGroups = true;
+      RestrictAddressFamilies = [ "AF_UNIX" ];
     };
 
     script = ''
