@@ -33,10 +33,14 @@
             path: guid(68a6f3c1-1eee-4845-8c3e-7108cec34c4a):/EFI/Microsoft/Boot/bootmgfw.efi
         '';
 
-        # Secure Boot is intentionally staged separately. First test the new
-        # Limine boot path for both operating systems; enroll keys only after
-        # that succeeds and the recovery path has been verified.
-        secureBoot.enable = false;
+        # Limine Secure Boot signing and config/checksum validation are enabled.
+        # Create and enroll the host keys manually before applying this
+        # generation. Never create or enroll keys automatically during rebuild.
+        secureBoot = {
+          enable = true;
+          autoGenerateKeys = false;
+          autoEnrollKeys.enable = false;
+        };
       };
 
       timeout = 5;
