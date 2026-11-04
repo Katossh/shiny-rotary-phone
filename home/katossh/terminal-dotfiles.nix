@@ -216,9 +216,9 @@ let
 
   kittyConfigReplacement = [
     "font_family      JetBrainsMono Nerd Font"
-    "bold_font        JetBrainsMono Nerd Font Bold"
-    "italic_font      JetBrainsMono Nerd Font Italic"
-    "bold_italic_font JetBrainsMono Nerd Font Bold Italic"
+    "bold_font        auto"
+    "italic_font      auto"
+    "bold_italic_font auto"
     "map ctrl+shift+v paste_from_clipboard\nmap ctrl+c copy_or_interrupt\nmap ctrl+v paste_from_clipboard"
   ];
 
