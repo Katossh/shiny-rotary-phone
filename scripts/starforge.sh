@@ -4,7 +4,6 @@ usage() {
   cat <<'EOF'
 Usage:
   starforge status   Show a concise workstation health snapshot.
-  starforge gpu      Open the live AMD GPU monitor.
   starforge check    Run local formatting, lint, evaluation, and build checks.
 EOF
 }
@@ -30,7 +29,7 @@ show_status() {
 
   printf '\nAMD GPU\n'
   if ! amdgpu_top --list 2>/dev/null; then
-    printf 'GPU telemetry unavailable. Try starforge gpu after checking the amdgpu driver.\n'
+    printf 'GPU telemetry unavailable.\n'
   fi
 
   printf '\nHardware sensors\n'
@@ -86,6 +85,7 @@ run_checks() {
   check_formatting
 
   printf '\n== Statix and Deadnix ==\n'
+  # shellcheck disable=SC2016
   nix develop --no-update-lock-file --accept-flake-config --command bash -euo pipefail -c '
     mapfile -t nix_files < <(
       git ls-files --cached --others --exclude-standard -- "*.nix" ":!:hosts/starforge/hardware-configuration.nix"
@@ -118,9 +118,6 @@ run_checks() {
 case "${1:-status}" in
   status)
     show_status
-    ;;
-  gpu)
-    exec amdgpu_top --smi
     ;;
   check)
     run_checks
