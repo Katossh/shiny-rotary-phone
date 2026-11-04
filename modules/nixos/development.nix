@@ -20,5 +20,9 @@
     cargo
     go
     gcc
+    clang
+    jq
+    yt-dlp
+    mpv
   ];
 }

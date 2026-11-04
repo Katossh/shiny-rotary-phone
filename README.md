@@ -32,6 +32,8 @@ GPU on an AM5 platform.
 - Vulkan and VA-API diagnostic tools are installed.
 - `amdgpu_top`, `lm_sensors`, `nvme-cli`, `smartmontools`, `pciutils`,
   and `usbutils` provide hardware monitoring and diagnostics.
+- Clang, GCC, Rust, and Go provide the system development toolchain; jq, yt-dlp,
+  and mpv provide JSON processing, media downloading, and playback.
 - Bluetooth, NetworkManager, UPower, and power-profiles-daemon remain enabled.
 - `fwupd` is enabled for firmware updates on devices supported by LVFS.
 - `smartd` automatically monitors detected SMART-capable storage devices.
@@ -347,7 +349,8 @@ are not re-authorized by a strict startup policy.
 - Niri is enabled at the NixOS level so greetd can launch the session.
 - Home Manager owns and validates the generated Niri KDL configuration.
 - Noctalia is configured through its Home Manager module and validates its TOML.
-- Noctalia uses the Catppuccin built-in palette and JetBrainsMono Nerd Font.
+- Noctalia uses the Catppuccin built-in palette and Inter as its system-installed interface font.
+- LocalSend is installed for cross-platform LAN file sharing.
 - The session locks after ten idle minutes, turns displays off after fifteen,
   and locks before suspend with no passwordless grace period.
 - Kitty and Zsh configuration remain owned by terminal-dotfiles to avoid
