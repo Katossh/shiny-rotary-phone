@@ -14,12 +14,10 @@
 
     packages = with pkgs; [
       brightnessctl
-      discord
       grim
       playerctl
       pavucontrol
       slurp
-      telegram-desktop
       wl-clipboard
     ];
 

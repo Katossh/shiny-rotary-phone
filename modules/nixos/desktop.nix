@@ -1,8 +1,11 @@
 { pkgs, ... }:
 
 {
-  programs.niri.enable = true;
-  programs.firefox.enable = true;
+  programs = {
+    niri.enable = true;
+    firefox.enable = true;
+    amnezia-vpn.enable = true;
+  };
 
   # Keep the system XKB layout aligned with Niri's Wayland keyboard config.
   services.xserver.xkb.layout = "us,ru";
