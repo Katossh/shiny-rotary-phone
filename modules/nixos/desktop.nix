@@ -8,24 +8,26 @@
   };
 
   # Keep the system XKB map aligned with Niri's Wayland keyboard configuration.
-  services.xserver.xkb = {
-    layout = "us,ru";
-    options = "grp:alt_shift_toggle";
-  };
+  services = {
+    xserver.xkb = {
+      layout = "us,ru";
+      options = "grp:alt_shift_toggle";
+    };
 
-  services.gnome.gnome-keyring.enable = true;
+    gnome.gnome-keyring.enable = true;
+
+    greetd = {
+      enable = true;
+      settings.default_session = {
+        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd niri-session";
+        user = "greeter";
+      };
+    };
+  };
 
   environment.systemPackages = [
     pkgs.chromium
   ];
-
-  services.greetd = {
-    enable = true;
-    settings.default_session = {
-      command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd niri-session";
-      user = "greeter";
-    };
-  };
 
   security.polkit.enable = true;
 
