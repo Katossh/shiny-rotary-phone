@@ -86,7 +86,7 @@ run_checks() {
   check_formatting
 
   printf '\n== Statix and Deadnix ==\n'
-  nix develop --no-update-lock-file --command bash -euo pipefail -c '
+  nix develop --no-update-lock-file --accept-flake-config --command bash -euo pipefail -c '
     mapfile -t nix_files < <(
       git ls-files --cached --others --exclude-standard -- "*.nix" ":!:hosts/starforge/hardware-configuration.nix"
     )
