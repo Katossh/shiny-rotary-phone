@@ -20,6 +20,7 @@
     ../../modules/nixos/nix.nix
     ../../modules/nixos/observability.nix
     ../../modules/nixos/security.nix
+    ../../modules/nixos/usbguard.nix
     ../../modules/nixos/snapshots.nix
     ../../modules/nixos/storage.nix
     ../../modules/nixos/terminal.nix
