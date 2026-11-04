@@ -12,6 +12,7 @@ _:
       input = {
         keyboard = {
           xkb.layout = "us,ru";
+          xkb.options = "grp:alt_shift_toggle";
           "track-layout" = "global";
         };
         mouse."accel-profile" = "flat";
@@ -121,8 +122,6 @@ _:
           "panel-toggle"
           "launcher"
         ];
-        # Cycle between US and Russian layouts without colliding with the launcher.
-        "Mod+Shift+Space".switch-layout._args = [ "next" ];
         "Mod+S".spawn = [
           "noctalia"
           "msg"
@@ -160,7 +159,8 @@ _:
           "window-switcher"
           "hold"
         ];
-        "Alt+Shift+Tab".spawn = [
+        # Keep reverse switching separate from the Alt+Shift XKB layout toggle.
+        "Alt+Ctrl+Tab".spawn = [
           "noctalia"
           "msg"
           "window-switcher"

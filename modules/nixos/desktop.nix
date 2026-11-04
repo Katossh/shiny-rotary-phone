@@ -7,25 +7,50 @@
     amnezia-vpn.enable = true;
   };
 
-  # Keep the system XKB layout aligned with Niri's Wayland keyboard config.
-  services.xserver.xkb.layout = "us,ru";
+  # Keep the system XKB map aligned with Niri's Wayland keyboard configuration.
+  services = {
+    xserver.xkb = {
+      layout = "us,ru";
+      options = "grp:alt_shift_toggle";
+    };
+
+    gnome.gnome-keyring.enable = true;
+
+    greetd = {
+      enable = true;
+      settings.default_session = {
+        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd niri-session";
+        user = "greeter";
+      };
+    };
+  };
 
   environment.systemPackages = [
     pkgs.chromium
   ];
 
-  services.greetd = {
-    enable = true;
-    settings.default_session = {
-      command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd niri-session";
-      user = "greeter";
-    };
-  };
-
   security.polkit.enable = true;
 
   xdg.portal = {
     enable = true;
-    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    xdgOpenUsePortal = true;
+
+    extraPortals = [
+      pkgs.xdg-desktop-portal-gnome
+      pkgs.xdg-desktop-portal-gtk
+    ];
+
+    config = {
+      niri = {
+        default = [
+          "gnome"
+          "gtk"
+        ];
+        "org.freedesktop.impl.portal.FileChooser" = [ "gtk" ];
+        "org.freedesktop.impl.portal.Secret" = [ "gnome-keyring" ];
+      };
+
+      common.default = [ "gtk" ];
+    };
   };
 }

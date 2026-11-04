@@ -39,11 +39,10 @@
       interval = "monthly";
     };
 
-    # Grant the active local desktop user access to these HID interfaces.
-    # Required for browser-based device configuration (e.g. ATK Hub WebHID).
+    # ATK/VXE receivers use WebHID through Chromium's hidraw interface.
+    # uaccess grants the active local session access without world-writable nodes.
     udev.extraRules = ''
-      # VXE R1 Pro receiver.
-      KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="373b", ATTRS{idProduct}=="1272", TAG+="uaccess"
+      SUBSYSTEM=="hidraw", ATTRS{idVendor}=="373b", TAG+="uaccess"
 
       # VXE NordicMouse 1K receiver.
       KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3554", ATTRS{idProduct}=="f58a", TAG+="uaccess"

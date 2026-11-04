@@ -15,12 +15,13 @@
     ../../modules/nixos/desktop.nix
     ../../modules/nixos/development.nix
     ../../modules/nixos/hardware.nix
-    ../../modules/nixos/networking.nix
-    ../../modules/nixos/storage.nix
-    ../../modules/nixos/snapshots.nix
     ../../modules/nixos/memory.nix
+    ../../modules/nixos/networking.nix
     ../../modules/nixos/nix.nix
+    ../../modules/nixos/observability.nix
     ../../modules/nixos/security.nix
+    ../../modules/nixos/snapshots.nix
+    ../../modules/nixos/storage.nix
     ../../modules/nixos/terminal.nix
     ../../modules/nixos/users.nix
     ../../modules/nixos/virtualisation.nix
