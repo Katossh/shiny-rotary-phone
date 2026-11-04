@@ -9,6 +9,7 @@
       "vscode"
       "code"
       "discord"
+      "discord-unwrapped"
     ];
 
   environment.systemPackages = with pkgs; [
