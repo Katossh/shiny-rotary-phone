@@ -14,34 +14,33 @@ let
     deny owner @{HOME}/.password-store/** rw,
   '';
 
-  browserProfile =
-    executable: configPath: cachePath: ''
-      abi <abi/4.0>,
-      include <tunables/global>
+  browserProfile = executable: configPath: cachePath: ''
+    abi <abi/4.0>,
+    include <tunables/global>
 
-      profile ${executable} {
-        include <abstractions/base>
-        include <abstractions/nameservice>
-        include <abstractions/ssl_certs>
-        include <abstractions/user-tmp>
+    profile ${executable} {
+      include <abstractions/base>
+      include <abstractions/nameservice>
+      include <abstractions/ssl_certs>
+      include <abstractions/user-tmp>
 
-        # Runtime files and shared libraries are immutable Nix store content.
-        /nix/store/** mr,
+      # Runtime files and shared libraries are immutable Nix store content.
+      /nix/store/** mr,
 
-        # Keep browser state and explicit downloads writable.
-        owner @{HOME}/${configPath}/** rwk,
-        owner @{HOME}/${cachePath}/** rwk,
-        owner @{HOME}/Downloads/** rwk,
+      # Keep browser state and explicit downloads writable.
+      owner @{HOME}/${configPath}/** rwk,
+      owner @{HOME}/${cachePath}/** rwk,
+      owner @{HOME}/Downloads/** rwk,
 
-        # Browsers need ordinary client networking.
-        network inet stream,
-        network inet dgram,
-        network inet6 stream,
-        network inet6 dgram,
+      # Browsers need ordinary client networking.
+      network inet stream,
+      network inet dgram,
+      network inet6 stream,
+      network inet6 dgram,
 
-        ${browserCredentialDenials}
-      }
-    '';
+      ${browserCredentialDenials}
+    }
+  '';
 
   editorProfile = executable: ''
     abi <abi/4.0>,
@@ -117,18 +116,16 @@ in
       # logged but allowed. Explicit deny rules below remain enforced.
       firefox = {
         state = "complain";
-        profile = browserProfile
-          "${config.programs.firefox.finalPackage}/bin/firefox"
-          ".mozilla"
-          ".cache/mozilla";
+        profile =
+          browserProfile "${config.programs.firefox.finalPackage}/bin/firefox" ".mozilla"
+            ".cache/mozilla";
       };
 
       chromium = {
         state = "complain";
-        profile = browserProfile
-          "${pkgs.chromium.browser}/libexec/chromium/chromium"
-          ".config/chromium"
-          ".cache/chromium";
+        profile =
+          browserProfile "${pkgs.chromium.browser}/libexec/chromium/chromium" ".config/chromium"
+            ".cache/chromium";
       };
 
       # IDEs run user code, build scripts, language servers, terminals and plugins.
