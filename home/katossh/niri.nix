@@ -7,17 +7,22 @@ _:
     settings = {
       "prefer-no-csd" = { };
 
+      # Predictable pointer movement for the VXE mouse.
+      input.mouse."accel-profile" = "flat";
+
       layout = {
         gaps = 8;
-        "center-focused-column" = "never";
+        "center-focused-column" = "on-overflow";
         "default-column-width" = {
           proportion = 0.5;
         };
         "preset-column-widths" = {
           _children = [
+            { proportion = 0.25; }
             { proportion = 0.33333; }
             { proportion = 0.5; }
             { proportion = 0.66667; }
+            { proportion = 0.75; }
           ];
         };
         "focus-ring" = {
@@ -37,17 +42,68 @@ _:
         };
       };
 
-      "window-rule" = {
-        _children = [
-          {
-            match._props."app-id" = ".*";
-            "geometry-corner-radius" = 10;
-            "clip-to-geometry" = true;
-          }
-        ];
+      # Apply rounded corners to ordinary application windows.
+      "window-rule"._children = [
+        {
+          match._props."app-id" = ".*";
+          "geometry-corner-radius" = 10;
+          "clip-to-geometry" = true;
+        }
+      ];
+
+      # Niri 26.04 compositor blur; keep it moderate on the integrated Radeon GPU.
+      blur = {
+        passes = 2;
+        offset = 3.0;
+        noise = 0.03;
+        saturation = 1.0;
       };
 
+      # Permit Noctalia notification actions and activation requests.
+      debug."honor-xdg-activation-with-invalid-serial" = { };
+
       "screenshot-path" = "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png";
+
+      # Repeated top-level KDL nodes must use root _children.
+      _children = [
+        {
+          # Xiaomi 34-inch ultrawide: choose the highest advertised 3440x1440 mode.
+          # This should select the monitor's 180 Hz mode when advertised.
+          output = {
+            _args = [ "DP-1" ];
+            mode = "3440x1440";
+            "variable-refresh-rate" = { };
+          };
+        }
+        {
+          # Float Noctalia's settings window.
+          window-rule = {
+            match._props."app-id" = "^dev\\.noctalia\\.Noctalia$";
+            "open-floating" = true;
+            "default-column-width".fixed = 1080;
+            "default-window-height".fixed = 920;
+          };
+        }
+        {
+          # Keep Noctalia surfaces blurring the content behind them, not wallpaper xray.
+          layer-rule = {
+            match._props.namespace = "^noctalia-(bar-[^\"]+|notification|dock|panel|attached-panel|osd)$";
+            "background-effect" = {
+              xray = false;
+            };
+          };
+        }
+        {
+          # Enable blur specifically for Noctalia's window switcher.
+          layer-rule = {
+            match._props.namespace = "^noctalia-window-switcher$";
+            "background-effect" = {
+              blur = true;
+              xray = false;
+            };
+          };
+        }
+      ];
 
       binds = {
         "Mod+Shift+Slash"."show-hotkey-overlay" = { };
@@ -75,9 +131,33 @@ _:
           "session"
           "lock"
         ];
-        "Mod+O"."toggle-overview" = { };
-        "Mod+Q"."close-window" = { };
-        "Alt+F4"."close-window" = { };
+        "Mod+O" = {
+          _props.repeat = false;
+          "toggle-overview" = { };
+        };
+        "Mod+Q" = {
+          _props.repeat = false;
+          "close-window" = { };
+        };
+        "Alt+F4" = {
+          _props.repeat = false;
+          "close-window" = { };
+        };
+
+        # Noctalia window switcher: hold Alt to browse, release to activate.
+        "Alt+Tab".spawn = [
+          "noctalia"
+          "msg"
+          "window-switcher"
+          "hold"
+        ];
+        "Alt+Shift+Tab".spawn = [
+          "noctalia"
+          "msg"
+          "window-switcher"
+          "hold"
+          "reverse"
+        ];
 
         "Mod+Left"."focus-column-left" = { };
         "Mod+Down"."focus-window-down" = { };
@@ -87,6 +167,8 @@ _:
         "Mod+J"."focus-window-down" = { };
         "Mod+K"."focus-window-up" = { };
         "Mod+L"."focus-column-right" = { };
+        "Mod+Home"."focus-column-first" = { };
+        "Mod+End"."focus-column-last" = { };
 
         "Mod+Ctrl+Left"."move-column-left" = { };
         "Mod+Ctrl+Down"."move-window-down" = { };
@@ -96,6 +178,8 @@ _:
         "Mod+Ctrl+J"."move-window-down" = { };
         "Mod+Ctrl+K"."move-window-up" = { };
         "Mod+Ctrl+L"."move-column-right" = { };
+        "Mod+Ctrl+Home"."move-column-to-first" = { };
+        "Mod+Ctrl+End"."move-column-to-last" = { };
 
         "Mod+Shift+Left"."focus-monitor-left" = { };
         "Mod+Shift+Down"."focus-monitor-down" = { };
@@ -135,7 +219,19 @@ _:
         "Mod+R"."switch-preset-column-width" = { };
         "Mod+Shift+R"."switch-preset-column-width-back" = { };
         "Mod+Ctrl+R"."reset-window-height" = { };
+        "Mod+Ctrl+Shift+R"."switch-preset-window-height" = { };
+        "Mod+Minus".set-column-width._args = [ "-10%" ];
+        "Mod+Equal".set-column-width._args = [ "+10%" ];
+        "Mod+Shift+Minus".set-window-height._args = [ "-10%" ];
+        "Mod+Shift+Equal".set-window-height._args = [ "+10%" ];
         "Mod+F"."maximize-column" = { };
+        "Mod+M"."maximize-window-to-edges" = { };
+        "Mod+Ctrl+F"."expand-column-to-available-width" = { };
+        "Mod+Ctrl+C"."center-visible-columns" = { };
+        "Mod+BracketLeft"."consume-or-expel-window-left" = { };
+        "Mod+BracketRight"."consume-or-expel-window-right" = { };
+        "Mod+Ctrl+Comma"."consume-window-into-column" = { };
+        "Mod+Period"."expel-window-from-column" = { };
         "Mod+Shift+F"."fullscreen-window" = { };
         "Mod+C"."center-column" = { };
         "Mod+V"."toggle-window-floating" = { };
@@ -154,33 +250,30 @@ _:
         "Mod+Shift+E".quit = { };
         "Mod+Shift+P"."power-off-monitors" = { };
 
+        # Use Noctalia IPC so volume changes display its OSD.
         "XF86AudioRaiseVolume" = {
           _props."allow-when-locked" = true;
           spawn = [
-            "wpctl"
-            "set-volume"
-            "@DEFAULT_AUDIO_SINK@"
-            "5%+"
-            "-l"
-            "1.0"
+            "noctalia"
+            "msg"
+            "volume-up"
           ];
         };
         "XF86AudioLowerVolume" = {
           _props."allow-when-locked" = true;
           spawn = [
-            "wpctl"
-            "set-volume"
-            "@DEFAULT_AUDIO_SINK@"
-            "5%-"
+            "noctalia"
+            "msg"
+            "volume-down"
           ];
         };
         "XF86AudioMute" = {
           _props."allow-when-locked" = true;
+          _props.repeat = false;
           spawn = [
-            "wpctl"
-            "set-mute"
-            "@DEFAULT_AUDIO_SINK@"
-            "toggle"
+            "noctalia"
+            "msg"
+            "volume-mute"
           ];
         };
         "XF86AudioMicMute" = {
@@ -213,18 +306,23 @@ _:
           "next"
         ];
 
-        "XF86MonBrightnessUp".spawn = [
-          "brightnessctl"
-          "--class=backlight"
-          "set"
-          "+5%"
-        ];
-        "XF86MonBrightnessDown".spawn = [
-          "brightnessctl"
-          "--class=backlight"
-          "set"
-          "5%-"
-        ];
+        # Noctalia handles brightness and displays the matching OSD.
+        "XF86MonBrightnessUp" = {
+          _props."allow-when-locked" = true;
+          spawn = [
+            "noctalia"
+            "msg"
+            "brightness-up"
+          ];
+        };
+        "XF86MonBrightnessDown" = {
+          _props."allow-when-locked" = true;
+          spawn = [
+            "noctalia"
+            "msg"
+            "brightness-down"
+          ];
+        };
       };
     };
   };
