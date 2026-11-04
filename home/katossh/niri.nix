@@ -159,7 +159,8 @@ _:
           "window-switcher"
           "hold"
         ];
-        "Alt+Shift+Tab".spawn = [
+        # Keep reverse switching separate from the Alt+Shift XKB layout toggle.
+        "Alt+Ctrl+Tab".spawn = [
           "noctalia"
           "msg"
           "window-switcher"
