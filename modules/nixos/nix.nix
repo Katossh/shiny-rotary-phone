@@ -30,9 +30,10 @@ _:
       options = "--delete-older-than 14d";
     };
 
+    # Deduplicate identical store files once a week, Sunday at 03:45.
     optimise = {
       automatic = true;
-      dates = [ "weekly" ];
+      dates = [ "Sun 03:45" ];
     };
   };
 }

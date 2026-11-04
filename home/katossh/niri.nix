@@ -8,10 +8,11 @@ _:
       # Ask clients to omit their own titlebars where they support server-side decorations.
       "prefer-no-csd" = { };
 
-      # Keyboard layouts and predictable pointer movement for the VXE mouse.
+      # Use XKB for layout switching and keep predictable pointer movement for the VXE mouse.
       input = {
         keyboard = {
           xkb.layout = "us,ru";
+          xkb.options = "grp:alt_shift_toggle";
           "track-layout" = "global";
         };
         mouse."accel-profile" = "flat";
@@ -94,7 +95,7 @@ _:
         {
           # Keep Noctalia surfaces blurring the content behind them, not wallpaper xray.
           layer-rule = {
-            match._props.namespace = "^noctalia-(bar-[^\"]+|notification|dock|panel|attached-panel|osd)$";
+            match._props.namespace = "^noctalia-(bar-[^\\"]+|notification|dock|panel|attached-panel|osd)$";
             "background-effect" = {
               xray = false;
             };
@@ -121,8 +122,6 @@ _:
           "panel-toggle"
           "launcher"
         ];
-        # Cycle between US and Russian layouts without colliding with the launcher.
-        "Mod+Shift+Space".switch-layout._args = [ "next" ];
         "Mod+S".spawn = [
           "noctalia"
           "msg"
