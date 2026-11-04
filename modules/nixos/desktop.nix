@@ -1,6 +1,8 @@
 { pkgs, ... }:
 
 {
+  fonts.packages = [ pkgs.inter ];
+
   programs = {
     niri.enable = true;
     firefox.enable = true;

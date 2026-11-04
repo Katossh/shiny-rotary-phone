@@ -38,7 +38,7 @@
         };
       };
       shell = {
-        font_family = "JetBrainsMono Nerd Font";
+        font_family = "Inter";
         settings_show_advanced = true;
         launch_apps_as_systemd_services = true;
       };
