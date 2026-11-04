@@ -42,39 +42,14 @@ _:
         };
       };
 
-      "window-rule" = {
-        _children = [
-          {
-            match._props."app-id" = ".*";
-            "geometry-corner-radius" = 10;
-            "clip-to-geometry" = true;
-          }
-          {
-            # Float Noctalia's settings window instead of inserting it into a column.
-            match._props."app-id" = "^dev\\.noctalia\\.Noctalia$";
-            "open-floating" = true;
-            "default-column-width".fixed = 1080;
-            "default-window-height".fixed = 920;
-          }
-        ];
-      };
-
-      # Keep Noctalia's blur sampling the content behind its surfaces.
-      "layer-rule" = {
-        _children = [
-          {
-            match._props.namespace = "^noctalia-(bar-[^\"]+|notification|dock|panel|attached-panel|osd)$";
-            "background-effect".xray = false;
-          }
-          {
-            match._props.namespace = "^noctalia-window-switcher$";
-            "background-effect" = {
-              blur = true;
-              xray = false;
-            };
-          }
-        ];
-      };
+      # Apply rounded corners to ordinary application windows.
+      "window-rule"._children = [
+        {
+          match._props."app-id" = ".*";
+          "geometry-corner-radius" = 10;
+          "clip-to-geometry" = true;
+        }
+      ];
 
       # Niri 26.04 compositor blur; keep it moderate on the integrated Radeon GPU.
       blur = {
@@ -88,6 +63,47 @@ _:
       debug."honor-xdg-activation-with-invalid-serial" = { };
 
       "screenshot-path" = "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png";
+
+      # Repeated top-level KDL nodes must use root _children.
+      _children = [
+        {
+          # Xiaomi 34-inch ultrawide: choose the highest advertised 3440x1440 mode.
+          # This should select the monitor's 180 Hz mode when advertised.
+          output = {
+            _args = [ "DP-1" ];
+            mode = "3440x1440";
+            "variable-refresh-rate" = { };
+          };
+        }
+        {
+          # Float Noctalia's settings window.
+          window-rule = {
+            match._props."app-id" = "^dev\\.noctalia\\.Noctalia$";
+            "open-floating" = true;
+            "default-column-width".fixed = 1080;
+            "default-window-height".fixed = 920;
+          };
+        }
+        {
+          # Keep Noctalia surfaces blurring the content behind them, not wallpaper xray.
+          layer-rule = {
+            match._props.namespace = "^noctalia-(bar-[^\"]+|notification|dock|panel|attached-panel|osd)$";
+            "background-effect" = {
+              xray = false;
+            };
+          };
+        }
+        {
+          # Enable blur specifically for Noctalia's window switcher.
+          layer-rule = {
+            match._props.namespace = "^noctalia-window-switcher$";
+            "background-effect" = {
+              blur = true;
+              xray = false;
+            };
+          };
+        }
+      ];
 
       binds = {
         "Mod+Shift+Slash"."show-hotkey-overlay" = { };
