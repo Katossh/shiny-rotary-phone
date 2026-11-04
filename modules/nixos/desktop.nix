@@ -1,7 +1,10 @@
 { pkgs, ... }:
 
 {
-  fonts.packages = [ pkgs.inter ];
+  fonts.packages = [
+    pkgs.inter
+    pkgs.jetbrains-mono
+  ];
 
   programs = {
     niri.enable = true;

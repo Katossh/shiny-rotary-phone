@@ -13,29 +13,6 @@ _:
   # outbound connections; this host does not accept SSH sessions.
   services.openssh.enable = false;
 
-  # USBGuard keeps existing device state and evaluates rules for new devices.
-  # Unknown devices are allowed by default; explicit local block rules still
-  # apply. This avoids locking out ordinary USB peripherals on this workstation.
-  #
-  # The rule file remains host-local and writable at
-  # /var/lib/usbguard/rules.conf so root can persist approved device rules.
-  services.usbguard = {
-    enable = true;
-    implicitPolicyTarget = "allow";
-    presentDevicePolicy = "keep";
-    presentControllerPolicy = "keep";
-    insertedDevicePolicy = "apply-policy";
-    IPCAllowedUsers = [ "root" ];
-    IPCAllowedGroups = [ ];
-  };
-
-  # Wait until the initial udev coldplug has settled before USBGuard snapshots
-  # present devices. This avoids racing the initial keyboard/mouse enumeration.
-  systemd.services.usbguard = {
-    wants = [ "systemd-udev-settle.service" ];
-    after = [ "systemd-udev-settle.service" ];
-  };
-
   security = {
     protectKernelImage = true;
 

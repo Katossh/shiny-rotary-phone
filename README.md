@@ -131,14 +131,16 @@ the old GRUB files during this process.
 ### Secure Boot (deferred)
 
 Secure Boot signing and enforcement are **not enabled** in the NixOS
-configuration. No Secure Boot keys are generated or enrolled by this
-repository, and no firmware settings should be changed as part of this
-configuration update. The Limine EFI boot path remains in its current
-non-Secure-Boot state.
+configuration. The `sbctl` utility is installed for manual status and key
+management, but this repository does not generate or enroll keys automatically
+and does not change firmware settings.
 
-This can be revisited after the Limine/Windows chainload path has been tested
-on the workstation and a recovery procedure has been confirmed. The existing
-LUKS/Btrfs arrangement is unchanged.
+Complete key generation and enrollment on the workstation only after both
+Limine-to-NixOS and Limine-to-Windows 11 boot paths have passed real reboot
+tests and a recovery route has been confirmed. Enrollment must retain the
+Microsoft and firmware-builtin certificates (the `--microsoft` and
+`--firmware-builtin` options). Keep Secure Boot disabled until those manual
+steps are complete. The existing LUKS/Btrfs arrangement is unchanged.
 
 Starforge does not configure Windows volume encryption.
 
@@ -263,13 +265,10 @@ the actual passthrough workload and hardware topology are known.
   to three, and limits credential caching to five minutes.
 - Nix builds remain sandboxed; only root and wheel members may use the daemon,
   while only root is a trusted Nix user.
-- USBGuard allows IPC control only to root, preserves currently connected
-  devices during startup, and allows newly inserted devices unless an explicit
-  local rule blocks them.
 - AppArmor enforces a dedicated profile for the system `curl` executable;
   browsers and other desktop applications are not yet confined.
-- Secure Boot is deferred. No keys are generated or enrolled, and the
-  firmware enforcement state is left untouched.
+- Secure Boot is deferred. `sbctl` is installed, but no keys are generated or
+  enrolled and the firmware enforcement state is left untouched.
 - Existing LUKS full-disk encryption and encrypted Btrfs layout are preserved.
 
 This is a workstation baseline, not a claim of complete isolation. The
@@ -319,31 +318,6 @@ allows other home-directory files. Do not add exceptions for those paths just
 to silence denials; review the affected command and adjust only when the
 access is genuinely required. `killUnconfinedConfinables` remains disabled so
 profile changes do not send signals to already-running desktop processes.
-### USBGuard device management
-
-USBGuard starts after the initial udev device enumeration has settled.
-Its policy is deliberately permissive for ordinary workstation use:
-
-- Devices already connected when USBGuard starts keep their current state.
-- Newly inserted devices are evaluated against the local rule file.
-- Devices without an explicit matching rule are allowed by default.
-- Explicit local block rules continue to deny matching devices.
-- Only root can use the USBGuard IPC interface.
-
-Inspect the current device and rule state with:
-
-```sh
-sudo usbguard list-devices --tree
-sudo usbguard list-devices --blocked
-sudo usbguard list-rules
-sudo journalctl -u usbguard -b
-```
-
-Persistent rules remain host-local in `/var/lib/usbguard/rules.conf` and are
-not committed to Git because they contain hardware-specific identifiers.
-There is no generated host-specific allowlist and devices connected at boot
-are not re-authorized by a strict startup policy.
-
 ## Desktop
 
 - Niri is enabled at the NixOS level so greetd can launch the session.
