@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ./gtk.nix
     ./niri.nix
     ./noctalia.nix
     ./terminal-dotfiles.nix
