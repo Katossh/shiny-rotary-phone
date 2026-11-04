@@ -5,13 +5,20 @@ _:
     enable = true;
 
     settings = {
+      # Ask clients to omit their own titlebars where they support server-side decorations.
       "prefer-no-csd" = { };
 
-      # Predictable pointer movement for the VXE mouse.
-      input.mouse."accel-profile" = "flat";
+      # Keyboard layouts and predictable pointer movement for the VXE mouse.
+      input = {
+        keyboard = {
+          xkb.layout = "us,ru";
+          "track-layout" = "global";
+        };
+        mouse."accel-profile" = "flat";
+      };
 
       layout = {
-        gaps = 8;
+        gaps = 12;
         "center-focused-column" = "on-overflow";
         "default-column-width" = {
           proportion = 0.5;
@@ -46,7 +53,7 @@ _:
       "window-rule"._children = [
         {
           match._props."app-id" = ".*";
-          "geometry-corner-radius" = 10;
+          "geometry-corner-radius" = 14;
           "clip-to-geometry" = true;
         }
       ];
@@ -72,7 +79,7 @@ _:
           output = {
             _args = [ "DP-1" ];
             mode = "3440x1440";
-            "variable-refresh-rate" = { };
+            # FreeSync / VRR intentionally disabled.
           };
         }
         {
@@ -114,6 +121,8 @@ _:
           "panel-toggle"
           "launcher"
         ];
+        # Cycle between US and Russian layouts without colliding with the launcher.
+        "Mod+Shift+Space".switch-layout._args = [ "next" ];
         "Mod+S".spawn = [
           "noctalia"
           "msg"
