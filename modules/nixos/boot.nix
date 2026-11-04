@@ -35,9 +35,9 @@
             path: guid(68a6f3c1-1eee-4845-8c3e-7108cec34c4a):/EFI/Microsoft/Boot/bootmgfw.efi
         '';
 
-        # Secure Boot remains explicitly disabled until the boot path and
-        # recovery procedure have been tested on the physical workstation.
-        secureBoot.enable = false;
+        # Sign Limine's EFI executable with the sbctl key provisioned locally.
+        # Keep the private key material out of the repository.
+        secureBoot.enable = true;
       };
 
       timeout = 5;
