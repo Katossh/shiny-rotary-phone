@@ -204,6 +204,30 @@ let
     color15 ${color "TEXT"}
   '';
 
+  kittyConfigOriginal = builtins.readFile (dotfiles + "/config/terminal/kitty/kitty.conf");
+
+  kittyConfigExpected = [
+    "font_family      Jetbrains Mono"
+    "bold_font        Jetbrains Mono Bold"
+    "italic_font      Jetbrains Mono Italic"
+    "bold_italic_font Jetbrains Mono Bold Italic"
+    "map ctrl+shift+v paste_from_clipboard"
+  ];
+
+  kittyConfigReplacement = [
+    "font_family      JetBrainsMono Nerd Font"
+    "bold_font        auto"
+    "italic_font      auto"
+    "bold_italic_font auto"
+    "map ctrl+shift+v paste_from_clipboard\nmap ctrl+c copy_or_interrupt\nmap ctrl+v paste_from_clipboard"
+  ];
+
+  kittyConfig =
+    if builtins.all (needle: lib.hasInfix needle kittyConfigOriginal) kittyConfigExpected then
+      lib.replaceStrings kittyConfigExpected kittyConfigReplacement kittyConfigOriginal
+    else
+      throw "terminal-dotfiles: expected Kitty font or clipboard mappings were not found";
+
   tmuxPalette = ''
     set -g status-style "fg=${color "TEXT"},bg=${color "MANTLE"}"
     set -g message-style "fg=${color "BASE"},bg=${color "YELLOW"}"
@@ -239,6 +263,7 @@ assert assertUniqueTargets;
     enable = true;
 
     configFile = configFiles // {
+      "kitty/kitty.conf".text = kittyConfig;
       "zsh/.zshrc".text = zshrcText;
       "kitty/themes/dots-palette.conf".text = kittyPalette;
     };

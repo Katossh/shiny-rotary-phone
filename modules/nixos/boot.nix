@@ -1,6 +1,8 @@
 { pkgs, ... }:
 
 {
+  environment.systemPackages = [ pkgs.sbctl ];
+
   boot = {
     loader = {
       # Keep the existing FAT32 /boot partition. Limine installs its EFI

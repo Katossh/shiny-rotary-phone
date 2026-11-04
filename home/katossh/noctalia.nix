@@ -38,6 +38,7 @@
         };
       };
       shell = {
+        clipboard_enabled = true;
         font_family = "Inter";
         settings_show_advanced = true;
         launch_apps_as_systemd_services = true;

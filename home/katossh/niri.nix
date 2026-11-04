@@ -9,6 +9,10 @@ _:
       "prefer-no-csd" = { };
 
       # Keyboard layouts and predictable pointer movement for the VXE mouse.
+      clipboard = {
+        "disable-primary" = { };
+      };
+
       input = {
         keyboard = {
           xkb.layout = "us,ru";
@@ -16,6 +20,9 @@ _:
           "track-layout" = "global";
         };
         mouse."accel-profile" = "flat";
+        "focus-follows-mouse" = {
+          _props."max-scroll-amount" = "0%";
+        };
       };
 
       layout = {
@@ -243,7 +250,13 @@ _:
         "Mod+Period"."expel-window-from-column" = { };
         "Mod+Shift+F"."fullscreen-window" = { };
         "Mod+C"."center-column" = { };
-        "Mod+V"."toggle-window-floating" = { };
+        "Mod+V".spawn = [
+          "noctalia"
+          "msg"
+          "panel-toggle"
+          "clipboard"
+        ];
+        "Mod+Ctrl+V"."toggle-window-floating" = { };
         "Mod+Shift+V"."switch-focus-between-floating-and-tiling" = { };
         "Mod+W"."toggle-column-tabbed-display" = { };
 
