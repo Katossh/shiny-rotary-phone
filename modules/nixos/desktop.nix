@@ -12,6 +12,9 @@
     amnezia-vpn.enable = true;
   };
 
+  # Firefox otherwise handles PRIMARY selection paste on middle-click itself.
+  programs.firefox.preferences."middlemouse.paste" = false;
+
   # Keep the system XKB map aligned with Niri's Wayland keyboard configuration.
   services = {
     xserver.xkb = {
