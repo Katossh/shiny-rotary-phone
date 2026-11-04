@@ -4,8 +4,11 @@
   programs.niri.enable = true;
   programs.firefox.enable = true;
 
+  # Keep the system XKB layout aligned with Niri's Wayland keyboard config.
+  services.xserver.xkb.layout = "us,ru";
+
   environment.systemPackages = [
-    pkgs.brave
+    pkgs.chromium
   ];
 
   services.greetd = {
