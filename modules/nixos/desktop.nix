@@ -8,7 +8,11 @@
 
   programs = {
     niri.enable = true;
-    firefox.enable = true;
+    firefox = {
+      enable = true;
+      # Firefox implements PRIMARY-selection paste itself on Linux.
+      preferences."middlemouse.paste" = false;
+    };
     amnezia-vpn.enable = true;
   };
 
