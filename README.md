@@ -140,10 +140,6 @@ fail-closed enforcement should not be assumed solely from the Secure Boot
 status. Keep the known-good recovery route and do not delete the existing
 `dbx` revocation database.
 
-The NixOS `/boot` partition remains a FAT32 partition whose GPT type is
-reported as `Linux filesystem`; this layout is intentionally preserved.
-Do not change its partition type or resize either EFI-related partition.
-
 Starforge does not configure Windows volume encryption.
 
 ## Memory and session protection
@@ -539,5 +535,5 @@ follow a newer NixOS release; it remains `26.05` from the original install.
   job, then builds the complete system closure in a separate job.
 - Keep a known-good generation and a copy of the hardware configuration
   before changing bootloader, LUKS, Btrfs, or kernel settings.
-- Keep the previous GRUB UEFI boot entry until Limine and Windows chainloading
-  have passed real reboot tests. Secure Boot is not part of this rollout.
+- Keep the previous GRUB UEFI boot entry as a recovery route until Limine and
+  Windows chainloading have been re-tested with Secure Boot enabled.
