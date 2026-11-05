@@ -2,26 +2,26 @@
 set -Eeuo pipefail
 
 readonly REPOSITORY_URL="https://github.com/Katossh/shiny-rotary-phone.git"
-readonly HOST_NAME="starforge"
+readonly HOST_NAME="workstation"
 readonly ROOT_LUKS_UUID="fb18dd0b-4f76-449f-9d00-67cc9d49b4ee"
 readonly BOOT_FS_UUID="FD77-5C81"
 readonly WINDOWS_ESP_PARTUUID="68a6f3c1-1eee-4845-8c3e-7108cec34c4a"
 readonly INSTALL_ROOT="/mnt"
-readonly INSTALL_REPO="/mnt/etc/nixos/starforge"
+readonly INSTALL_REPO="/mnt/etc/nixos"
 
 MODE="switch"
 ASSUME_YES="false"
 
 log() {
-  printf '\n[starforge] %s\n' "$*"
+  printf '\n[nixcfg] %s\n' "$*"
 }
 
 warn() {
-  printf '\n[starforge] WARNING: %s\n' "$*" >&2
+  printf '\n[nixcfg] WARNING: %s\n' "$*" >&2
 }
 
 die() {
-  printf '\n[starforge] ERROR: %s\n' "$*" >&2
+  printf '\n[nixcfg] ERROR: %s\n' "$*" >&2
   exit 1
 }
 
@@ -30,11 +30,11 @@ usage() {
 Usage: ./install.sh [--switch | --test | --install] [--yes]
 
 Modes:
-  --switch   Build and activate Starforge, making it the default generation.
+  --switch   Build and activate the workstation profile, making it the default generation.
              This is the default mode.
-  --test     Build and activate Starforge temporarily without changing the
+  --test     Build and activate the workstation profile temporarily without changing the
              default boot generation.
-  --install  Install Starforge into an already mounted /mnt from a NixOS
+  --install  Install the workstation profile into an already mounted /mnt from a NixOS
              installer environment. This mode never partitions or formats disks.
   --yes      Skip the interactive confirmation prompt.
   --help     Show this help.
@@ -90,9 +90,9 @@ configure_nix() {
 }
 
 check_profile_files() {
-  local hardware_file="${REPO_DIR}/hosts/starforge/hardware-configuration.nix"
+  local hardware_file="${REPO_DIR}/hosts/workstation/hardware-configuration.nix"
 
-  [[ -f "$hardware_file" ]] || die "Missing Starforge hardware configuration: ${hardware_file}"
+  [[ -f "$hardware_file" ]] || die "Missing host hardware configuration: ${hardware_file}"
   grep -Fq "$ROOT_LUKS_UUID" "$hardware_file" \
     || die "The committed hardware configuration no longer matches the expected encrypted-root UUID."
   grep -Fq "$BOOT_FS_UUID" "$hardware_file" \
@@ -110,7 +110,7 @@ check_expected_devices() {
   )
 
   for path in "${devices[@]}"; do
-    [[ -e "$path" ]] || die "Expected Starforge disk identifier is missing: $path. Refusing to apply this machine-specific profile."
+    [[ -e "$path" ]] || die "Expected host-profile disk identifier is missing: $path. Refusing to apply this machine-specific profile."
   done
 
   [[ -b /dev/mapper/cryptroot ]] \
@@ -197,16 +197,16 @@ run_switch() {
   log "Repository: $REPO_DIR"
   log "Mode: $MODE"
   if [[ "$MODE" == "test" ]]; then
-    confirm "Build and temporarily activate Starforge? The default boot generation will not be changed."
+    confirm "Build and temporarily activate the workstation profile? The default boot generation will not be changed."
   else
-    confirm "Build and activate Starforge as the default system generation?"
+    confirm "Build and activate the workstation profile as the default system generation?"
   fi
 
   # nixos-rebuild builds the complete toplevel before activating it. A failed
   # evaluation or build therefore leaves the currently active generation intact.
   nixos-rebuild "$MODE" --flake "$REPO_DIR#$HOST_NAME" --show-trace
 
-  log "Starforge $MODE completed."
+  log "NixOS $MODE completed."
   if [[ "$MODE" == "test" ]]; then
     log "This is a temporary activation. Use ./install.sh --switch after testing to make it the boot default."
   fi
@@ -222,7 +222,7 @@ run_install() {
   [[ "$REPO_DIR" == "$INSTALL_REPO" ]] \
     || die "For a fresh install, clone this repository to $INSTALL_REPO and run the script from there."
   [[ -d /sys/firmware/efi/efivars ]] \
-    || die "Starforge requires a UEFI boot. Boot the NixOS installer in UEFI mode."
+    || die "This host profile requires a UEFI boot. Boot the NixOS installer in UEFI mode."
   check_profile_files
   check_expected_devices
 
@@ -240,8 +240,8 @@ run_install() {
 
   log "Target root: $INSTALL_ROOT"
   log "Repository: $REPO_DIR"
-  warn "This installs only to the existing mounted Starforge layout. It does not partition, format, create filesystems, or change LUKS keys."
-  confirm "Install NixOS from this Starforge flake to /mnt?"
+  warn "This installs only to the existing mounted host layout. It does not partition, format, create filesystems, or change LUKS keys."
+  confirm "Install NixOS from this flake to /mnt?"
 
   nixos-install --flake "$REPO_DIR#$HOST_NAME"
 
