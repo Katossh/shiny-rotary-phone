@@ -21,11 +21,18 @@ Review these outputs together:
 
 - `sbctl status`: enrolled/setup state and firmware quirk detection.
 - `sbctl verify`: EFI files on the ESP and files registered in the sbctl
-  signing database. An unsigned or untracked file must be identified before
-  deciding whether it belongs in the boot chain.
+  signing database. This check is scoped to the local sbctl signing database
+  key; it is not a complete validation against every certificate enrolled in
+  UEFI. In particular, Windows Boot Manager may be Microsoft-signed rather
+  than signed by Starforge's local db key. Treat such output as a review item,
+  not an instruction to sign or replace the Windows loader.
 - `bootctl status`: UEFI and Secure Boot state reported by systemd-boot's
   firmware interface. This is independent of whether Limine is the active loader.
-- `fwupdmgr security`: firmware security attributes, when supported.
+- `fwupdmgr security`: firmware security attributes, when supported. Run the
+  fwupd client as the normal user; it uses its privileged daemon and PolicyKit.
+- `fwupdmgr get-bios-settings`: optional read-only inspection of firmware
+  settings, when the motherboard exposes them through the firmware-attributes
+  interface. Do not use `set-bios-setting` during this audit.
 
 MSI AMD 600-series motherboards are listed in the sbctl FQ0001 advisory. The
 advisory describes firmware that may execute EFI images despite a Secure Boot
@@ -112,7 +119,8 @@ overhead.
 
 ## Audit hand-off
 
-Run `starforge security-audit` from the installed system and share the output.
+Run `starforge security-audit` from the installed system and review the output
+for machine-identifying details before sharing it.
 The next changes should be based on these observations:
 
 - Secure Boot: reconcile FQ0001, firmware settings, and EFI signature results.
