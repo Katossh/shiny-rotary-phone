@@ -164,7 +164,6 @@ security_audit() {
   run_diagnostic user sbctl status
   run_diagnostic root sbctl verify
   run_diagnostic user bootctl status --no-pager
-  run_diagnostic user fwupdmgr security
   run_diagnostic user fwupdmgr get-devices
   run_diagnostic user fwupdmgr get-bios-settings
   run_diagnostic root fwupdtool esp-list --verbose
