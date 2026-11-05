@@ -19,6 +19,35 @@ Terminal packages and dotfiles remain integrated from
 
 Use [`install.sh`](./install.sh) for one-command deployment. See [`INSTALL.md`](./INSTALL.md) for existing-system updates and a fresh install from the NixOS ISO. The installer validates the host profile's fixed LUKS/Btrfs/UEFI identifiers and never partitions or formats disks.
 
+## User configuration
+
+Personal appearance and selected desktop preferences are managed in
+[`home/katossh/preferences.nix`](./home/katossh/preferences.nix). This file
+provides typed options for the Noctalia theme, built-in palette, interface font,
+Niri keyboard layout, and layout gaps. See
+[`docs/user-configuration.md`](./docs/user-configuration.md) for defaults,
+accepted values, ownership boundaries, and safe application instructions.
+
+The repository currently supports one machine profile (`workstation`):
+reusable system behavior lives in `modules/nixos/`, hardware-specific facts
+live in `hosts/workstation/`, and personal preferences live in Home Manager.
+Terminal configuration remains owned by `terminal-dotfiles`.
+
+## Diagnostics and recovery
+
+Use the following read-only commands for routine maintenance:
+
+```sh
+nixcfg doctor
+nixcfg recovery
+```
+
+The existing `nixcfg status` and `nixcfg audit` commands remain available;
+`nixcfg check` evaluates and builds the configuration without activating it.
+See [`docs/diagnostics-recovery.md`](./docs/diagnostics-recovery.md) for
+result states, exit codes, generation rollback, snapshot limitations, and
+host-specific recovery guidance.
+
 ## Hardware profile
 
 The host profile targets an AMD Ryzen 5 7600X and its integrated Radeon RDNA2
