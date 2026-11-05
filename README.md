@@ -12,7 +12,7 @@ Terminal packages and dotfiles remain integrated from
 - `flake.nix`, `flake.lock`: inputs, pinned dependencies, formatter, and host profile output.
 - `hosts/workstation/`: host-specific hardware, display topology, and generated hardware details.
 - `modules/nixos/`: reusable system-level modules.
-- `home/katossh/`: Home Manager configuration for the user.
+- `home/`: Home Manager modules for the configured workstation user.
 - `.github/workflows/nixos.yml`: parallel validation and system-build checks.
 
 ## Installation
@@ -22,11 +22,13 @@ Use [`install.sh`](./install.sh) for one-command deployment. See [`INSTALL.md`](
 ## User configuration
 
 Personal appearance and selected desktop preferences are managed in
-[`home/katossh/preferences.nix`](./home/katossh/preferences.nix). This file
+[`home/preferences.nix`](./home/preferences.nix). This file
 provides typed options for the Noctalia theme, built-in palette, interface font,
-Niri keyboard layout, layout gaps, and per-output display settings. Physical
-monitor topology for this workstation is configured in
-[`hosts/workstation/displays.nix`](./hosts/workstation/displays.nix). See
+Niri keyboard layout, layout gaps, and per-output display settings. The
+workstation login name is set once as `starforge.user.username` in
+`hosts/workstation/default.nix`; NixOS, Home Manager, the home directory, and
+libvirt authorization derive from it. Physical monitor topology for this
+workstation is configured in `hosts/workstation/displays.nix`. See
 [`docs/user-configuration.md`](./docs/user-configuration.md) for defaults,
 accepted values, ownership boundaries, and safe application instructions.
 
@@ -128,7 +130,7 @@ The motherboard's Wi-Fi and Bluetooth devices still depend on the exact
 wireless module fitted to the board revision. Redistributable firmware and
 the in-kernel drivers are enabled; verify the detected chipset with
 `lspci -nnk` and `lsusb` after installation.
-
+ 
 The host-specific CPU/GPU modules and device udev rules are isolated in
 `hosts/workstation/hardware.nix`. Common hardware capabilities and diagnostic
 tools remain in `modules/nixos/hardware.nix`; filesystem mount and Btrfs scrub
@@ -144,6 +146,7 @@ The current host's Niri output preference is defined in
 available modes. Add one attribute per display to configure its mode, scale,
 and optional logical position. See
 [`docs/user-configuration.md`](./docs/user-configuration.md) for examples.
+
 
 ## Bootloader and Windows dual boot
 
@@ -228,7 +231,7 @@ The host uses AMD KVM with QEMU and libvirt:
 - The short-lived `libvirtd-config` and `libvirt-default-network` helper units use a shared systemd sandbox: no new privileges, private home/tmp/device views, read-only `/usr`/`/boot`/`/efi`, UNIX-socket-only access, and restrictions on kernel interfaces, namespaces, realtime scheduling, SUID/SGID creation, and writable-executable memory. The long-running `libvirtd` daemon is deliberately not given this blanket profile because it must manage KVM devices, cgroups, and virtual networking.
 - Host shutdown requests a guest ACPI shutdown rather than saving guest RAM state; up to two guests are asked to stop concurrently.
 - Libvirt management is granted through Polkit to the active local
-  `katossh` session; the user no longer needs broad `libvirtd` group membership.
+  configured local user session; the user no longer needs broad `libvirtd` group membership.
 
 Before creating VMs, enable CPU virtualisation (SVM) in the motherboard UEFI.
 IOMMU is only needed for device passthrough; it is not required for ordinary
@@ -296,7 +299,7 @@ the actual passthrough workload and hardware topology are known.
 
 Podman is the host's OCI container runtime; Docker Engine is not enabled.
 
-- Podman is daemonless and intended to be used rootless as `katossh`.
+- Podman is daemonless and intended to be used rootless by the configured workstation user.
 - NixOS allocates a subordinate UID/GID range for the user so rootless
   containers and Distrobox can create user namespaces.
 - `docker` is provided as a CLI alias for Podman to ease migration of existing
@@ -336,7 +339,7 @@ After the first switch that adds the subordinate ID mapping, log out and back
 in before creating rootless containers. Verify the mapping and runtime with:
 
 ```sh
-grep "^katossh:" /etc/subuid /etc/subgid
+grep "^$(id -un):" /etc/subuid /etc/subgid
 podman info --debug
 ```
 
