@@ -66,9 +66,7 @@ in
               };
 
               scale = mkOption {
-                type = types.nullOr (
-                  types.addCheck types.number (value: value > 0 && value <= 4)
-                );
+                type = types.nullOr (types.addCheck types.number (value: value > 0 && value <= 4));
                 default = null;
                 example = 1.25;
                 description = ''
@@ -156,13 +154,11 @@ in
     };
   };
 
-  assertions = lib.mapAttrsToList (
-    outputName: output: {
-      assertion = output.mode != null || output.scale != null || output.position != null;
-      message = ''
-        Starforge output "${outputName}" must set at least one of mode,
-        scale, or position.
-      '';
-    }
-  ) config.starforge.user.desktop.monitors;
+  assertions = lib.mapAttrsToList (outputName: output: {
+    assertion = output.mode != null || output.scale != null || output.position != null;
+    message = ''
+      Starforge output "${outputName}" must set at least one of mode,
+      scale, or position.
+    '';
+  }) config.starforge.user.desktop.monitors;
 }
