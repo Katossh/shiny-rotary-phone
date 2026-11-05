@@ -8,6 +8,7 @@ let
       coreutils
       diffutils
       findutils
+      inetutils
       gawk
       git
       lm_sensors
