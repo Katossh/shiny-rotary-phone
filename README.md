@@ -10,7 +10,7 @@ Terminal packages and dotfiles remain integrated from
 ## Repository layout
 
 - `flake.nix`, `flake.lock`: inputs, pinned dependencies, formatter, and host profile output.
-- `hosts/workstation/`: host-specific configuration and generated hardware details.
+- `hosts/workstation/`: host-specific hardware, display topology, and generated hardware details.
 - `modules/nixos/`: reusable system-level modules.
 - `home/katossh/`: Home Manager configuration for the user.
 - `.github/workflows/nixos.yml`: parallel validation and system-build checks.
@@ -24,7 +24,9 @@ Use [`install.sh`](./install.sh) for one-command deployment. See [`INSTALL.md`](
 Personal appearance and selected desktop preferences are managed in
 [`home/katossh/preferences.nix`](./home/katossh/preferences.nix). This file
 provides typed options for the Noctalia theme, built-in palette, interface font,
-Niri keyboard layout, and layout gaps. See
+Niri keyboard layout, layout gaps, and per-output display settings. Physical
+monitor topology for this workstation is configured in
+[`hosts/workstation/displays.nix`](./hosts/workstation/displays.nix). See
 [`docs/user-configuration.md`](./docs/user-configuration.md) for defaults,
 accepted values, ownership boundaries, and safe application instructions.
 
@@ -126,6 +128,22 @@ The motherboard's Wi-Fi and Bluetooth devices still depend on the exact
 wireless module fitted to the board revision. Redistributable firmware and
 the in-kernel drivers are enabled; verify the detected chipset with
 `lspci -nnk` and `lsusb` after installation.
+
+The host-specific CPU/GPU modules and device udev rules are isolated in
+`hosts/workstation/hardware.nix`. Common hardware capabilities and diagnostic
+tools remain in `modules/nixos/hardware.nix`; filesystem mount and Btrfs scrub
+policy live in `modules/nixos/storage.nix`. The generated
+`hosts/workstation/hardware-configuration.nix` remains untouched.
+
+## Display configuration
+
+The current host's Niri output preference is defined in
+`hosts/workstation/displays.nix` and uses the typed
+`starforge.user.desktop.monitors` option declared in Home Manager. Run
+`niri msg outputs` in a Wayland session to discover connector names and
+available modes. Add one attribute per display to configure its mode, scale,
+and optional logical position. See
+[`docs/user-configuration.md`](./docs/user-configuration.md) for examples.
 
 ## Bootloader and Windows dual boot
 

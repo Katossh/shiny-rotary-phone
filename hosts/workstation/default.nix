@@ -1,15 +1,12 @@
-{ inputs, ... }:
+{ ... }:
 
 {
   networking.hostName = "workstation";
 
   imports = [
     ./hardware-configuration.nix
-
-    # AMD Ryzen 7000 Raphael iGPU, common AMDGPU support, and AMD P-State.
-    inputs.nixos-hardware.nixosModules.common-cpu-amd-raphael-igpu
-    inputs.nixos-hardware.nixosModules.common-cpu-amd-pstate
-    inputs.nixos-hardware.nixosModules.common-gpu-amd
+    ./hardware.nix
+    ./displays.nix
 
     ../../modules/nixos/apparmor.nix
     ../../modules/nixos/audio.nix

@@ -50,7 +50,48 @@ in
       };
     };
 
-    desktop.niri = {
+    desktop = {
+      monitors = mkOption {
+        type = types.attrsOf (types.submodule {
+          options = {
+            mode = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+              example = "3440x1440@179.982";
+              description = "Optional Niri mode string; omitted means use the preferred display mode.";
+            };
+            scale = mkOption {
+              type = types.nullOr (types.addCheck types.number (value: value > 0 && value <= 4));
+              default = null;
+              example = 1.25;
+              description = "Optional logical scale factor greater than 0 and no greater than 4.";
+            };
+            position = mkOption {
+              type = types.nullOr (types.submodule {
+                options = {
+                  x = mkOption { type = types.int; description = "Horizontal logical position."; };
+                  y = mkOption { type = types.int; description = "Vertical logical position."; };
+                };
+              });
+              default = null;
+              example = { x = 3440; y = 0; };
+              description = "Optional logical output position; omitted means automatic placement.";
+            };
+          };
+        });
+        default = { };
+        example = {
+          "DP-1" = { mode = "3440x1440"; };
+          "HDMI-A-1" = {
+            mode = "1920x1080@60.000";
+            scale = 1.0;
+            position = { x = 3440; y = 0; };
+          };
+        };
+        description = "Per-output Niri settings, keyed by the connector reported by niri msg outputs.";
+      };
+
+      niri = {
       keyboardLayout = mkOption {
         type = types.str;
         default = "us,ru";

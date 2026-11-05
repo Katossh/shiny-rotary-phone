@@ -3,6 +3,12 @@ _:
 {
   # The four subvolumes share one encrypted Btrfs filesystem. Keep compression
   # and atime policy consistent across all mounts.
+  services.btrfs.autoScrub = {
+    enable = true;
+    fileSystems = [ "/" ];
+    interval = "monthly";
+  };
+
   fileSystems = {
     "/".options = [
       "compress=zstd:1"

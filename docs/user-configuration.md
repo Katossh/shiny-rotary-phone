@@ -7,10 +7,11 @@ selectable profiles.
 The repository separates configuration by ownership:
 
 - **Core system behavior:** reusable system-wide modules in `modules/nixos/`.
-- **Host-specific behavior:** hardware, disk, boot, and machine facts in
-  `hosts/workstation/`.
+- **Host-specific behavior:** hardware, disk, boot, and physical display
+  topology in `hosts/workstation/`.
 - **Personal preferences:** user-session settings in
-  `home/katossh/preferences.nix`.
+  `home/katossh/preferences.nix`; monitor option types are declared there,
+  while each host supplies its physical output map separately.
 - **Terminal environment:** terminal packages, manifests, and dotfiles remain
   owned by the separate `terminal-dotfiles` repository.
 
@@ -31,6 +32,7 @@ Home Manager configuration.
 | `starforge.user.desktop.niri.keyboardLayout` | `"us,ru"` | Comma-separated XKB layout identifiers passed to Niri. |
 | `starforge.user.desktop.niri.keyboardLayoutOptions` | `"grp:alt_shift_toggle"` | XKB layout options passed to Niri. |
 | `starforge.user.desktop.niri.gaps` | `12` | Niri layout gap in logical pixels; integer range 0–64. |
+| `starforge.user.desktop.monitors` | `{}` | Niri output map keyed by connector name; supports mode, scale, and position. |
 
 Built-in Noctalia palettes supported by the currently pinned Noctalia input:
 
@@ -70,6 +72,73 @@ To use automatic light/dark switching, change the corresponding defaults in
 Keep each option's declared type and description intact. The enum types reject
 unsupported theme modes and palette names; the gap type rejects values outside
 the 0–64 range.
+
+## Display and hardware customization
+
+The Home Manager option `starforge.user.desktop.monitors` is declared in
+`home/katossh/preferences.nix`. It is keyed by exact connector names reported
+by Niri. Its default is empty, so a different machine is not forced to use the
+workstation's `DP-1` output.
+
+The current workstation's physical display choice is kept in
+`hosts/workstation/displays.nix`:
+
+```nix
+home-manager.users.katossh.starforge.user.desktop.monitors = {
+  "DP-1" = {
+    mode = "3440x1440";
+  };
+};
+```
+
+Discover connector names and advertised modes in a running Wayland session:
+
+```sh
+niri msg outputs
+```
+
+For a multi-monitor layout, add one attribute per output. Replace
+`HDMI-A-1` below with an actual connector reported by Niri:
+
+```nix
+home-manager.users.katossh.starforge.user.desktop.monitors = {
+  "DP-1" = {
+    mode = "3440x1440";
+  };
+  "HDMI-A-1" = {
+    mode = "1920x1080@60.000";
+    scale = 1.0;
+    position = { x = 3440; y = 0; };
+  };
+};
+```
+
+- `mode` is optional; omitting it leaves mode selection to Niri.
+- `scale` is optional and must be greater than 0 and no greater than 4.
+- `position` is an optional logical `x`/`y` position. Omitting it lets
+  Niri position the output automatically.
+
+The Home Manager Niri module validates the generated KDL during the system
+build. This validates syntax, not whether a physical connector or mode exists
+on hardware that is not attached during the build.
+
+### Hardware ownership
+
+- `hosts/workstation/hardware.nix` contains this host's AMD CPU/GPU modules,
+  early AMDGPU setup, and exact hidraw permissions for the VXE receiver and
+  LEKU keyboard.
+- `modules/nixos/hardware.nix` contains common capabilities such as firmware,
+  graphics, Bluetooth, fwupd, SMART monitoring, and common diagnostic tools.
+- `modules/nixos/storage.nix` owns filesystem mount policy and the Btrfs scrub
+  timer.
+- `hosts/workstation/hardware-configuration.nix` remains generated storage,
+  boot, and detected-device configuration; do not hand-edit it for routine
+  personalization.
+
+When adapting Starforge to another computer, replace the host-specific
+hardware modules and device rules with ones appropriate to the actual CPU/GPU
+and peripherals. Regenerate hardware-configuration.nix for the target machine
+and review it rather than copying this workstation's disk and device details.
 
 ## Apply changes safely
 
