@@ -1,19 +1,8 @@
 _:
 
 {
-  # Keep the host firewall enabled and do not expose services by default.
-  # The default iptables backend is retained for libvirt compatibility.
-  networking.firewall = {
-    enable = true;
-    allowedTCPPorts = [ ];
-    allowedUDPPorts = [ ];
-  };
-
-  # Disable the inbound SSH daemon. The OpenSSH client remains usable for
-  # outbound connections; this host does not accept SSH sessions.
-  services.openssh.enable = false;
-
   security = {
+    polkit.enable = true;
     protectKernelImage = true;
 
     sudo = {
@@ -38,6 +27,8 @@ _:
     auditd.enable = true;
   };
 
+  # Kernel and network-stack hardening belongs to the security policy even
+  # though some of the affected sysctls are networking-related.
   boot.kernelParams = [
     "slab_nomerge"
     "page_alloc.shuffle=1"

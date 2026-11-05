@@ -1,20 +1,22 @@
 { pkgs, ... }:
 
 {
-  fonts.packages = [
-    pkgs.inter
-    pkgs.jetbrains-mono
-  ];
-
   programs = {
     niri.enable = true;
+
     firefox = {
       enable = true;
       # Firefox implements PRIMARY-selection paste itself on Linux.
       preferences."middlemouse.paste" = false;
     };
-    amnezia-vpn.enable = true;
   };
+
+  # Xwayland support is part of the compositor/desktop stack, not the
+  # portable terminal environment.
+  environment.systemPackages = [
+    pkgs.chromium
+    pkgs.xwayland-satellite
+  ];
 
   # Keep the system XKB map aligned with Niri's Wayland keyboard configuration.
   services = {
@@ -33,12 +35,6 @@
       };
     };
   };
-
-  environment.systemPackages = [
-    pkgs.chromium
-  ];
-
-  security.polkit.enable = true;
 
   xdg.portal = {
     enable = true;

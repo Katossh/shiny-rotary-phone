@@ -1,4 +1,4 @@
-_:
+{ pkgs, ... }:
 
 {
   # The four subvolumes share one encrypted Btrfs filesystem. Keep compression
@@ -7,6 +7,13 @@ _:
     enable = true;
     fileSystems = [ "/" ];
     interval = "monthly";
+  };
+
+  # SMART monitoring and NVMe administration concern storage devices rather
+  # than general hardware capability.
+  services.smartd = {
+    enable = true;
+    autodetect = true;
   };
 
   fileSystems = {
@@ -30,4 +37,9 @@ _:
       "noatime"
     ];
   };
+
+  environment.systemPackages = with pkgs; [
+    nvme-cli
+    smartmontools
+  ];
 }
