@@ -30,12 +30,23 @@ Review these outputs together:
   firmware interface. This is independent of whether Limine is the active loader.
 - `fwupdmgr security`: firmware security attributes, when supported. Run the
   fwupd client as the normal user; it uses its privileged daemon and PolicyKit.
+- `fwupdmgr get-devices` and `fwupdmgr get-bios-settings`: device inventory
+  and firmware attributes, when the motherboard exposes them.
+- `fwupdtool esp-list --verbose`: detailed ESP discovery diagnostics.
+- `findmnt` and `lsblk`: the actual `/boot` mount, filesystem, and GPT
+  partition type. For GPT, the EFI System Partition type GUID is
+  `c12a7328-f81f-11d2-ba4b-00a0c93ec93b`; a FAT filesystem alone does not prove
+  that the partition is typed as an ESP.
+- `systemctl status udisks2.service`: runtime block-device discovery state.
+  The NixOS fwupd module enables UDisks 2, but its runtime availability still
+  needs to be checked.
 - `fwupdmgr get-bios-settings`: optional read-only inspection of firmware
   settings, when the motherboard exposes them through the firmware-attributes
   interface. Do not use `set-bios-setting` during this audit.
 
 MSI AMD 600-series motherboards are listed in the sbctl FQ0001 advisory. The
-advisory describes firmware that may execute EFI images despite a Secure Boot
+Starforge host uses an MSI B650M board, so this advisory applies to the platform.
+The advisory describes firmware that may execute EFI images despite a Secure Boot
 policy violation. Its documented firmware-side mitigation is to use Custom
 Secure Boot mode and either set Option ROM, Removable Media, and Fixed Media
 execution policies to **Deny Execute**, or select the **Maximum Security**
@@ -107,8 +118,21 @@ unprivileged BPF restrictions, and filesystem protections in
 `nixos-hardware` Raphael/P-State modules.
 
 The audit reads the running kernel's vulnerability status, active cpufreq
-driver/EPP, kernel command line, relevant sysctls, AMD-Vi/IOMMU kernel logs,
-IOMMU groups, and PCI device bindings.
+driver/EPP, kernel command line, Lockdown state from
+`/sys/kernel/security/lockdown`, and the raw kernel taint value with its set
+flags decoded from `/proc/sys/kernel/tainted`. It also reads relevant sysctls,
+AMD-Vi/IOMMU kernel logs, IOMMU groups, and PCI device bindings.
+
+A nonzero kernel taint value is diagnostic metadata, not proof of compromise.
+Preserve the raw value and every decoded flag; identify the corresponding
+module, warning, firmware workaround, or event before deciding on remediation.
+
+The `lockdown=integrity` kernel parameter can disable kernel interfaces that
+would let userspace modify the running kernel. It is not enabled automatically
+by this audit change: inspect the active module set and test it in a separate
+NixOS generation with a known-good rollback path before making it permanent.
+The kernel documents `integrity` and the stricter `confidentiality` mode in its
+[command-line parameter reference](https://docs.kernel.org/admin-guide/kernel-parameters.html).
 
 Do not add `amd_iommu=on`, `amd_iommu=force_enable`, `iommu=pt`, or VFIO
 bindings speculatively. AMD IOMMU should be detected from firmware tables; PCI
@@ -127,8 +151,10 @@ The next changes should be based on these observations:
 - AppArmor: identify real complain-mode events before enforcing individual
   desktop profiles.
 - USBGuard: create and test explicit rules from the actual device inventory.
-- Kernel: distinguish already-active protections from missing ones and measure
-  any performance-sensitive additions.
+- Kernel: inspect decoded taint flags and Lockdown state; identify the cause of
+  every taint flag before remediation.
+- fwupd: verify ESP partition type, `/boot` mount options, and UDisks discovery
+  before changing partition metadata or fwupd settings.
 
 This audit is intentionally a collection step; it does not claim that any
 unverified security control is effective.
