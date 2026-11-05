@@ -1,7 +1,10 @@
-{ inputs, ... }:
+{ config, inputs, ... }:
 
 {
   networking.hostName = "workstation";
+
+  # The single interactive account shared by NixOS and Home Manager.
+  starforge.user.username = "katossh";
 
   imports = [
     ./hardware-configuration.nix
@@ -35,9 +38,10 @@
 
     extraSpecialArgs = {
       inherit inputs;
+      starforgeUsername = config.starforge.user.username;
     };
 
-    users.katossh = import ../../home/katossh;
+    users.${config.starforge.user.username} = import ../../home;
   };
 
   # Preserve compatibility defaults from the original installation.
