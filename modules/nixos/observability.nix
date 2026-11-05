@@ -8,9 +8,9 @@ let
       coreutils
       diffutils
       findutils
-      inetutils
       gawk
       git
+      inetutils
       lm_sensors
       nix
       nixfmt
