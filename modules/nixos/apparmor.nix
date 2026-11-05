@@ -1,8 +1,13 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
-  browserCredentialDenials = ''
-    # Browsers should not need direct access to local developer credentials.
+  credentialDenials = ''
+    # Desktop applications do not need direct access to local developer credentials.
     deny owner @{HOME}/.ssh/** rw,
     deny owner @{HOME}/.gnupg/** rw,
     deny owner @{HOME}/.aws/** rw,
@@ -12,6 +17,52 @@ let
     deny owner @{HOME}/.docker/config.json rw,
     deny owner @{HOME}/.config/sops/age/keys.txt rw,
     deny owner @{HOME}/.password-store/** rw,
+  '';
+
+  networkClientRules = ''
+    network inet stream,
+    network inet dgram,
+    network inet6 stream,
+    network inet6 dgram,
+  '';
+
+  desktopRuntimeRules = ''
+    # User-session IPC and Wayland/Xwayland display sockets.
+    owner /run/user/[0-9]*/bus rw,
+    owner /run/user/[0-9]*/wayland-* rw,
+    owner /run/user/[0-9]*/at-spi/bus_0 rw,
+    owner /run/user/[0-9]*/doc/** rwk,
+    owner /run/user/[0-9]*/pipewire-0 rw,
+    owner /run/user/[0-9]*/pulse/native rw,
+    owner @{HOME}/.Xauthority r,
+    owner /tmp/.X11-unix/X* rw,
+
+    # GPU, shared memory and audio device access remains subject to Unix DAC.
+    /dev/dri/renderD* rw,
+    /dev/shm/** rwk,
+    /dev/snd/** rw,
+  '';
+
+  # Initial GUI profiles deliberately use complain mode. These allow rules
+  # document the intended runtime surface while audit logs reveal additional
+  # paths required by this specific NixOS desktop.
+  guiClientProfile = executable: appDataRules: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+      include <abstractions/nameservice>
+      include <abstractions/ssl_certs>
+      include <abstractions/user-tmp>
+
+      /nix/store/** mr,
+
+      ${appDataRules}
+      ${desktopRuntimeRules}
+      ${networkClientRules}
+      ${credentialDenials}
+    }
   '';
 
   browserProfile = executable: configPath: cachePath: ''
@@ -24,21 +75,69 @@ let
       include <abstractions/ssl_certs>
       include <abstractions/user-tmp>
 
-      # Runtime files and shared libraries are immutable Nix store content.
       /nix/store/** mr,
 
-      # Keep browser state and explicit downloads writable.
       owner @{HOME}/${configPath}/** rwk,
       owner @{HOME}/${cachePath}/** rwk,
       owner @{HOME}/Downloads/** rwk,
 
-      # Browsers need ordinary client networking.
-      network inet stream,
-      network inet dgram,
-      network inet6 stream,
-      network inet6 dgram,
+      ${networkClientRules}
+      ${credentialDenials}
+    }
+  '';
 
-      ${browserCredentialDenials}
+  mediaPlayerProfile = executable: mediaRules: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+      include <abstractions/nameservice>
+      include <abstractions/ssl_certs>
+      include <abstractions/user-tmp>
+
+      /nix/store/** mr,
+
+      ${mediaRules}
+      ${desktopRuntimeRules}
+      ${networkClientRules}
+      ${credentialDenials}
+    }
+  '';
+
+  downloaderProfile = executable: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+      include <abstractions/nameservice>
+      include <abstractions/ssl_certs>
+      include <abstractions/user-tmp>
+
+      /nix/store/** mr,
+
+      # yt-dlp writes only to the normal media/download locations by default.
+      owner @{HOME}/Downloads/** rwk,
+      owner @{HOME}/Videos/** rwk,
+      owner @{HOME}/Music/** rwk,
+      owner @{HOME}/.config/yt-dlp/** r,
+      owner @{HOME}/.cache/yt-dlp/** rwk,
+      owner @{HOME}/.local/share/yt-dlp/** rwk,
+
+      # Permit the Nixpkgs-provided media post-processor and JS runtime.
+      ${lib.getExe pkgs.ffmpeg-headless} ix,
+      ${lib.getExe pkgs.deno} ix,
+
+      # Do not let a downloader silently harvest browser session cookies.
+      deny owner @{HOME}/.mozilla/**/cookies.sqlite r,
+      deny owner @{HOME}/.config/chromium/**/Cookies r,
+      deny owner @{HOME}/.config/google-chrome/**/Cookies r,
+      deny owner @{HOME}/.config/BraveSoftware/**/Cookies r,
+      deny owner @{HOME}/.config/microsoft-edge/**/Cookies r,
+
+      ${networkClientRules}
+      ${credentialDenials}
     }
   '';
 
@@ -52,15 +151,12 @@ let
       include <abstractions/ssl_certs>
       include <abstractions/user-tmp>
 
-      # Runtime files and shared libraries are immutable Nix store content.
       /nix/store/** mr,
 
-      # Editors and extensions need outbound networking and may launch tools.
-      # These profiles stay in complain mode while their process trees are audited.
-      network inet stream,
-      network inet dgram,
-      network inet6 stream,
-      network inet6 dgram,
+      # Editors and extensions run user code, language servers and terminals.
+      # Keep these profiles in complain mode until their child-process trees
+      # have been reviewed on the actual workstation.
+      ${networkClientRules}
     }
   '';
 in
@@ -73,7 +169,6 @@ in
 
     policies = {
       curl = {
-        # Keep the existing, deliberately enforced curl profile.
         state = "enforce";
         profile = ''
           abi <abi/4.0>,
@@ -86,34 +181,23 @@ in
             include <abstractions/ssl_certs>
             include <abstractions/user-tmp>
 
-            # curl needs its executable and shared libraries from the immutable
-            # Nix store, but must not modify the store.
             /nix/store/** mr,
 
-            # Support ordinary uploads, downloads, and config files in the
-            # invoking user's home directory.
+            # curl supports ordinary file uploads and downloads, but must not
+            # access local credentials even when given an attacker-controlled URL.
             owner @{HOME}/ rw,
             owner @{HOME}/** rwk,
-
-            # Do not let a compromised curl process read or overwrite private
-            # SSH/GPG key material or common cloud/CLI credential stores.
             deny owner @{HOME}/.ssh/** rw,
             deny owner @{HOME}/.gnupg/** rw,
             deny owner @{HOME}/.aws/** rw,
             deny owner @{HOME}/.config/gh/** rw,
             deny owner @{HOME}/.config/gcloud/** rw,
 
-            # HTTP(S), DNS, and other ordinary TCP/UDP client traffic.
-            network inet stream,
-            network inet dgram,
-            network inet6 stream,
-            network inet6 dgram,
+            ${networkClientRules}
           }
         '';
       };
 
-      # Complain mode is intentionally a staging phase: unlisted operations are
-      # logged but allowed. Explicit deny rules below remain enforced.
       firefox = {
         state = "complain";
         profile =
@@ -128,9 +212,68 @@ in
             ".cache/chromium";
       };
 
-      # IDEs run user code, build scripts, language servers, terminals and plugins.
-      # Keep them in complain mode without hard-coded credential denies until
-      # their actual workflows and child-process trees have been reviewed.
+      localsend = {
+        state = "complain";
+        profile = guiClientProfile (lib.getExe pkgs.localsend) ''
+          owner @{HOME}/.config/localsend/** rwk,
+          owner @{HOME}/.config/org.localsend.localsend_app/** rwk,
+          owner @{HOME}/.local/share/localsend/** rwk,
+          owner @{HOME}/.local/share/org.localsend.localsend_app/** rwk,
+          owner @{HOME}/.cache/localsend/** rwk,
+
+          # File sharing needs downloads and portal-granted document access.
+          owner @{HOME}/Downloads/** rwk,
+          owner @{HOME}/Documents/** r,
+          owner @{HOME}/Pictures/** r,
+          owner @{HOME}/Videos/** r,
+          owner @{HOME}/Music/** r,
+        '';
+      };
+
+      telegram = {
+        state = "complain";
+        profile = guiClientProfile (lib.getExe pkgs.telegram-desktop) ''
+          owner @{HOME}/.local/share/TelegramDesktop/** rwk,
+          owner @{HOME}/.config/TelegramDesktop/** rwk,
+          owner @{HOME}/.cache/TelegramDesktop/** rwk,
+          owner @{HOME}/Downloads/** rwk,
+        '';
+      };
+
+      discord = {
+        state = "complain";
+        profile = guiClientProfile (lib.getExe pkgs.discord) ''
+          owner @{HOME}/.config/discord/** rwk,
+          owner @{HOME}/.cache/discord/** rwk,
+          owner @{HOME}/.local/share/discord/** rwk,
+          owner @{HOME}/Downloads/** rwk,
+        '';
+      };
+
+      mpv = {
+        state = "complain";
+        profile = mediaPlayerProfile (lib.getExe pkgs.mpv) ''
+          owner @{HOME}/.config/mpv/** rwk,
+          owner @{HOME}/.cache/mpv/** rwk,
+          owner @{HOME}/.local/share/mpv/** rwk,
+
+          # Read media from the usual user directories; keep writes out of them.
+          owner @{HOME}/Documents/** r,
+          owner @{HOME}/Downloads/** r,
+          owner @{HOME}/Music/** r,
+          owner @{HOME}/Pictures/** r,
+          owner @{HOME}/Videos/** r,
+
+          /dev/dri/renderD* rw,
+          /dev/snd/** rw,
+        '';
+      };
+
+      yt-dlp = {
+        state = "complain";
+        profile = downloaderProfile (lib.getExe pkgs.yt-dlp);
+      };
+
       vscode = {
         state = "complain";
         profile = editorProfile "${pkgs.vscode}/lib/vscode/code";
