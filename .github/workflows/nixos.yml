@@ -154,7 +154,7 @@ jobs:
         run: |
           echo "::notice::Cachix is not configured. Create a public cache and set the CACHIX_CACHE_NAME repository variable to enable it."
 
-      - name: Build the Starforge system closure
+      - name: Build the workstation system closure
         run: |
           nix build \
             --no-update-lock-file \
