@@ -11,24 +11,32 @@
     ./hardware.nix
     ./displays.nix
 
-    ../../modules/nixos/apparmor.nix
-    ../../modules/nixos/audio.nix
+    ../../modules/nixos/nixpkgs.nix
+    ../../modules/nixos/nix.nix
     ../../modules/nixos/boot.nix
-    ../../modules/nixos/containers.nix
+    ../../modules/nixos/locale.nix
+
+    ../../modules/nixos/networking.nix
+    ../../modules/nixos/security.nix
+    ../../modules/nixos/apparmor.nix
+    ../../modules/nixos/usbguard.nix
+    ../../modules/nixos/users.nix
+
+    ../../modules/nixos/hardware.nix
+    ../../modules/nixos/storage.nix
+    ../../modules/nixos/snapshots.nix
+    ../../modules/nixos/memory.nix
+    ../../modules/nixos/power.nix
+
+    ../../modules/nixos/audio.nix
+    ../../modules/nixos/fonts.nix
     ../../modules/nixos/desktop.nix
     ../../modules/nixos/development.nix
-    ../../modules/nixos/hardware.nix
-    ../../modules/nixos/memory.nix
-    ../../modules/nixos/networking.nix
-    ../../modules/nixos/nix.nix
-    ../../modules/nixos/observability.nix
-    ../../modules/nixos/security.nix
-    ../../modules/nixos/usbguard.nix
-    ../../modules/nixos/snapshots.nix
-    ../../modules/nixos/storage.nix
+    ../../modules/nixos/media.nix
     ../../modules/nixos/terminal.nix
-    ../../modules/nixos/users.nix
+    ../../modules/nixos/containers.nix
     ../../modules/nixos/virtualisation.nix
+    ../../modules/nixos/observability.nix
   ];
 
   home-manager = {

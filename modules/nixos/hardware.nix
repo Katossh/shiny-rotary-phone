@@ -15,28 +15,13 @@
     };
   };
 
-  services = {
-    # Firmware updates are offered only for devices supported by LVFS/fwupd.
-    fwupd.enable = true;
+  # Firmware updates are offered only for devices supported by LVFS/fwupd.
+  services.fwupd.enable = true;
 
-    # Monitor available SMART-capable storage devices. Alerts go to the journal
-    # and wall by the NixOS smartd defaults.
-    smartd = {
-      enable = true;
-      autodetect = true;
-    };
-
-    # Used by Noctalia's network, Bluetooth, battery, and power UI.
-    upower.enable = true;
-    power-profiles-daemon.enable = true;
-  };
-
-  # Hardware diagnostics for the CPU, NVMe storage, buses, and graphics stack.
+  # Hardware diagnostics for the CPU, buses, and graphics stack.
   environment.systemPackages = with pkgs; [
     lm_sensors
-    nvme-cli
     pciutils
-    smartmontools
     usbutils
     vulkan-tools
   ];
