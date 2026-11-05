@@ -112,7 +112,7 @@ security_audit() {
   run_diagnostic user sbctl status
   run_diagnostic root sbctl verify
   run_diagnostic user bootctl status --no-pager
-  run_diagnostic root fwupdmgr security
+  run_diagnostic user fwupdmgr security
 
   printf '\n== 2. AppArmor ==\n'
   run_diagnostic user systemctl is-active apparmor.service
