@@ -1,4 +1,4 @@
-{ inputs, ... }:
+{ config, inputs, ... }:
 
 {
   imports = [ inputs.noctalia.homeModules.default ];
@@ -39,15 +39,15 @@
       };
       shell = {
         clipboard_enabled = true;
-        font_family = "Inter";
+        font_family = config.starforge.user.appearance.fontFamily;
         settings_show_advanced = true;
         launch_apps_as_systemd_services = true;
       };
 
       theme = {
-        mode = "dark";
+        mode = config.starforge.user.appearance.themeMode;
         source = "builtin";
-        builtin = "Catppuccin";
+        builtin = config.starforge.user.appearance.palette;
       };
     };
   };

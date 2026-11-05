@@ -1,4 +1,4 @@
-_:
+{ config, ... }:
 
 {
   wayland.windowManager.niri = {
@@ -15,8 +15,8 @@ _:
 
       input = {
         keyboard = {
-          xkb.layout = "us,ru";
-          xkb.options = "grp:alt_shift_toggle";
+          xkb.layout = config.starforge.user.desktop.niri.keyboardLayout;
+          xkb.options = config.starforge.user.desktop.niri.keyboardLayoutOptions;
           "track-layout" = "global";
         };
         mouse."accel-profile" = "flat";
@@ -26,7 +26,7 @@ _:
       };
 
       layout = {
-        gaps = 12;
+        gaps = config.starforge.user.desktop.niri.gaps;
         "center-focused-column" = "on-overflow";
         "default-column-width" = {
           proportion = 0.5;

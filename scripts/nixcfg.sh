@@ -3,9 +3,16 @@
 usage() {
   cat <<'EOF'
 Usage:
-  nixcfg status          Show a concise workstation health snapshot.
+  nixcfg status          Show a concise workstation hardware/status snapshot.
+  nixcfg doctor          Run read-only system and desktop health checks.
+  nixcfg recovery        List system generations and show recovery guidance.
   nixcfg audit           Collect read-only P0 security diagnostics.
   nixcfg check           Run local formatting, lint, evaluation, and build checks.
+
+Doctor exit codes:
+  0  No required checks reported an error (warnings may still be present).
+  1  One or more required checks reported an error.
+  2  At least one check was unknown or could not be completed, with no errors.
 EOF
 }
 
@@ -290,6 +297,317 @@ security_audit() {
   printf 'Review the output before changing Secure Boot, AppArmor, USBGuard, or kernel settings.\n\n'
 }
 
+
+DOCTOR_ERROR_COUNT=0
+DOCTOR_WARNING_COUNT=0
+DOCTOR_UNKNOWN_COUNT=0
+DOCTOR_SKIPPED_COUNT=0
+
+doctor_report() {
+  local severity="$1"
+  local label="$2"
+  local observed="$3"
+  local next_step="${4:-}"
+
+  printf '[%s] %s: %s\n' "$severity" "$label" "$observed"
+  if [[ -n "$next_step" ]]; then
+    printf '       Next: %s\n' "$next_step"
+  fi
+
+  case "$severity" in
+    ERROR) DOCTOR_ERROR_COUNT=$((DOCTOR_ERROR_COUNT + 1)) ;;
+    WARN) DOCTOR_WARNING_COUNT=$((DOCTOR_WARNING_COUNT + 1)) ;;
+    UNKNOWN) DOCTOR_UNKNOWN_COUNT=$((DOCTOR_UNKNOWN_COUNT + 1)) ;;
+    SKIP) DOCTOR_SKIPPED_COUNT=$((DOCTOR_SKIPPED_COUNT + 1)) ;;
+  esac
+}
+
+doctor_check_system_unit() {
+  local unit="$1"
+  local label="$2"
+  local load_state state
+
+  load_state="$(systemctl show --property=LoadState --value "$unit" 2>/dev/null || true)"
+  state="$(systemctl is-active "$unit" 2>/dev/null || true)"
+
+  case "$load_state" in
+    not-found)
+      doctor_report ERROR "$label" "unit $unit was not found although the workstation profile expects it" \
+        "Check the active system generation and the module that declares $unit."
+      return
+      ;;
+    masked)
+      doctor_report ERROR "$label" "unit $unit is masked" \
+        "Inspect with: systemctl status $unit --no-pager"
+      return
+      ;;
+    loaded) ;;
+    *)
+      doctor_report UNKNOWN "$label" "systemd could not determine the load state of $unit" \
+        "Inspect with: systemctl status $unit --no-pager"
+      return
+      ;;
+  esac
+
+  case "$state" in
+    active)
+      doctor_report OK "$label" "$unit is active"
+      ;;
+    inactive|failed|dead)
+      doctor_report ERROR "$label" "$unit is $state" \
+        "Inspect with: systemctl status $unit --no-pager; journalctl -u $unit -b --no-pager -n 80"
+      ;;
+    activating|deactivating|reloading)
+      doctor_report WARN "$label" "$unit is $state" \
+        "Re-check with: systemctl status $unit --no-pager"
+      ;;
+    *)
+      doctor_report UNKNOWN "$label" "systemd returned state '${state:-no response}' for $unit" \
+        "Inspect with: systemctl status $unit --no-pager"
+      ;;
+  esac
+}
+
+doctor_check_user_unit() {
+  local unit="$1"
+  local label="$2"
+  local load_state state
+
+  load_state="$(systemctl --user show --property=LoadState --value "$unit" 2>/dev/null || true)"
+  state="$(systemctl --user is-active "$unit" 2>/dev/null || true)"
+
+  case "$load_state" in
+    not-found)
+      doctor_report ERROR "$label" "user unit $unit was not found in the active session" \
+        "Check the active Home Manager generation and the module that declares $unit."
+      return
+      ;;
+    masked)
+      doctor_report ERROR "$label" "user unit $unit is masked" \
+        "Inspect with: systemctl --user status $unit --no-pager"
+      return
+      ;;
+    loaded) ;;
+    *)
+      doctor_report UNKNOWN "$label" "the user systemd manager could not determine the load state of $unit" \
+        "Inspect with: systemctl --user status $unit --no-pager"
+      return
+      ;;
+  esac
+
+  case "$state" in
+    active)
+      doctor_report OK "$label" "$unit is active"
+      ;;
+    inactive|failed|dead)
+      doctor_report ERROR "$label" "$unit is $state" \
+        "Inspect with: systemctl --user status $unit --no-pager; journalctl --user -u $unit -b --no-pager -n 80"
+      ;;
+    activating|deactivating|reloading)
+      doctor_report WARN "$label" "$unit is $state" \
+        "Re-check with: systemctl --user status $unit --no-pager"
+      ;;
+    *)
+      doctor_report UNKNOWN "$label" "systemd returned state '${state:-no response}' for $unit" \
+        "Inspect with: systemctl --user status $unit --no-pager"
+      ;;
+  esac
+}
+
+run_doctor() {
+  local system_state failed_units failed_names failed_count root_usage system_profile
+
+  DOCTOR_ERROR_COUNT=0
+  DOCTOR_WARNING_COUNT=0
+  DOCTOR_UNKNOWN_COUNT=0
+  DOCTOR_SKIPPED_COUNT=0
+
+  printf '\nStarforge system diagnostics (read-only)\n'
+  printf '%s\n' '========================================='
+  printf 'Host: %s\n' "$(hostname)"
+  printf 'Date: %s\n' "$(date --iso-8601=seconds)"
+  printf 'No services are restarted and no configuration is changed.\n\n'
+
+  if [[ -e /etc/NIXOS ]]; then
+    doctor_report OK "NixOS installation" "/etc/NIXOS is present"
+  else
+    doctor_report ERROR "NixOS installation" "/etc/NIXOS is missing" \
+      "Confirm that this command is running on the intended NixOS installation."
+  fi
+
+  system_state="$(systemctl is-system-running 2>/dev/null || true)"
+  case "$system_state" in
+    running)
+      doctor_report OK "Systemd manager" "system state is running"
+      ;;
+    degraded)
+      doctor_report WARN "Systemd manager" "system state is degraded" \
+        "Review failed units below, then inspect each relevant unit with systemctl status."
+      ;;
+    starting|stopping)
+      doctor_report WARN "Systemd manager" "system state is $system_state" \
+        "Wait until boot or shutdown completes, then run nixcfg doctor again."
+      ;;
+    *)
+      doctor_report UNKNOWN "Systemd manager" "systemd returned state '${system_state:-no response}'" \
+        "Check whether PID 1 is systemd and whether systemctl can reach the system manager."
+      ;;
+  esac
+
+  if failed_units="$(systemctl --failed --no-legend --plain --no-pager 2>/dev/null)"; then
+    if [[ -n "$failed_units" ]]; then
+      failed_count="$(awk 'NF { count++ } END { print count + 0 }' <<< "$failed_units")"
+      failed_names="$(awk 'NF { printf "%s%s", separator, $1; separator = ", " } END { print "" }' <<< "$failed_units")"
+      doctor_report WARN "Failed systemd units" "$failed_count failed unit(s): $failed_names" \
+        "Inspect with: systemctl --failed --no-pager; then use journalctl -u UNIT -b --no-pager -n 80."
+    else
+      doctor_report OK "Failed systemd units" "none"
+    fi
+  else
+    doctor_report UNKNOWN "Failed systemd units" "systemd did not return the failed-unit list" \
+      "Inspect with: systemctl --failed --no-pager"
+  fi
+
+  printf '\nRequired system services\n'
+  doctor_check_system_unit "NetworkManager.service" "NetworkManager"
+  doctor_check_system_unit "apparmor.service" "AppArmor"
+  doctor_check_system_unit "usbguard.service" "USBGuard"
+  doctor_check_system_unit "libvirtd.socket" "Libvirt management socket"
+  doctor_check_system_unit "prepare-btrfs-snapshots.service" "Btrfs snapshot preparation"
+  doctor_check_system_unit "snapper-timeline.timer" "Snapper timeline timer"
+  doctor_check_system_unit "snapper-cleanup.timer" "Snapper cleanup timer"
+
+  printf '\nDesktop session\n'
+  if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
+    doctor_report SKIP "Wayland session" "no active Wayland session was detected; user desktop units were not checked"
+  elif [[ -z "${XDG_RUNTIME_DIR:-}" || ! -S "${XDG_RUNTIME_DIR:-/nonexistent}/bus" ]]; then
+    doctor_report UNKNOWN "Wayland user manager" "the Wayland session is present but its user systemd bus is unavailable" \
+      "Check XDG_RUNTIME_DIR and the user systemd manager before inspecting desktop services."
+  elif ! systemctl --user show-environment >/dev/null 2>&1; then
+    doctor_report UNKNOWN "Wayland user manager" "systemctl could not contact the user manager" \
+      "Inspect with: systemctl --user status"
+  else
+    doctor_report OK "Wayland user manager" "the user systemd manager is reachable"
+    doctor_check_user_unit "noctalia.service" "Noctalia shell"
+    doctor_check_user_unit "pipewire.service" "PipeWire"
+    doctor_check_user_unit "pipewire-pulse.service" "PipeWire PulseAudio compatibility"
+    doctor_check_user_unit "wireplumber.service" "WirePlumber"
+  fi
+
+  printf '\nStorage\n'
+  root_usage="$(df -P --output=pcent / 2>/dev/null | awk 'NR == 2 { gsub(/%/, "", $1); print $1 }')"
+  if [[ "$root_usage" =~ ^[0-9]+$ ]]; then
+    if (( 10#$root_usage >= 95 )); then
+      doctor_report ERROR "Root filesystem capacity" "$root_usage% used" \
+        "Inspect with: df -h /; do not delete Nix generations or snapshots until you know what recovery points you need."
+    elif (( 10#$root_usage >= 85 )); then
+      doctor_report WARN "Root filesystem capacity" "$root_usage% used" \
+        "Review disk usage with: df -h / and sudo nix-collect-garbage --dry-run."
+    else
+      doctor_report OK "Root filesystem capacity" "$root_usage% used"
+    fi
+  else
+    doctor_report UNKNOWN "Root filesystem capacity" "df could not report root filesystem usage" \
+      "Inspect with: df -h /"
+  fi
+
+  system_profile="/nix/var/nix/profiles/system"
+  if [[ -e "$system_profile" ]]; then
+    doctor_report OK "Current system generation" "$(readlink "$system_profile" 2>/dev/null || printf 'profile target is readable')"
+  else
+    doctor_report ERROR "Current system generation" "the system profile $system_profile is missing" \
+      "Do not rebuild or edit boot entries blindly; inspect the NixOS profile and boot recovery path first."
+  fi
+
+  printf '\nSummary: %s error(s), %s warning(s), %s unknown, %s skipped.\n\n' \
+    "$DOCTOR_ERROR_COUNT" "$DOCTOR_WARNING_COUNT" "$DOCTOR_UNKNOWN_COUNT" "$DOCTOR_SKIPPED_COUNT"
+
+  if (( DOCTOR_ERROR_COUNT > 0 )); then
+    return 1
+  fi
+  if (( DOCTOR_UNKNOWN_COUNT > 0 )); then
+    return 2
+  fi
+  return 0
+}
+
+show_recovery() {
+  local system_profile="/nix/var/nix/profiles/system"
+  local current_generation
+
+  printf '\nStarforge recovery guide (read-only)\n'
+  printf '%s\n' '======================================'
+  printf 'This command only inspects generation metadata and prints instructions.\n'
+  printf 'It does not rebuild, switch, roll back, change boot entries, or restore files.\n\n'
+
+  if [[ -e "$system_profile" ]]; then
+    current_generation="$(readlink "$system_profile" 2>/dev/null || true)"
+    printf 'Current system profile: %s\n' "${current_generation:-unavailable}"
+  else
+    printf 'Current system profile: unavailable (%s is missing)\n' "$system_profile"
+  fi
+
+  printf '\nAvailable system generations\n'
+  if command -v nix-env >/dev/null 2>&1 && [[ -e "$system_profile" ]]; then
+    if ! nix-env --list-generations --profile "$system_profile"; then
+      printf 'Could not list system generations.\n'
+    fi
+  else
+    printf 'nix-env or the system profile is unavailable; generation listing skipped.\n'
+  fi
+
+  cat <<'EOF'
+
+Recovery paths
+
+1. The system boots, but the latest generation is broken:
+   From a TTY or terminal in the running NixOS system, run:
+     sudo nixos-rebuild switch --rollback
+   Then verify the result with:
+     nixcfg doctor
+
+2. The current generation does not reach a usable login:
+   At the Limine boot menu, select an earlier NixOS generation.
+   Do not select the separate Windows Boot Manager entry unless you intend
+   to boot Windows. The configured Limine menu retains up to five generations.
+
+3. A build or evaluation failed before activation:
+   A failed build does not require a rollback because it has not activated a
+   new generation. Read the complete error, inspect the configuration diff,
+   and correct the source before retrying. Do not delete generations or run
+   garbage collection as a first troubleshooting step.
+
+4. Individual files need to be recovered:
+   Inspect the root and home snapshots with:
+     sudo snapper -c root list
+     sudo snapper -c home list
+   Root snapshots are under /.snapshots/<number>/snapshot/ and home snapshots
+   are under /home/.snapshots/<number>/snapshot/. Restore individual files only
+   after checking the source and destination. These snapshots share the same
+   physical disk and are not an independent backup. The /nix and /var/log
+   subvolumes are not included in the root snapshot.
+
+5. The machine cannot boot any installed generation:
+   Boot a NixOS installer ISO in UEFI mode and use the existing LUKS passphrase.
+   The repository's INSTALL.md describes the existing disk layout and mount
+   points for installation; its --install mode is a reinstall path, not a
+   tested chroot-repair procedure. Do not format partitions, regenerate the
+   hardware configuration, enroll new Secure Boot keys, or run install.sh
+   --install unless a reinstall is explicitly intended.
+
+Limitations
+
+- A NixOS generation rollback restores the system closure, not arbitrary user
+  data or external changes.
+- Btrfs snapshots are not backups and do not cover /nix or /var/log here.
+- Secure Boot and the Limine EFI path are host-specific. Preserve known-good
+  boot entries and key material; use nixcfg audit for the deeper read-only
+  Secure Boot, AppArmor, USBGuard, and kernel checks.
+EOF
+
+  printf '\n'
+}
+
 check_formatting() {
   local nix_file
   local failed=0
@@ -359,6 +677,12 @@ run_checks() {
 case "${1:-status}" in
   status)
     show_status
+    ;;
+  doctor)
+    run_doctor
+    ;;
+  recovery)
+    show_recovery
     ;;
   audit)
     security_audit
