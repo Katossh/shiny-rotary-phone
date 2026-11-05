@@ -1,4 +1,4 @@
-{ ... }:
+_:
 
 {
   # Podman is the primary OCI runtime. The Docker alias is CLI compatibility
