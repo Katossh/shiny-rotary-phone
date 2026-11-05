@@ -4,19 +4,44 @@ Starforge currently ships one supported machine profile: `workstation`.
 It is intentionally not a generic multi-host installer or a collection of
 selectable profiles.
 
+## Workstation account identity
+
+The workstation login name is configured once in
+`hosts/workstation/default.nix`:
+
+```nix
+starforge.user.username = "katossh";
+```
+
+The option accepts a 1–32 character login name beginning with a lowercase
+letter or underscore and containing only lowercase letters, digits,
+underscores, and hyphens. The name `root` is reserved and rejected.
+
+This value controls the NixOS normal-user account, the Home Manager user entry,
+the `/home/<username>` directory, and the libvirt socket/Polkit authorization.
+The Home Manager modules themselves live in the neutral `home/` directory.
+For a fresh installation, `install.sh --install` evaluates this option and
+prompts you to set the password for that account.
+
+**Changing the name on an already installed system is not an account migration.**
+NixOS does not automatically rename the existing account, move its home
+directory, transfer its password, or change ownership of existing files.
+Keep the current value (`katossh`) on the existing workstation unless you
+have separately planned and verified a user-account migration. Set a different
+name before a fresh installation instead.
+
 The repository separates configuration by ownership:
 
 - **Core system behavior:** reusable system-wide modules in `modules/nixos/`.
-- **Host-specific behavior:** hardware, disk, boot, and physical display
-  topology in `hosts/workstation/`.
+- **Host-specific behavior:** hardware, disk, boot, and machine facts in
+  `hosts/workstation/`.
 - **Personal preferences:** user-session settings in
-  `home/katossh/preferences.nix`; monitor option types are declared there,
-  while each host supplies its physical output map separately.
+  `home/preferences.nix`.
 - **Terminal environment:** terminal packages, manifests, and dotfiles remain
   owned by the separate `terminal-dotfiles` repository.
 
 Most users should change personal preferences in the single
-`home/katossh/preferences.nix` file rather than editing the implementation
+`home/preferences.nix` file rather than editing the implementation
 modules that consume them.
 
 ## Supported preferences
@@ -56,7 +81,7 @@ own `sync_color_scheme` setting.
 ## Example
 
 To use automatic light/dark switching, change the corresponding defaults in
-`home/katossh/preferences.nix`:
+`home/preferences.nix`:
 
 ```diff
 -        default = "dark";
@@ -76,19 +101,23 @@ the 0–64 range.
 ## Display and hardware customization
 
 The Home Manager option `starforge.user.desktop.monitors` is declared in
-`home/katossh/preferences.nix`. It is keyed by exact connector names reported
-by Niri. Its default is empty, so a different machine is not forced to use the
-workstation's `DP-1` output.
+`home/preferences.nix`. It is keyed by exact connector names reported by
+Niri. Its default is empty, so a host without an explicit display map uses
+Niri's preferred-mode behavior.
 
 The current workstation's physical display choice is kept in
 `hosts/workstation/displays.nix`:
 
 ```nix
-home-manager.users.katossh.starforge.user.desktop.monitors = {
-  "DP-1" = {
-    mode = "3440x1440";
+{ config, ... }:
+
+{
+  home-manager.users.${config.starforge.user.username}.starforge.user.desktop.monitors = {
+    "DP-1" = {
+      mode = "3440x1440";
+    };
   };
-};
+}
 ```
 
 Discover connector names and advertised modes in a running Wayland session:
@@ -101,7 +130,7 @@ For a multi-monitor layout, add one attribute per output. Replace
 `HDMI-A-1` below with an actual connector reported by Niri:
 
 ```nix
-home-manager.users.katossh.starforge.user.desktop.monitors = {
+{
   "DP-1" = {
     mode = "3440x1440";
   };
@@ -110,7 +139,7 @@ home-manager.users.katossh.starforge.user.desktop.monitors = {
     scale = 1.0;
     position = { x = 3440; y = 0; };
   };
-};
+}
 ```
 
 - `mode` is optional; omitting it leaves mode selection to Niri.
@@ -137,8 +166,9 @@ on hardware that is not attached during the build.
 
 When adapting Starforge to another computer, replace the host-specific
 hardware modules and device rules with ones appropriate to the actual CPU/GPU
-and peripherals. Regenerate hardware-configuration.nix for the target machine
-and review it rather than copying this workstation's disk and device details.
+and peripherals. Regenerate `hardware-configuration.nix` for the target
+machine and review it rather than copying this workstation's disk and device
+details.
 
 ## Apply changes safely
 
