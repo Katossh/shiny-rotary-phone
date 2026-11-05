@@ -66,12 +66,12 @@ in
               };
 
               scale = mkOption {
-                type = types.nullOr (types.addCheck types.number (value: value > 0 && value <= 4));
+                type = types.nullOr (types.addCheck types.number (value: value > 0 && value <= 10));
                 default = null;
                 example = 1.25;
                 description = ''
                   Optional logical scale factor greater than 0 and no greater
-                  than 4.
+                  than 10.
                 '';
               };
 
