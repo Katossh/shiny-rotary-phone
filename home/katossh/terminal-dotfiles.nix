@@ -1,4 +1,10 @@
-{ config, inputs, lib, pkgs, ... }:
+{
+  config,
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   # terminal-dotfiles owns its complete configuration lifecycle. Home Manager
@@ -16,15 +22,20 @@
         export HOME="${config.home.homeDirectory}"
         export XDG_CONFIG_HOME="${config.home.homeDirectory}/.config"
         export XDG_DATA_HOME="${config.home.homeDirectory}/.local/share"
-        export PATH="${lib.makeBinPath (with pkgs; [
-          coreutils
-          findutils
-          gawk
-          git
-          gnugrep
-          gnused
-          tmux
-        ])}:$PATH"
+        export PATH="${
+          lib.makeBinPath (
+            with pkgs;
+            [
+              coreutils
+              findutils
+              gawk
+              git
+              gnugrep
+              gnused
+              tmux
+            ]
+          )
+        }:$PATH"
 
         # Do not inherit an offline/config-only setting from the caller. The
         # installer must restore Oh My Zsh and its plugins during activation.
