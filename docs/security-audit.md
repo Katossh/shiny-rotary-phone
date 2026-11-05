@@ -1,0 +1,126 @@
+# P0 security audit
+
+Starforge provides a read-only diagnostic command:
+
+```sh
+starforge security-audit
+```
+
+It checks Secure Boot state and EFI signatures, AppArmor status and audit events,
+USBGuard device inventory and rules, CPU vulnerability mitigations, AMD P-State,
+selected sysctl values, AMD IOMMU initialization, and PCI device bindings.
+
+The command does not modify firmware variables, Secure Boot keys, USBGuard rules,
+AppArmor profiles, kernel parameters, or system configuration. It requests sudo
+once for root-only checks. Without elevated privileges, those checks are marked
+as skipped rather than silently omitted.
+
+## 1. Secure Boot and MSI FQ0001
+
+Review these outputs together:
+
+- `sbctl status`: enrolled/setup state and firmware quirk detection.
+- `sbctl verify`: EFI files on the ESP and files registered in the sbctl
+  signing database. An unsigned or untracked file must be identified before
+  deciding whether it belongs in the boot chain.
+- `bootctl status`: UEFI and Secure Boot state reported by systemd-boot's
+  firmware interface. This is independent of whether Limine is the active loader.
+- `fwupdmgr security`: firmware security attributes, when supported.
+
+MSI AMD 600-series motherboards are listed in the sbctl FQ0001 advisory. The
+advisory describes firmware that may execute EFI images despite a Secure Boot
+policy violation. Its documented firmware-side mitigation is to use Custom
+Secure Boot mode and either set Option ROM, Removable Media, and Fixed Media
+execution policies to **Deny Execute**, or select the **Maximum Security**
+preset when the firmware exposes that control.
+
+Starforge currently documents Maximum Security as selected, but the FQ0001
+warning must remain an explicit review item until the exact firmware settings
+and current sbctl detection output are checked on the host. A green Secure Boot
+status alone is not evidence that the firmware rejects every untrusted EFI
+image.
+
+Do not run key enrollment, key reset, key rotation, or `sbctl sign-all` as part
+of an audit. Do not delete or replace `dbx`. Preserve the existing Microsoft
+certificates and Windows Boot Manager chainloading path. Any experiment with
+an unsigned EFI image must use a removable test medium and a recovery path;
+do not alter the working NixOS or Windows boot files to test enforcement.
+
+## 2. AppArmor
+
+The current baseline enforces the curl profile. Firefox, Chromium, LocalSend,
+Telegram, Discord, mpv, yt-dlp, VS Code, and Zed are intentionally configured
+in complain mode.
+
+Review `aa-status` and the kernel journal entries. In complain mode, operations
+that would have been denied are generally logged as `apparmor="ALLOWED"`
+with a `denied_mask`; explicit deny rules remain effective.
+
+Before changing a profile to `enforce`:
+
+1. Use the application normally, including updates, downloads, media playback,
+   portals, screen sharing, GPU acceleration, extensions, language servers,
+   terminals, and child processes where applicable.
+2. Review the resulting AppArmor events and identify the executable, path,
+   operation, and profile involved.
+3. Add only the narrowest required rule.
+4. Test the profile in a temporary generation before making it the default.
+
+Do not promote browser or editor profiles wholesale. Editors execute user code
+and spawn tools; browsers have complex helper and portal workflows. Their
+profiles need separate review.
+
+## 3. USBGuard
+
+USBGuard is currently configured with a permissive default-allow policy.
+This preserves device usability but is not an allowlist.
+
+Review `usbguard list-devices`, `usbguard list-rules`, and the service journal.
+Identify every device needed for normal operation, including internal USB
+devices, Bluetooth/Wi-Fi components exposed over USB, keyboard, mouse, audio
+receivers, storage devices, and recovery peripherals.
+
+Do not switch `implicitPolicyTarget` to `block` until the inventory has been
+reviewed and explicit rules have been prepared and tested. A careless default
+block can disable input devices or other essential peripherals. The intended
+target is a small, explicit allowlist with a documented recovery procedure,
+not an unreviewed generated policy.
+
+## 4. Kernel hardening and AMD IOMMU
+
+The current configuration already sets:
+
+- `slab_nomerge`
+- `page_alloc.shuffle=1`
+- `randomize_kstack_offset=on`
+
+It also configures kernel pointer/dmesg restrictions, Yama ptrace scope,
+unprivileged BPF restrictions, and filesystem protections in
+`modules/nixos/security.nix`. AMD P-State is imported through the
+`nixos-hardware` Raphael/P-State modules.
+
+The audit reads the running kernel's vulnerability status, active cpufreq
+driver/EPP, kernel command line, relevant sysctls, AMD-Vi/IOMMU kernel logs,
+IOMMU groups, and PCI device bindings.
+
+Do not add `amd_iommu=on`, `amd_iommu=force_enable`, `iommu=pt`, or VFIO
+bindings speculatively. AMD IOMMU should be detected from firmware tables; PCI
+passthrough is not part of this P0 baseline. Likewise, evaluate
+`init_on_alloc=1` and `init_on_free=1` with the actual kernel configuration
+and workload before enabling them, because they can add memory-allocation
+overhead.
+
+## Audit hand-off
+
+Run `starforge security-audit` from the installed system and share the output.
+The next changes should be based on these observations:
+
+- Secure Boot: reconcile FQ0001, firmware settings, and EFI signature results.
+- AppArmor: identify real complain-mode events before enforcing individual
+  desktop profiles.
+- USBGuard: create and test explicit rules from the actual device inventory.
+- Kernel: distinguish already-active protections from missing ones and measure
+  any performance-sensitive additions.
+
+This audit is intentionally a collection step; it does not claim that any
+unverified security control is effective.
