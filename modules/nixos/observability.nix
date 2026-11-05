@@ -7,8 +7,10 @@ let
       amdgpu_top
       coreutils
       diffutils
+      findutils
       gawk
       git
+      inetutils
       lm_sensors
       nix
       nixfmt

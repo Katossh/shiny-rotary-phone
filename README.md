@@ -340,6 +340,14 @@ until a suitable device and its complete IOMMU group are reviewed. Kernel
 module locking remains intentionally omitted because this workstation needs
 runtime hardware, networking, Bluetooth, and KVM modules.
 
+### P0 security audit
+
+Run `starforge security-audit` to collect read-only diagnostics for Secure Boot,
+AppArmor, USBGuard, CPU mitigations, AMD P-State, sysctl hardening, and AMD
+IOMMU. The command does not modify system state. See
+[`docs/security-audit.md`](./docs/security-audit.md) for the review procedure
+and the safety gates before tightening any policy.
+
 ### AppArmor
 
 AppArmor is enabled through the NixOS module. It activates the AppArmor LSM,
