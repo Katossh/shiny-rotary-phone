@@ -18,9 +18,11 @@
     packages = with pkgs; [
       brightnessctl
       discord
+      distrobox
       grim
       playerctl
       pavucontrol
+      podman-compose
       slurp
       telegram-desktop
       localsend
