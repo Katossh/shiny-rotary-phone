@@ -178,6 +178,7 @@ The host uses AMD KVM with QEMU and libvirt:
 - Virt-manager provides the graphical manager.
 - SPICE USB redirection is enabled.
 - virtiofsd is installed as a vhost-user backend, enabling VirtioFS host-directory sharing in VM definitions.
+- The short-lived `libvirtd-config` and `libvirt-default-network` helper units use a shared systemd sandbox: no new privileges, private home/tmp/device views, read-only `/usr`/`/boot`/`/efi`, UNIX-socket-only access, and restrictions on kernel interfaces, namespaces, realtime scheduling, SUID/SGID creation, and writable-executable memory. The long-running `libvirtd` daemon is deliberately not given this blanket profile because it must manage KVM devices, cgroups, and virtual networking.
 - Host shutdown requests a guest ACPI shutdown rather than saving guest RAM state; up to two guests are asked to stop concurrently.
 - Libvirt management is granted through Polkit to the active local
   `katossh` session; the user no longer needs broad `libvirtd` group membership.
@@ -200,6 +201,7 @@ virsh -c qemu:///system list --all
 virsh -c qemu:///system net-list --all
 cat /sys/module/kvm_amd/parameters/nested
 systemctl status libvirt-default-network.service
+systemd-analyze security libvirtd-config.service libvirt-default-network.service
 ```
 
 Because QEMU runs unprivileged, direct USB/PCI device assignment may require
