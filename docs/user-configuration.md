@@ -114,7 +114,7 @@ home-manager.users.katossh.starforge.user.desktop.monitors = {
 ```
 
 - `mode` is optional; omitting it leaves mode selection to Niri.
-- `scale` is optional and must be greater than 0 and no greater than 4.
+- `scale` is optional and must be greater than 0 and no greater than 10.
 - `position` is an optional logical `x`/`y` position. Omitting it lets
   Niri position the output automatically.
 
