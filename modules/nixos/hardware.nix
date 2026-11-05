@@ -1,19 +1,14 @@
 { pkgs, ... }:
 
 {
-  # AMD Ryzen 7000 platform and its integrated RDNA2 graphics.
+  # Common workstation capabilities. CPU/GPU platform modules and
+  # device-specific udev rules live in hosts/workstation/hardware.nix.
   hardware = {
     enableRedistributableFirmware = true;
-    cpu.amd.updateMicrocode = true;
-
     graphics = {
       enable = true;
       enable32Bit = true;
     };
-
-    # Load amdgpu early for a clean Wayland/KMS hand-off.
-    amdgpu.initrd.enable = true;
-
     bluetooth = {
       enable = true;
       powerOnBoot = true;
@@ -31,26 +26,6 @@
       autodetect = true;
     };
 
-    # Monthly checksum scrub of the single Btrfs filesystem. All configured
-    # subvolumes live on the same filesystem, so scrubbing / avoids duplicate work.
-    btrfs.autoScrub = {
-      enable = true;
-      fileSystems = [ "/" ];
-      interval = "monthly";
-    };
-
-    # ATK/VXE receivers use WebHID through Chromium's hidraw interface.
-    # uaccess grants the active local session access without world-writable nodes.
-    udev.extraRules = ''
-      SUBSYSTEM=="hidraw", ATTRS{idVendor}=="373b", TAG+="uaccess"
-
-      # VXE NordicMouse 1K receiver.
-      KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3554", ATTRS{idProduct}=="f58a", TAG+="uaccess"
-
-      # LEKU NUT65 keyboard.
-      KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="342d", ATTRS{idProduct}=="e51a", TAG+="uaccess"
-    '';
-
     # Used by Noctalia's network, Bluetooth, battery, and power UI.
     upower.enable = true;
     power-profiles-daemon.enable = true;
@@ -58,8 +33,6 @@
 
   # Hardware diagnostics for the CPU, NVMe storage, buses, and graphics stack.
   environment.systemPackages = with pkgs; [
-    amdgpu_top
-    libva-utils
     lm_sensors
     nvme-cli
     pciutils

@@ -1,5 +1,17 @@
-{ config, ... }:
+{ config, lib, ... }:
 
+let
+  monitorOutputNodes = lib.mapAttrsToList (outputName: monitor: {
+    output = {
+      _args = [ outputName ];
+    }
+    // lib.optionalAttrs (monitor.mode != null) { inherit (monitor) mode; }
+    // lib.optionalAttrs (monitor.scale != null) { inherit (monitor) scale; }
+    // lib.optionalAttrs (monitor.position != null) {
+      position._props = monitor.position;
+    };
+  }) config.starforge.user.desktop.monitors;
+in
 {
   wayland.windowManager.niri = {
     enable = true;
@@ -80,16 +92,8 @@
       "screenshot-path" = "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png";
 
       # Repeated top-level KDL nodes must use root _children.
-      _children = [
-        {
-          # Xiaomi 34-inch ultrawide: choose the highest advertised 3440x1440 mode.
-          # This should select the monitor's 180 Hz mode when advertised.
-          output = {
-            _args = [ "DP-1" ];
-            mode = "3440x1440";
-            # FreeSync / VRR intentionally disabled.
-          };
-        }
+      # Output nodes are generated from starforge.user.desktop.monitors.
+      _children = monitorOutputNodes ++ [
         {
           # Float Noctalia's settings window.
           window-rule = {
