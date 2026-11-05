@@ -2,6 +2,30 @@
 
 let
   virsh = "${config.virtualisation.libvirtd.package}/bin/virsh";
+
+  # These helper units only prepare libvirt configuration and request that the
+  # local NAT network is started. They do not need devices, IP networking,
+  # writable system paths, or access to kernel-management interfaces.
+  helperServiceHardening = {
+    NoNewPrivileges = true;
+    ProtectSystem = "full";
+    ProtectHome = true;
+    PrivateTmp = true;
+    PrivateDevices = true;
+    ProtectClock = true;
+    ProtectControlGroups = true;
+    ProtectHostname = true;
+    ProtectKernelLogs = true;
+    ProtectKernelModules = true;
+    ProtectKernelTunables = true;
+    RestrictAddressFamilies = [ "AF_UNIX" ];
+    RestrictNamespaces = true;
+    RestrictRealtime = true;
+    RestrictSUIDSGID = true;
+    LockPersonality = true;
+    MemoryDenyWriteExecute = true;
+    SystemCallArchitectures = "native";
+  };
 in
 {
   # KVM/QEMU managed through libvirt. QEMU guests run as the dedicated
@@ -29,26 +53,22 @@ in
     services = {
       libvirtd.path = [ pkgs.dnsmasq ];
 
+      # The NixOS-generated setup helper only populates /var/lib/libvirt and
+      # /run/libvirt from immutable Nix-store inputs.
+      libvirtd-config.serviceConfig = helperServiceHardening;
+
       libvirt-default-network = {
         description = "Start and autostart the libvirt default NAT network";
         wantedBy = [ "multi-user.target" ];
         requires = [ "libvirtd.service" ];
         after = [ "libvirtd.service" ];
 
-        serviceConfig = {
+        # This helper only talks to libvirtd over its local UNIX socket.
+        # The shared profile keeps /etc writable for libvirt's autostart
+        # symlink while removing unrelated device, kernel, and namespace access.
+        serviceConfig = helperServiceHardening // {
           Type = "oneshot";
           RemainAfterExit = true;
-
-          # The helper only talks to the local libvirt UNIX socket. Keep /etc
-          # writable for libvirt's autostart symlink, but isolate everything else.
-          ProtectSystem = "full";
-          ProtectHome = true;
-          PrivateTmp = true;
-          NoNewPrivileges = true;
-          ProtectKernelTunables = true;
-          ProtectKernelModules = true;
-          ProtectControlGroups = true;
-          RestrictAddressFamilies = [ "AF_UNIX" ];
         };
 
         script = ''
