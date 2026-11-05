@@ -1,4 +1,4 @@
-_: 
+_:
 
 {
   # Compressed RAM swap absorbs short memory spikes without writing VM or

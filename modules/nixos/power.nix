@@ -1,4 +1,4 @@
-_: 
+_:
 
 {
   # No persistent swap/resume target is configured. zram alone cannot provide
