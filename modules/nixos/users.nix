@@ -19,23 +19,25 @@ in
     '';
   };
 
-  assertions = [
-    {
-      assertion = username != "root";
-      message = "starforge.user.username must be a non-root login name.";
-    }
-  ];
-
-  users.users.${username} = {
-    isNormalUser = true;
-    shell = pkgs.zsh;
-
-    # Rootless Podman needs subordinate UID/GID mappings for user namespaces.
-    autoSubUidGidRange = true;
-
-    extraGroups = [
-      "wheel"
-      "networkmanager"
+  config = {
+    assertions = [
+      {
+        assertion = username != "root";
+        message = "starforge.user.username must be a non-root login name.";
+      }
     ];
+
+    users.users.${username} = {
+      isNormalUser = true;
+      shell = pkgs.zsh;
+
+      # Rootless Podman needs subordinate UID/GID mappings for user namespaces.
+      autoSubUidGidRange = true;
+
+      extraGroups = [
+        "wheel"
+        "networkmanager"
+      ];
+    };
   };
 }
