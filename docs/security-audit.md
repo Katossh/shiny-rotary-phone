@@ -6,9 +6,10 @@ Starforge provides a read-only diagnostic command:
 starforge security-audit
 ```
 
-It checks Secure Boot state and EFI signatures, AppArmor status and audit events,
-USBGuard device inventory and rules, CPU vulnerability mitigations, AMD P-State,
-selected sysctl values, AMD IOMMU initialization, and PCI device bindings.
+It checks Secure Boot state and EFI signatures, fwupd/ESP discovery, AppArmor
+status and audit events, USBGuard device inventory and rules, kernel Lockdown
+and taint metadata, CPU vulnerability mitigations, AMD P-State, selected sysctl
+values, AMD IOMMU initialization, and PCI device bindings.
 
 The command does not modify firmware variables, Secure Boot keys, USBGuard rules,
 AppArmor profiles, kernel parameters, or system configuration. It requests sudo
@@ -30,8 +31,8 @@ Review these outputs together:
   firmware interface. This is independent of whether Limine is the active loader.
 - `fwupdmgr security`: firmware security attributes, when supported. Run the
   fwupd client as the normal user; it uses its privileged daemon and PolicyKit.
-- `fwupdmgr get-devices` and `fwupdmgr get-bios-settings`: device inventory
-  and firmware attributes, when the motherboard exposes them.
+- `fwupdmgr get-devices`: device inventory.
+
 - `fwupdtool esp-list --verbose`: detailed ESP discovery diagnostics.
 - `findmnt` and `lsblk`: the actual `/boot` mount, filesystem, and GPT
   partition type. For GPT, the EFI System Partition type GUID is
@@ -41,8 +42,8 @@ Review these outputs together:
   The NixOS fwupd module enables UDisks 2, but its runtime availability still
   needs to be checked.
 - `fwupdmgr get-bios-settings`: optional read-only inspection of firmware
-  settings, when the motherboard exposes them through the firmware-attributes
-  interface. Do not use `set-bios-setting` during this audit.
+  attributes, when the motherboard exposes them. Do not write firmware settings
+  as part of this audit.
 
 MSI AMD 600-series motherboards are listed in the sbctl FQ0001 advisory. The
 Starforge host uses an MSI B650M board, so this advisory applies to the platform.
