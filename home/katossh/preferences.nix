@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ config, lib, ... }:
 
 let
   inherit (lib) mkOption types;
@@ -92,7 +92,7 @@ in
       };
 
       niri = {
-      keyboardLayout = mkOption {
+        keyboardLayout = mkOption {
         type = types.str;
         default = "us,ru";
         example = "us,gb";
@@ -101,7 +101,7 @@ in
         '';
       };
 
-      keyboardLayoutOptions = mkOption {
+        keyboardLayoutOptions = mkOption {
         type = types.str;
         default = "grp:alt_shift_toggle";
         example = "grp:win_space_toggle";
@@ -110,7 +110,7 @@ in
         '';
       };
 
-      gaps = mkOption {
+        gaps = mkOption {
         type = types.ints.between 0 64;
         default = 12;
         example = 8;
@@ -120,4 +120,11 @@ in
       };
     };
   };
+
+  assertions = lib.mapAttrsToList (
+    outputName: output: {
+      assertion = output.mode != null || output.scale != null || output.position != null;
+      message = "Starforge output \"${outputName}\" must set at least one of mode, scale, or position.";
+    }
+  ) config.starforge.user.desktop.monitors;
 }
