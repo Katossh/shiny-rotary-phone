@@ -66,11 +66,11 @@ run_diagnostic() {
   printf '\n'
 
   if [[ "$privilege" == "root" ]] && (( EUID != 0 )); then
-    if (("${#SUDO_PREFIX[@]}" == 0)); then
+    if [[ "$sudo_available" != "true" ]]; then
       printf '[skipped] Root privileges are unavailable.\n'
       return 0
     fi
-    if "${SUDO_PREFIX[@]}" "$@"; then
+    if sudo "$@"; then
       return 0
     else
       status=$?
@@ -89,11 +89,11 @@ run_diagnostic() {
 
 security_audit() {
   local path group device
-  local -a SUDO_PREFIX=()
+  local sudo_available=false
 
   if (( EUID != 0 )); then
     if command -v sudo >/dev/null 2>&1 && sudo -v; then
-      SUDO_PREFIX=(sudo)
+      sudo_available=true
     else
       printf 'Root-only checks will be skipped. Re-run with sudo for a complete audit.\n'
     fi
