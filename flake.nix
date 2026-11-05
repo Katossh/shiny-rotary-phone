@@ -1,5 +1,5 @@
 {
-  description = "Starforge NixOS workstation with Niri and Noctalia";
+  description = "NixOS workstation configuration with Niri and Noctalia";
 
   nixConfig = {
     extra-substituters = [ "https://noctalia.cachix.org" ];
@@ -51,7 +51,7 @@
         ];
       };
 
-      nixosConfigurations.starforge = nixpkgs.lib.nixosSystem {
+      nixosConfigurations.workstation = nixpkgs.lib.nixosSystem {
         inherit system;
 
         specialArgs = {
@@ -60,7 +60,7 @@
 
         modules = [
           home-manager.nixosModules.home-manager
-          ./hosts/starforge
+          ./hosts/workstation
         ];
       };
     };
