@@ -415,7 +415,7 @@ doctor_check_user_unit() {
 }
 
 run_doctor() {
-  local system_state failed_units failed_names failed_count root_usage
+  local system_state failed_units failed_names failed_count root_usage system_profile
 
   DOCTOR_ERROR_COUNT=0
   DOCTOR_WARNING_COUNT=0
