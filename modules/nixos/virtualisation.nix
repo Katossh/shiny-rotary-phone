@@ -3,9 +3,9 @@
 let
   virsh = "${config.virtualisation.libvirtd.package}/bin/virsh";
 
-  # These helper units only prepare libvirt configuration and request that the
-  # local NAT network is started. They do not need devices, IP networking,
-  # writable system paths, or access to kernel-management interfaces.
+  # These short-lived helper units prepare libvirt state or request that its
+  # local NAT network is started. They do not need hardware devices, IP
+  # networking, or direct access to kernel-management interfaces.
   helperServiceHardening = {
     NoNewPrivileges = true;
     ProtectSystem = "full";
