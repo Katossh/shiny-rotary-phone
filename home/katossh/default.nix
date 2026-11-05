@@ -10,6 +10,11 @@
 
   services.polkit-gnome.enable = true;
 
+  home.sessionVariables = {
+    DBX_CONTAINER_MANAGER = "podman";
+    PODMAN_COMPOSE_PROVIDER = "${pkgs.podman-compose}/bin/podman-compose";
+  };
+
   home = {
     username = "katossh";
     homeDirectory = "/home/katossh";
@@ -18,9 +23,11 @@
     packages = with pkgs; [
       brightnessctl
       discord
+      distrobox
       grim
       playerctl
       pavucontrol
+      podman-compose
       slurp
       telegram-desktop
       localsend

@@ -243,6 +243,54 @@ The configuration does not set `iommu=pt` or force isolation overrides.
 Those options change DMA mapping behavior and should be selected only after
 the actual passthrough workload and hardware topology are known.
 
+## Containers
+
+Podman is the host's OCI container runtime; Docker Engine is not enabled.
+
+- Podman is daemonless and intended to be used rootless as `katossh`.
+- NixOS allocates a subordinate UID/GID range for the user so rootless
+  containers and Distrobox can create user namespaces.
+- `docker` is provided as a CLI alias for Podman to ease migration of existing
+  Docker-oriented commands. This does **not** enable the Docker-compatible API
+  socket. The rootful Podman socket is not exposed to the user.
+- The default Podman bridge has DNS enabled for Compose workloads.
+- Home Manager installs Distrobox for user-managed development environments
+  and `podman-compose` as the explicitly selected external provider for
+  `podman compose`. Distrobox is explicitly pinned to the Podman backend.
+
+Prefer rootless commands without `sudo`:
+
+```sh
+podman info
+podman run --rm quay.io/podman/hello
+podman-compose version
+distrobox create --name fedora-dev --image registry.fedoraproject.org/fedora:latest
+distrobox enter fedora-dev
+distrobox list
+```
+
+Distrobox environments are user containers, not virtual machines: they share
+the host kernel and integrate with the user's home directory and desktop.
+Use the existing KVM/libvirt stack when stronger isolation or a separate
+kernel is required. Container images and writable layers are stored in the
+user's Podman storage, outside the Nix store.
+
+The NixOS Podman module provides a rootless per-user API socket at
+`$XDG_RUNTIME_DIR/podman/podman.sock`; it is scoped to this user's containers.
+The Docker-compatible system-wide `/run/docker.sock` alias is not enabled,
+and the user is not added to the rootful `podman` group. When an application
+needs the Docker API, point it at the rootless socket with
+`DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock` rather than granting
+it access to the rootful socket.
+
+After the first switch that adds the subordinate ID mapping, log out and back
+in before creating rootless containers. Verify the mapping and runtime with:
+
+```sh
+grep "^katossh:" /etc/subuid /etc/subgid
+podman info --debug
+```
+
 ## Security baseline
 
 - The NixOS firewall is explicitly enabled, with no extra inbound TCP or UDP
