@@ -122,25 +122,23 @@ the partition table or create another Windows-visible EFI System Partition.
 Do not change its GPT type or resize either EFI-related partition as part of
 this bootloader migration.
 
-The Limine boot path is being kept separate from Secure Boot for now.
-Boot both NixOS and Windows through Limine with firmware Secure Boot disabled,
-and retain the existing `NixOS-boot` GRUB entry as a recovery route. Do not
-rewrite the partition table, resize either EFI-related partition, or delete
-the old GRUB files during this process.
+Limine is configured for Secure Boot signing with the locally provisioned
+`sbctl` database key. Key creation and enrollment remain manual workstation
+operations; the NixOS configuration signs the Limine EFI executable during
+bootloader installation but does not generate or enroll keys automatically.
 
-### Secure Boot (deferred)
+Secure Boot is enabled on the workstation and both `sbctl status` and
+`bootctl status` report it active in User Mode. The enrollment retained the
+Microsoft and firmware-builtin certificates so Windows Boot Manager remains
+chainloadable through Limine. The MSI firmware is configured for Custom mode
+and the Maximum Security preset.
 
-Secure Boot signing and enforcement are **not enabled** in the NixOS
-configuration. The `sbctl` utility is installed for manual status and key
-management, but this repository does not generate or enroll keys automatically
-and does not change firmware settings.
-
-Complete key generation and enrollment on the workstation only after both
-Limine-to-NixOS and Limine-to-Windows 11 boot paths have passed real reboot
-tests and a recovery route has been confirmed. Enrollment must retain the
-Microsoft and firmware-builtin certificates (the `--microsoft` and
-`--firmware-builtin` options). Keep Secure Boot disabled until those manual
-steps are complete. The existing LUKS/Btrfs arrangement is unchanged.
+**Firmware caveat:** `sbctl` still reports MSI quirk FQ0001, which warns that
+the firmware may execute EFI images despite a Secure Boot policy violation.
+The Maximum Security preset is selected, but the persistent warning means
+fail-closed enforcement should not be assumed solely from the Secure Boot
+status. Keep the known-good recovery route and do not delete the existing
+`dbx` revocation database.
 
 Starforge does not configure Windows volume encryption.
 
@@ -265,11 +263,21 @@ the actual passthrough workload and hardware topology are known.
   to three, and limits credential caching to five minutes.
 - Nix builds remain sandboxed; only root and wheel members may use the daemon,
   while only root is a trusted Nix user.
-- AppArmor enforces a dedicated profile for the system `curl` executable;
-  browsers and other desktop applications are not yet confined.
-- Secure Boot is deferred. `sbctl` is installed, but no keys are generated or
-  enrolled and the firmware enforcement state is left untouched.
-- Existing LUKS full-disk encryption and encrypted Btrfs layout are preserved.
+- AppArmor enforces the existing `curl` profile and loads separate
+  complain-mode profiles for Firefox, Chromium, VS Code, and Zed. The browser
+  profiles explicitly deny direct access to selected credential stores; the
+  editor profiles remain observational while their child-process workflows
+  are reviewed.
+- USBGuard runs with a default-allow policy. It preserves devices already
+  connected at daemon startup, evaluates newly inserted devices against its
+  rule file, and allows unmatched devices. It is an audit/selective-control
+  layer here, not a USB allowlist or a guarantee against spoofed BadUSB devices.
+  Only root can use its IPC interface; the D-Bus interface is disabled.
+- Secure Boot is enabled and Limine is signed with the locally enrolled
+  `sbctl` database key. MSI firmware quirk FQ0001 remains reported by
+  `sbctl`; see the Secure Boot caveat above.
+- The Linux root and Btrfs data subvolumes remain inside the existing LUKS
+  container. TPM-backed unlocking is not configured yet.
 
 This is a workstation baseline, not a claim of complete isolation. The
 Noctalia session is configured to lock after ten minutes of inactivity, turn
@@ -288,36 +296,71 @@ AppArmor is enabled through the NixOS module. It activates the AppArmor LSM,
 loads declared policies at boot, and provides the management utilities. A
 reboot is required the first time this LSM is enabled.
 
-The Nixpkgs `curl` executable now runs under an **enforced** profile. It can
+The Nixpkgs `curl` executable runs under an **enforced** profile. It can
 read the immutable Nix store, use DNS and ordinary IPv4/IPv6 TCP/UDP networking,
 and read or write files in the invoking user's home directory. It is explicitly
-denied access to the contents of `.ssh`, `.gnupg`, `.aws`, GitHub CLI
-credentials, and Google Cloud credentials. Writes outside the home and
-temporary directories are denied by default. This is a targeted profile, not
-a claim that the browser, editor, or every desktop process is confined.
+denied access to `.ssh`, `.gnupg`, `.aws`, GitHub CLI credentials, and
+Google Cloud credentials. Writes outside the home and temporary directories
+are denied by default.
 
-After deploying and rebooting, verify the loaded profile and exercise normal
-curl operations:
+Separate profiles are also loaded for:
+
+- **Firefox and Chromium:** `complain` mode, with access to their own browser
+  state/cache and Downloads explicitly allowed. Direct reads and writes to
+  selected developer credential stores (`.ssh`, `.gnupg`, `.aws`,
+  `.config/gh`, `.config/gcloud`, `.kube`, Docker config, SOPS age keys,
+  and `.password-store`) are explicitly denied. Explicit `deny` rules remain
+  effective even in complain mode; other unlisted operations are logged but
+  allowed.
+- **VS Code and Zed:** `complain` mode with no hard-coded credential denies.
+  These editors launch terminals, language servers, build scripts, Git/SSH and
+  extensions, so their actual process trees must be reviewed before introducing
+  enforcing restrictions.
+
+The desktop profiles are a staging baseline, not full application confinement:
+complain mode does not block ordinary unmatched operations. In particular,
+the editor profiles currently provide telemetry rather than a security boundary.
+Do not promote them to `enforce` until the observed accesses and normal
+workflows have been reviewed.
+
+After deploying, verify the loaded profiles and inspect AppArmor events:
 
 ```sh
 sudo aa-status
 sudo systemctl status apparmor.service
-readlink -f "$(command -v curl)"
-curl -I https://example.com
-curl -o "$HOME/Downloads/apparmor-test.txt" https://example.com
-```
-
-Check for denied operations:
-
-```sh
+sudo journalctl -k -b --grep='apparmor="ALLOWED"'
 sudo journalctl -k -b --grep='apparmor="DENIED"'
 ```
 
-The profile deliberately protects credential directories even though it
-allows other home-directory files. Do not add exceptions for those paths just
-to silence denials; review the affected command and adjust only when the
-access is genuinely required. `killUnconfinedConfinables` remains disabled so
-profile changes do not send signals to already-running desktop processes.
+The existing `curl` profile deliberately protects credential directories even
+though it allows other home-directory files. Do not add exceptions for those
+paths just to silence denials; review the affected command and adjust only
+when access is genuinely required. `killUnconfinedConfinables` remains
+disabled so profile changes do not terminate already-running desktop processes.
+
+### USBGuard
+
+USBGuard is enabled with a **permissive default-allow policy**, not a device
+allowlist. Existing devices retain their current authorization state when the
+daemon starts. Newly inserted devices are evaluated against the mutable
+`/var/lib/usbguard/rules.conf`; when no rule matches, the default policy allows
+the device. No D-Bus interface is enabled, and only root is allowed to use the
+USBGuard IPC interface.
+
+This provides device inventory, event visibility, and the option to add
+specific manual rules without automatically blocking unknown keyboards,
+mice, storage devices, or other peripherals. USB descriptors can be spoofed,
+so this policy is not a guarantee against BadUSB.
+
+Useful commands:
+
+```sh
+sudo usbguard list-devices
+sudo usbguard list-rules
+sudo usbguard watch
+sudo journalctl -u usbguard -b
+```
+
 ## Desktop
 
 - Niri is enabled at the NixOS level so greetd can launch the session.
@@ -492,5 +535,5 @@ follow a newer NixOS release; it remains `26.05` from the original install.
   job, then builds the complete system closure in a separate job.
 - Keep a known-good generation and a copy of the hardware configuration
   before changing bootloader, LUKS, Btrfs, or kernel settings.
-- Keep the previous GRUB UEFI boot entry until Limine and Windows chainloading
-  have passed real reboot tests. Secure Boot is not part of this rollout.
+- Keep the previous GRUB UEFI boot entry as a recovery route until Limine and
+  Windows chainloading have been re-tested with Secure Boot enabled.
