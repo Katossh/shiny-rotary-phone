@@ -309,9 +309,9 @@ doctor_report() {
   local observed="$3"
   local next_step="${4:-}"
 
-  printf '[%s] %s: %s\\n' "$severity" "$label" "$observed"
+  printf '[%s] %s: %s\n' "$severity" "$label" "$observed"
   if [[ -n "$next_step" ]]; then
-    printf '       Next: %s\\n' "$next_step"
+    printf '       Next: %s\n' "$next_step"
   fi
 
   case "$severity" in
@@ -415,18 +415,18 @@ doctor_check_user_unit() {
 }
 
 run_doctor() {
-  local system_state failed_units failed_names failed_count root_usage system_profile
+  local system_state failed_units failed_names failed_count root_usage
 
   DOCTOR_ERROR_COUNT=0
   DOCTOR_WARNING_COUNT=0
   DOCTOR_UNKNOWN_COUNT=0
   DOCTOR_SKIPPED_COUNT=0
 
-  printf '\\nStarforge system diagnostics (read-only)\\n'
-  printf '%s\\n' '========================================='
-  printf 'Host: %s\\n' "$(hostname)"
-  printf 'Date: %s\\n' "$(date --iso-8601=seconds)"
-  printf 'No services are restarted and no configuration is changed.\\n\\n'
+  printf '\nStarforge system diagnostics (read-only)\n'
+  printf '%s\n' '========================================='
+  printf 'Host: %s\n' "$(hostname)"
+  printf 'Date: %s\n' "$(date --iso-8601=seconds)"
+  printf 'No services are restarted and no configuration is changed.\n\n'
 
   if [[ -e /etc/NIXOS ]]; then
     doctor_report OK "NixOS installation" "/etc/NIXOS is present"
@@ -468,7 +468,7 @@ run_doctor() {
       "Inspect with: systemctl --failed --no-pager"
   fi
 
-  printf '\\nRequired system services\\n'
+  printf '\nRequired system services\n'
   doctor_check_system_unit "NetworkManager.service" "NetworkManager"
   doctor_check_system_unit "apparmor.service" "AppArmor"
   doctor_check_system_unit "usbguard.service" "USBGuard"
@@ -477,7 +477,7 @@ run_doctor() {
   doctor_check_system_unit "snapper-timeline.timer" "Snapper timeline timer"
   doctor_check_system_unit "snapper-cleanup.timer" "Snapper cleanup timer"
 
-  printf '\\nDesktop session\\n'
+  printf '\nDesktop session\n'
   if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
     doctor_report SKIP "Wayland session" "no active Wayland session was detected; user desktop units were not checked"
   elif [[ -z "${XDG_RUNTIME_DIR:-}" || ! -S "${XDG_RUNTIME_DIR:-/nonexistent}/bus" ]]; then
@@ -494,7 +494,7 @@ run_doctor() {
     doctor_check_user_unit "wireplumber.service" "WirePlumber"
   fi
 
-  printf '\\nStorage\\n'
+  printf '\nStorage\n'
   root_usage="$(df -P --output=pcent / 2>/dev/null | awk 'NR == 2 { gsub(/%/, "", $1); print $1 }')"
   if [[ "$root_usage" =~ ^[0-9]+$ ]]; then
     if (( 10#$root_usage >= 95 )); then
@@ -519,7 +519,7 @@ run_doctor() {
       "Do not rebuild or edit boot entries blindly; inspect the NixOS profile and boot recovery path first."
   fi
 
-  printf '\\nSummary: %s error(s), %s warning(s), %s unknown, %s skipped.\\n\\n' \
+  printf '\nSummary: %s error(s), %s warning(s), %s unknown, %s skipped.\n\n' \
     "$DOCTOR_ERROR_COUNT" "$DOCTOR_WARNING_COUNT" "$DOCTOR_UNKNOWN_COUNT" "$DOCTOR_SKIPPED_COUNT"
 
   if (( DOCTOR_ERROR_COUNT > 0 )); then
@@ -535,25 +535,25 @@ show_recovery() {
   local system_profile="/nix/var/nix/profiles/system"
   local current_generation
 
-  printf '\\nStarforge recovery guide (read-only)\\n'
-  printf '%s\\n' '======================================'
-  printf 'This command only inspects generation metadata and prints instructions.\\n'
-  printf 'It does not rebuild, switch, roll back, change boot entries, or restore files.\\n\\n'
+  printf '\nStarforge recovery guide (read-only)\n'
+  printf '%s\n' '======================================'
+  printf 'This command only inspects generation metadata and prints instructions.\n'
+  printf 'It does not rebuild, switch, roll back, change boot entries, or restore files.\n\n'
 
   if [[ -e "$system_profile" ]]; then
     current_generation="$(readlink "$system_profile" 2>/dev/null || true)"
-    printf 'Current system profile: %s\\n' "${current_generation:-unavailable}"
+    printf 'Current system profile: %s\n' "${current_generation:-unavailable}"
   else
-    printf 'Current system profile: unavailable (%s is missing)\\n' "$system_profile"
+    printf 'Current system profile: unavailable (%s is missing)\n' "$system_profile"
   fi
 
-  printf '\\nAvailable system generations\\n'
+  printf '\nAvailable system generations\n'
   if command -v nix-env >/dev/null 2>&1 && [[ -e "$system_profile" ]]; then
     if ! nix-env --list-generations --profile "$system_profile"; then
-      printf 'Could not list system generations.\\n'
+      printf 'Could not list system generations.\n'
     fi
   else
-    printf 'nix-env or the system profile is unavailable; generation listing skipped.\\n'
+    printf 'nix-env or the system profile is unavailable; generation listing skipped.\n'
   fi
 
   cat <<'EOF'
@@ -605,7 +605,7 @@ Limitations
   Secure Boot, AppArmor, USBGuard, and kernel checks.
 EOF
 
-  printf '\\n'
+  printf '\n'
 }
 
 check_formatting() {

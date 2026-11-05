@@ -53,30 +53,23 @@ own `sync_color_scheme` setting.
 
 ## Example
 
-Edit only the values you want to change in `home/katossh/preferences.nix`.
-For example, the relevant option definitions can be overridden in the
-Home Manager user configuration as follows:
+To use automatic light/dark switching, change the corresponding defaults in
+`home/katossh/preferences.nix`:
 
-```nix
-{
-  starforge.user = {
-    appearance = {
-      themeMode = "auto";
-      palette = "Tokyo-Night";
-      fontFamily = "Inter";
-    };
+```diff
+-        default = "dark";
++        default = "auto";
 
-    desktop.niri = {
-      keyboardLayout = "us,ru";
-      keyboardLayoutOptions = "grp:alt_shift_toggle";
-      gaps = 8;
-    };
-  };
-}
+-        default = "Catppuccin";
++        default = "Tokyo-Night";
+
+-        default = 12;
++        default = 8;
 ```
 
-The example is a configuration fragment; keep the existing module options
-and imports in place.
+Keep each option's declared type and description intact. The enum types reject
+unsupported theme modes and palette names; the gap type rejects values outside
+the 0–64 range.
 
 ## Apply changes safely
 
