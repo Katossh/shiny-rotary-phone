@@ -154,7 +154,7 @@ in
     };
   };
 
-  assertions = lib.mapAttrsToList (outputName: output: {
+  config.assertions = lib.mapAttrsToList (outputName: output: {
     assertion = output.mode != null || output.scale != null || output.position != null;
     message = ''
       Starforge output "${outputName}" must set at least one of mode,
