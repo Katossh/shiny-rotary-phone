@@ -1,19 +1,16 @@
 { config, lib, ... }:
 
 let
-  monitorOutputNodes = lib.mapAttrsToList (
-    outputName: monitor: {
-      output =
-        {
-          _args = [ outputName ];
-        }
-        // lib.optionalAttrs (monitor.mode != null) { inherit (monitor) mode; }
-        // lib.optionalAttrs (monitor.scale != null) { inherit (monitor) scale; }
-        // lib.optionalAttrs (monitor.position != null) {
-          position._props = monitor.position;
-        };
+  monitorOutputNodes = lib.mapAttrsToList (outputName: monitor: {
+    output = {
+      _args = [ outputName ];
     }
-  ) config.starforge.user.desktop.monitors;
+    // lib.optionalAttrs (monitor.mode != null) { inherit (monitor) mode; }
+    // lib.optionalAttrs (monitor.scale != null) { inherit (monitor) scale; }
+    // lib.optionalAttrs (monitor.position != null) {
+      position._props = monitor.position;
+    };
+  }) config.starforge.user.desktop.monitors;
 in
 {
   wayland.windowManager.niri = {
