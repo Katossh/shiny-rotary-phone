@@ -1,9 +1,9 @@
 # P0 security audit
 
-Starforge provides a read-only diagnostic command:
+The configuration provides a read-only diagnostic command:
 
 ```sh
-starforge security-audit
+nixcfg audit
 ```
 
 It checks Secure Boot state and EFI signatures, fwupd/ESP discovery, AppArmor
@@ -16,6 +16,13 @@ AppArmor profiles, kernel parameters, or system configuration. It requests sudo
 once for root-only checks. Without elevated privileges, those checks are marked
 as skipped rather than silently omitted.
 
+The fwupd security check runs last. Before invoking it, the audit checks the
+local fwupd remote configuration for `AutomaticSecurityReports=true`; when
+found, it skips the check because fwupd can upload HSI results without asking.
+Otherwise, fwupd may display an upload prompt whose default answer is **N**.
+Press Enter or N to decline. Its follow-up question about asking again later
+does not upload the current report.
+
 ## 1. Secure Boot and MSI FQ0001
 
 Review these outputs together:
@@ -25,7 +32,7 @@ Review these outputs together:
   signing database. This check is scoped to the local sbctl signing database
   key; it is not a complete validation against every certificate enrolled in
   UEFI. In particular, Windows Boot Manager may be Microsoft-signed rather
-  than signed by Starforge's local db key. Treat such output as a review item,
+  than signed by the local db key enrolled on this host. Treat such output as a review item,
   not an instruction to sign or replace the Windows loader.
 - `bootctl status`: UEFI and Secure Boot state reported by systemd-boot's
   firmware interface. This is independent of whether Limine is the active loader.
@@ -46,14 +53,14 @@ Review these outputs together:
   as part of this audit.
 
 MSI AMD 600-series motherboards are listed in the sbctl FQ0001 advisory. The
-Starforge host uses an MSI B650M board, so this advisory applies to the platform.
+The current workstation uses an MSI B650M board, so this advisory applies to the platform.
 The advisory describes firmware that may execute EFI images despite a Secure Boot
 policy violation. Its documented firmware-side mitigation is to use Custom
 Secure Boot mode and either set Option ROM, Removable Media, and Fixed Media
 execution policies to **Deny Execute**, or select the **Maximum Security**
 preset when the firmware exposes that control.
 
-Starforge currently documents Maximum Security as selected, but the FQ0001
+The workstation profile currently documents Maximum Security as selected, but the FQ0001
 warning must remain an explicit review item until the exact firmware settings
 and current sbctl detection output are checked on the host. A green Secure Boot
 status alone is not evidence that the firmware rejects every untrusted EFI
@@ -144,7 +151,7 @@ overhead.
 
 ## Audit hand-off
 
-Run `starforge security-audit` from the installed system and review the output
+Run `nixcfg audit` from the installed system and review the output
 for machine-identifying details before sharing it.
 The next changes should be based on these observations:
 

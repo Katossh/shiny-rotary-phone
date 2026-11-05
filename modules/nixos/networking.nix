@@ -1,7 +1,6 @@
 _:
 
 {
-  networking.hostName = "starforge";
   networking.networkmanager.enable = true;
 
   # Retained from the original configuration.

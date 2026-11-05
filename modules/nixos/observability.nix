@@ -1,14 +1,15 @@
 { pkgs, ... }:
 
 let
-  starforge = pkgs.writeShellApplication {
-    name = "starforge";
+  nixcfg = pkgs.writeShellApplication {
+    name = "nixcfg";
     runtimeInputs = with pkgs; [
       amdgpu_top
       coreutils
       diffutils
       findutils
       gawk
+      gnugrep
       git
       inetutils
       lm_sensors
@@ -18,9 +19,9 @@ let
       systemd
       util-linux
     ];
-    text = builtins.readFile ../../scripts/starforge.sh;
+    text = builtins.readFile ../../scripts/nixcfg.sh;
   };
 in
 {
-  environment.systemPackages = [ starforge ];
+  environment.systemPackages = [ nixcfg ];
 }

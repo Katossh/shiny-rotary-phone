@@ -1,6 +1,8 @@
 { inputs, ... }:
 
 {
+  networking.hostName = "workstation";
+
   imports = [
     ./hardware-configuration.nix
 

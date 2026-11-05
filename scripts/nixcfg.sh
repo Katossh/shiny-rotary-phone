@@ -3,16 +3,16 @@
 usage() {
   cat <<'EOF'
 Usage:
-  starforge status          Show a concise workstation health snapshot.
-  starforge security-audit  Collect read-only P0 security diagnostics.
-  starforge check           Run local formatting, lint, evaluation, and build checks.
+  nixcfg status          Show a concise workstation health snapshot.
+  nixcfg audit           Collect read-only P0 security diagnostics.
+  nixcfg check           Run local formatting, lint, evaluation, and build checks.
 EOF
 }
 
 show_status() {
   local cpu_model load_average failed_units system_generation
 
-  printf '\nStarforge system status\n'
+  printf '\nNixOS system status\n'
   printf '%s\n' '======================='
   printf 'Kernel: %s\n' "$(uname -r)"
 
@@ -142,7 +142,7 @@ show_kernel_taint() {
 }
 
 security_audit() {
-  local path group device
+  local path group device remote_dir automatic_security_reports=false
   SUDO_AVAILABLE=false
 
   if (( EUID != 0 )); then
@@ -153,7 +153,7 @@ security_audit() {
     fi
   fi
 
-  printf '\nStarforge P0 security audit (read-only)\n'
+  printf '\nNixOS P0 security audit (read-only)\n'
   printf '%s\n' '======================================'
   printf 'Host: %s\n' "$(hostname)"
   printf 'Date: %s\n' "$(date --iso-8601=seconds)"
@@ -164,7 +164,6 @@ security_audit() {
   run_diagnostic user sbctl status
   run_diagnostic root sbctl verify
   run_diagnostic user bootctl status --no-pager
-  run_diagnostic user fwupdmgr security
   run_diagnostic user fwupdmgr get-devices
   run_diagnostic user fwupdmgr get-bios-settings
   run_diagnostic root fwupdtool esp-list --verbose
@@ -261,6 +260,32 @@ security_audit() {
   fi
   run_diagnostic user lspci -nnk
 
+  printf '\n== 6. Firmware security (fwupd) ==\n'
+  if (( EUID != 0 )) && [[ "$SUDO_AVAILABLE" != "true" ]]; then
+    printf '[skipped] Cannot verify fwupd remote reporting settings without root access. Re-run the audit with sudo to avoid an unverified upload setting.\n'
+  else
+    for remote_dir in /etc/fwupd/remotes.d /var/lib/fwupd/remotes.d; do
+      [[ -d "$remote_dir" ]] || continue
+      if (( EUID == 0 )); then
+        if grep -RiqE '^[[:space:]]*AutomaticSecurityReports[[:space:]]*=[[:space:]]*true' "$remote_dir" 2>/dev/null; then
+          automatic_security_reports=true
+          break
+        fi
+      elif sudo grep -RiqE '^[[:space:]]*AutomaticSecurityReports[[:space:]]*=[[:space:]]*true' "$remote_dir" 2>/dev/null; then
+        automatic_security_reports=true
+        break
+      fi
+    done
+
+    if [[ "$automatic_security_reports" == "true" ]]; then
+      printf '[skipped] fwupd automatic security reports are enabled. The security command could upload HSI data without asking.\n'
+    else
+      printf 'fwupdmgr may ask to upload anonymous HSI results to LVFS. Its upload prompt defaults to N; press Enter or N to decline.\n'
+      printf 'The follow-up question controls whether fwupd asks again in the future.\n'
+      run_diagnostic user fwupdmgr security
+    fi
+  fi
+
   printf '\n== End of read-only security audit ==\n'
   printf 'Review the output before changing Secure Boot, AppArmor, USBGuard, or kernel settings.\n\n'
 }
@@ -271,7 +296,7 @@ check_formatting() {
   local -a nix_files
 
   mapfile -t nix_files < <(
-    git ls-files --cached --others --exclude-standard -- '*.nix' ':!:hosts/starforge/hardware-configuration.nix'
+    git ls-files --cached --others --exclude-standard -- '*.nix' ':!:hosts/workstation/hardware-configuration.nix'
   )
 
   for nix_file in "${nix_files[@]}"; do
@@ -292,7 +317,7 @@ run_checks() {
 
   repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
   if [[ -z "$repo_root" || ! -f "$repo_root/flake.nix" ]]; then
-    printf 'starforge check must be run inside the Starforge Git repository.\n' >&2
+    printf 'nixcfg check must be run inside the NixOS configuration repository.\n' >&2
     return 2
   fi
   cd "$repo_root"
@@ -304,7 +329,7 @@ run_checks() {
   # shellcheck disable=SC2016
   nix develop --no-update-lock-file --accept-flake-config --command bash -euo pipefail -c '
     mapfile -t nix_files < <(
-      git ls-files --cached --others --exclude-standard -- "*.nix" ":!:hosts/starforge/hardware-configuration.nix"
+      git ls-files --cached --others --exclude-standard -- "*.nix" ":!:hosts/workstation/hardware-configuration.nix"
     )
     for nix_file in "${nix_files[@]}"; do
       statix check "$nix_file"
@@ -319,23 +344,23 @@ run_checks() {
     --accept-flake-config \
     --show-trace
 
-  printf '\n== Full Starforge system build ==\n'
+  printf '\n== Full NixOS system build ==\n'
   nix build \
     --no-update-lock-file \
     --accept-flake-config \
-    .#nixosConfigurations.starforge.config.system.build.toplevel \
+    .#nixosConfigurations.workstation.config.system.build.toplevel \
     --no-link \
     --fallback \
     --print-build-logs
 
-  printf '\nAll Starforge checks passed.\n'
+  printf '\nAll NixOS checks passed.\n'
 }
 
 case "${1:-status}" in
   status)
     show_status
     ;;
-  security-audit)
+  audit)
     security_audit
     ;;
   check)

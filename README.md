@@ -1,6 +1,6 @@
-# Starforge NixOS configuration
+# NixOS workstation configuration
 
-Declarative NixOS configuration for the `starforge` workstation.
+Declarative NixOS configuration for a workstation, with reusable system modules and a separate hardware profile.
 
 The repository manages the operating system, Niri desktop, Noctalia shell,
 virtual machines, host security baseline, and user-level desktop settings.
@@ -9,15 +9,15 @@ Terminal packages and dotfiles remain integrated from
 
 ## Repository layout
 
-- `flake.nix`, `flake.lock`: inputs, pinned dependencies, formatter, and host output.
-- `hosts/starforge/`: machine-specific configuration and generated hardware details.
+- `flake.nix`, `flake.lock`: inputs, pinned dependencies, formatter, and host profile output.
+- `hosts/workstation/`: host-specific configuration and generated hardware details.
 - `modules/nixos/`: reusable system-level modules.
 - `home/katossh/`: Home Manager configuration for the user.
 - `.github/workflows/nixos.yml`: parallel validation and system-build checks.
 
 ## Installation
 
-Use [`install.sh`](./install.sh) for one-command deployment. See [`INSTALL.md`](./INSTALL.md) for existing-system updates and a fresh install from the NixOS ISO. The script validates Starforge's fixed LUKS/Btrfs/UEFI identifiers and never partitions or formats disks.
+Use [`install.sh`](./install.sh) for one-command deployment. See [`INSTALL.md`](./INSTALL.md) for existing-system updates and a fresh install from the NixOS ISO. The installer validates the host profile's fixed LUKS/Btrfs/UEFI identifiers and never partitions or formats disks.
 
 ## Hardware profile
 
@@ -100,7 +100,7 @@ the in-kernel drivers are enabled; verify the detected chipset with
 
 ## Bootloader and Windows dual boot
 
-Starforge uses Limine in UEFI mode. Limine is selected here because it supports
+The workstation profile uses Limine in UEFI mode. Limine is selected here because it supports
 direct EFI chainloading from another partition by GPT partition GUID, allowing
 Windows Boot Manager to remain on its own EFI partition without relying on an
 unsigned UEFI Shell intermediary.
@@ -140,7 +140,7 @@ fail-closed enforcement should not be assumed solely from the Secure Boot
 status. Keep the known-good recovery route and do not delete the existing
 `dbx` revocation database.
 
-Starforge does not configure Windows volume encryption.
+The workstation profile does not configure Windows volume encryption.
 
 ## Memory and session protection
 
@@ -342,7 +342,7 @@ runtime hardware, networking, Bluetooth, and KVM modules.
 
 ### P0 security audit
 
-Run `starforge security-audit` to collect read-only diagnostics for Secure Boot,
+Run `nixcfg audit` to collect read-only diagnostics for Secure Boot,
 AppArmor, USBGuard, CPU mitigations, AMD P-State, sysctl hardening, and AMD
 IOMMU. The command does not modify system state. See
 [`docs/security-audit.md`](./docs/security-audit.md) for the review procedure
@@ -444,8 +444,8 @@ GitHub Actions runs two independent jobs in parallel:
    `statix` and `deadnix` using the flake's pinned development shell, and
    evaluates flake outputs with `nix flake check --no-build`. This is the
    quick feedback path; it does not compile the complete operating system.
-2. **Build Starforge system** builds the full
-   `nixosConfigurations.starforge.config.system.build.toplevel` closure.
+2. **Build workstation system** builds the full
+   `nixosConfigurations.workstation.config.system.build.toplevel` closure.
    This remains the expensive integration check.
 
 Both jobs use the committed `flake.lock`; normal CI does not update
@@ -496,7 +496,7 @@ Review the generated Nix configuration before applying it declaratively to
 the host.
 
 The jobs are separate checks. Configure the repository ruleset for `main`
-to require both `Validate Nix configuration` and `Build Starforge system`
+to require both `Validate Nix configuration` and `Build workstation system`
 before merging. Review approvals can remain at zero if solo maintenance is
 preferred; required checks and required reviews are separate controls.
 
@@ -512,12 +512,12 @@ CI never activates a NixOS generation or deploys to the workstation.
 The flake provides a development shell with `statix` and `deadnix` from the
 locked Nixpkgs revision. Formatting and static analysis cover maintained Nix
 files and deliberately exclude the NixOS-generated
-`hosts/starforge/hardware-configuration.nix`, which is owned by
+`hosts/workstation/hardware-configuration.nix`, which is owned by
 `nixos-generate-config` and is still evaluated by the flake checks and full
 system build. Run them locally before opening a PR:
 
 ```sh
-mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/starforge/hardware-configuration.nix")
+mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/workstation/hardware-configuration.nix")
 nix fmt -- "${nix_files[@]}"
 nix develop
 for nix_file in "${nix_files[@]}"; do
@@ -531,10 +531,10 @@ deadnix --fail "${nix_files[@]}"
 Run these commands from the repository root:
 
 ```sh
-mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/starforge/hardware-configuration.nix")
+mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/workstation/hardware-configuration.nix")
 nix fmt -- "${nix_files[@]}"
 nix flake check --no-build --no-update-lock-file --show-trace
-nix build .#nixosConfigurations.starforge.config.system.build.toplevel --no-link
+nix build .#nixosConfigurations.workstation.config.system.build.toplevel --no-link
 ```
 
 The Niri Home Manager module validates generated KDL, and the Noctalia module
@@ -545,8 +545,8 @@ validates generated settings during the build.
 First build the new system, then activate it as a test:
 
 ```sh
-sudo nixos-rebuild build --flake .#starforge
-sudo nixos-rebuild test --flake .#starforge
+sudo nixos-rebuild build --flake .#workstation
+sudo nixos-rebuild test --flake .#workstation
 ```
 
 Check the Niri session, Noctalia shell, networking, Bluetooth, audio, portals,
@@ -554,7 +554,7 @@ screenshots, media keys, display controls, Vulkan/VA-API, sensors, and a test VM
 Only after those checks pass, make the generation the default:
 
 ```sh
-sudo nixos-rebuild switch --flake .#starforge
+sudo nixos-rebuild switch --flake .#workstation
 ```
 
 Keep the previous generation available in the firmware boot menu. To roll back
@@ -565,7 +565,7 @@ sudo nixos-rebuild switch --rollback
 ```
 
 The generated hardware configuration contains the host's disk UUIDs and mount
-layout. It is preserved under `hosts/starforge/` and must not be copied to a
+layout. It is preserved under `hosts/workstation/` and must not be copied to a
 different machine without regenerating it.
 
 ## Updating dependencies

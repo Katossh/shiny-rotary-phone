@@ -25,7 +25,7 @@ _:
 
   # zram is not a hibernation target. Disable hibernation modes until a
   # persistent swap target and a tested resume configuration are available.
-  environment.etc."systemd/sleep.conf.d/20-starforge.conf".text = ''
+  environment.etc."systemd/sleep.conf.d/20-nixos.conf".text = ''
     [Sleep]
     AllowHibernation=no
     AllowHybridSleep=no

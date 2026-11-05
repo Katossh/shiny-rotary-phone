@@ -43,7 +43,7 @@ jobs:
       - name: Check shell syntax
         run: |
           bash -n install.sh
-          bash -n scripts/starforge.sh
+          bash -n scripts/nixcfg.sh
 
       - name: Install Nix
         uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31
@@ -56,14 +56,14 @@ jobs:
 
       - name: Check formatting
         run: |
-          mapfile -t nix_files < <(git ls-files '*.nix' ':!:hosts/starforge/hardware-configuration.nix')
+          mapfile -t nix_files < <(git ls-files '*.nix' ':!:hosts/workstation/hardware-configuration.nix')
           nix fmt -- "${nix_files[@]}"
           git diff --exit-code -- "${nix_files[@]}"
 
       - name: Run Nix static analysis
         run: |
           nix develop --no-update-lock-file --command bash -euo pipefail -c '
-            mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/starforge/hardware-configuration.nix")
+            mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/workstation/hardware-configuration.nix")
             for nix_file in "${nix_files[@]}"; do
               statix check "$nix_file"
             done
@@ -79,7 +79,7 @@ jobs:
             --show-trace
 
   build:
-    name: Build Starforge system
+    name: Build workstation system
     runs-on: ubuntu-24.04
     timeout-minutes: 90
 
@@ -154,12 +154,12 @@ jobs:
         run: |
           echo "::notice::Cachix is not configured. Create a public cache and set the CACHIX_CACHE_NAME repository variable to enable it."
 
-      - name: Build the Starforge system closure
+      - name: Build the workstation system closure
         run: |
           nix build \
             --no-update-lock-file \
             --accept-flake-config \
-            .#nixosConfigurations.starforge.config.system.build.toplevel \
+            .#nixosConfigurations.workstation.config.system.build.toplevel \
             --no-link \
             --fallback \
             --print-build-logs
