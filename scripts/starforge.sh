@@ -89,6 +89,58 @@ run_diagnostic() {
   return 0
 }
 
+show_kernel_taint() {
+  local raw_taint taint_number bit
+  local -a reasons=(
+    "proprietary module loaded"
+    "module force-loaded"
+    "out-of-spec hardware or configuration"
+    "module force-unloaded"
+    "machine check exception"
+    "bad page state"
+    "userspace requested taint"
+    "kernel OOPS or BUG"
+    "ACPI table overridden"
+    "kernel warning"
+    "staging driver loaded"
+    "firmware workaround applied"
+    "out-of-tree module loaded"
+    "unsigned module loaded"
+    "soft lockup occurred"
+    "kernel livepatch applied"
+    "auxiliary distribution taint"
+    "randstruct plugin enabled"
+    "in-kernel test executed"
+    "fwctl mutating debug operation used"
+  )
+
+  if [[ ! -r /proc/sys/kernel/tainted ]]; then
+    printf 'Kernel taint interface is unavailable.\n'
+    return
+  fi
+
+  raw_taint="$(< /proc/sys/kernel/tainted)"
+  printf 'Raw kernel taint value: %s\n' "$raw_taint"
+
+  if [[ ! "$raw_taint" =~ ^[0-9]+$ ]]; then
+    printf 'Kernel taint value is not a decimal integer; decoding skipped.\n'
+    return
+  fi
+
+  taint_number=$((10#$raw_taint))
+  if (( taint_number == 0 )); then
+    printf 'No kernel taint flags are set.\n'
+    return
+  fi
+
+  printf 'Decoded taint flags:\n'
+  for bit in "${!reasons[@]}"; do
+    if (( (taint_number & (1 << bit)) != 0 )); then
+      printf '  bit %s: %s\n' "$bit" "${reasons[$bit]}"
+    fi
+  done
+}
+
 security_audit() {
   local path group device
   SUDO_AVAILABLE=false
@@ -113,6 +165,12 @@ security_audit() {
   run_diagnostic root sbctl verify
   run_diagnostic user bootctl status --no-pager
   run_diagnostic user fwupdmgr security
+  run_diagnostic user fwupdmgr get-devices
+  run_diagnostic user fwupdmgr get-bios-settings
+  run_diagnostic root fwupdtool esp-list --verbose
+  run_diagnostic user findmnt --noheadings --output SOURCE,FSTYPE,OPTIONS --target /boot
+  run_diagnostic user lsblk --paths --output NAME,PARTTYPE,PARTTYPENAME,FSTYPE,MOUNTPOINTS
+  run_diagnostic user systemctl status udisks2.service --no-pager
 
   printf '\n== 2. AppArmor ==\n'
   run_diagnostic user systemctl is-active apparmor.service
@@ -128,6 +186,18 @@ security_audit() {
   printf '\n== 4. Kernel command line and mitigations ==\n'
   printf '$ cat /proc/cmdline\n'
   cat /proc/cmdline
+
+  printf '\nKernel Lockdown state:\n'
+  if [[ -r /sys/kernel/security/lockdown ]]; then
+    cat /sys/kernel/security/lockdown
+  else
+    printf 'Unavailable (securityfs or the kernel Lockdown interface is not exposed).\n'
+  fi
+  run_diagnostic root journalctl -k -b --no-pager --grep='lockdown|Lockdown' -n 50
+
+  printf '\nKernel taint state:\n'
+  show_kernel_taint
+
   printf '\nCPU vulnerability status:\n'
   if [[ -d /sys/devices/system/cpu/vulnerabilities ]]; then
     for path in /sys/devices/system/cpu/vulnerabilities/*; do
