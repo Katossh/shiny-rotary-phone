@@ -4,18 +4,44 @@ Starforge currently ships one supported machine profile: `workstation`.
 It is intentionally not a generic multi-host installer or a collection of
 selectable profiles.
 
+## Workstation account identity
+
+The workstation login name is configured once in
+`hosts/workstation/default.nix`:
+
+```nix
+starforge.user.username = "katossh";
+```
+
+The option accepts a 1–32 character login name beginning with a lowercase
+letter or underscore and containing only lowercase letters, digits,
+underscores, and hyphens. The name `root` is reserved and rejected.
+
+This value controls the NixOS normal-user account, the Home Manager user entry,
+the `/home/<username>` directory, and the libvirt socket/Polkit authorization.
+The Home Manager modules themselves live in the neutral `home/` directory.
+For a fresh installation, `install.sh --install` evaluates this option and
+prompts you to set the password for that account.
+
+**Changing the name on an already installed system is not an account migration.**
+NixOS does not automatically rename the existing account, move its home
+directory, transfer its password, or change ownership of existing files.
+Keep the current value (`katossh`) on the existing workstation unless you
+have separately planned and verified a user-account migration. Set a different
+name before a fresh installation instead.
+
 The repository separates configuration by ownership:
 
 - **Core system behavior:** reusable system-wide modules in `modules/nixos/`.
 - **Host-specific behavior:** hardware, disk, boot, and machine facts in
   `hosts/workstation/`.
 - **Personal preferences:** user-session settings in
-  `home/katossh/preferences.nix`.
+  `home/preferences.nix`.
 - **Terminal environment:** terminal packages, manifests, and dotfiles remain
   owned by the separate `terminal-dotfiles` repository.
 
 Most users should change personal preferences in the single
-`home/katossh/preferences.nix` file rather than editing the implementation
+`home/preferences.nix` file rather than editing the implementation
 modules that consume them.
 
 ## Supported preferences
@@ -54,7 +80,7 @@ own `sync_color_scheme` setting.
 ## Example
 
 To use automatic light/dark switching, change the corresponding defaults in
-`home/katossh/preferences.nix`:
+`home/preferences.nix`:
 
 ```diff
 -        default = "dark";

@@ -82,7 +82,7 @@ in
     };
 
     sockets.libvirtd.socketConfig = {
-      SocketUser = "katossh";
+      SocketUser = config.starforge.user.username;
       SocketGroup = "root";
       SocketMode = "0600";
     };
@@ -92,7 +92,7 @@ in
   security.polkit.extraConfig = ''
     polkit.addRule(function(action, subject) {
       if (action.id == "org.libvirt.unix.manage" &&
-          subject.user == "katossh" &&
+          subject.user == "${config.starforge.user.username}" &&
           subject.active == true &&
           subject.local == true) {
         return polkit.Result.YES;
