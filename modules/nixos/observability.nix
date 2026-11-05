@@ -7,6 +7,7 @@ let
       amdgpu_top
       coreutils
       diffutils
+      findutils
       gawk
       git
       lm_sensors
