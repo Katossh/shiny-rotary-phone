@@ -12,6 +12,7 @@
     ../../modules/nixos/apparmor.nix
     ../../modules/nixos/audio.nix
     ../../modules/nixos/boot.nix
+    ../../modules/nixos/containers.nix
     ../../modules/nixos/desktop.nix
     ../../modules/nixos/development.nix
     ../../modules/nixos/hardware.nix
