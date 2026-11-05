@@ -622,5 +622,7 @@ follow a newer NixOS release; it remains `26.05` from the original install.
   job, then builds the complete system closure in a separate job.
 - Keep a known-good generation and a copy of the hardware configuration
   before changing bootloader, LUKS, Btrfs, or kernel settings.
-- Keep the previous GRUB UEFI boot entry as a recovery route until Limine and
-  Windows chainloading have been re-tested with Secure Boot enabled.
+- Keep a known-good recovery route available before modifying bootloader
+  or Secure Boot settings. The Limine menu retains up to five NixOS generations;
+  verify the active Limine and Windows chainloading paths on the host before
+  relying on them as the only recovery route.
