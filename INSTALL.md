@@ -107,8 +107,9 @@ cd /mnt/etc/nixos
 The script verifies that `/mnt`, `/mnt/home`, `/mnt/nix`, `/mnt/var/log`, and
 `/mnt/boot` are mounted with the expected filesystem types and Btrfs subvolumes.
 It then runs `nixos-install --flake ...#workstation`, asks you to set the root
-password, and prompts you to set the `katossh` account password inside the new
-system. Set both passwords before rebooting.
+password, and prompts you to set the password for the account configured by
+`starforge.user.username` in `hosts/workstation/default.nix` (currently
+`katossh`). Set both passwords before rebooting.
 
 Do not run the fresh-install mode against a newly partitioned or different
 computer. The committed hardware configuration and Limine Windows entry are

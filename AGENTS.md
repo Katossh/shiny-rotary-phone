@@ -19,7 +19,7 @@ Treat the checked-out repository as the source of truth. At the time this guide 
 - `flake.nix`, `flake.lock` — flake inputs, pinned dependencies, formatter, development shell, and the `workstation` NixOS output.
 - `hosts/workstation/` — the current machine-specific host profile, including generated hardware configuration.
 - `modules/nixos/` — reusable system-level NixOS modules.
-- `home/katossh/` — Home Manager configuration for the user.
+- `home/` — Home Manager modules for the workstation user; the login name is configured once through `starforge.user.username` in `hosts/workstation/default.nix`.
 - `terminal-dotfiles` — a separate pinned input and the source of truth for terminal configuration and package manifests. Do not duplicate or take ownership of those files in Starforge.
 - `docs/security-audit.md` — documented security-audit procedure.
 - `nixcfg audit` — the existing documented, read-only security diagnostics entry point. Inspect its actual implementation and ownership before extending or changing it.
@@ -111,7 +111,7 @@ Use the existing project boundaries unless there is a demonstrated reason to cha
 
 - `hosts/workstation/` owns machine-specific facts and hardware-dependent configuration.
 - `modules/nixos/` owns reusable system-level behavior and system-wide policy.
-- `home/katossh/` owns user-session and Home Manager settings.
+- `home/` owns user-session and Home Manager settings; do not hard-code the login name in Home Manager modules.
 - `terminal-dotfiles` owns terminal packages, terminal configuration, and its manifests.
 
 Do not move a setting merely to make the directory structure look cleaner. Change ownership only when the current boundary causes a real maintenance or UX problem, and update every affected reference and document in the same complete change.

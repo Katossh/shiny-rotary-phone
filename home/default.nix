@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, starforgeUsername, ... }:
 
 {
   imports = [
@@ -17,8 +17,8 @@
   };
 
   home = {
-    username = "katossh";
-    homeDirectory = "/home/katossh";
+    username = starforgeUsername;
+    homeDirectory = "/home/${starforgeUsername}";
     stateVersion = "26.05";
 
     packages = with pkgs; [

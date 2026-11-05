@@ -89,6 +89,17 @@ configure_nix() {
   export NIX_CONFIG="${nix_config}"
 }
 
+get_workstation_username() {
+  local username
+
+  username="$(nix eval --raw "$REPO_DIR#nixosConfigurations.$HOST_NAME.config.starforge.user.username")" \
+    || die "Could not evaluate starforge.user.username for the workstation profile."
+  [[ "$username" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] \
+    || die "The evaluated workstation username is not a supported login name."
+
+  printf '%s\n' "$username"
+}
+
 check_profile_files() {
   local hardware_file="${REPO_DIR}/hosts/workstation/hardware-configuration.nix"
 
@@ -213,6 +224,8 @@ run_switch() {
 }
 
 run_install() {
+  local username
+
   require_nixos
   require_command nixos-install
   require_command nixos-enter
@@ -225,6 +238,7 @@ run_install() {
     || die "This host profile requires a UEFI boot. Boot the NixOS installer in UEFI mode."
   check_profile_files
   check_expected_devices
+  username="$(get_workstation_username)"
 
   check_mount "$INSTALL_ROOT" "btrfs"
   check_btrfs_subvolume "$INSTALL_ROOT" "@root"
@@ -245,8 +259,8 @@ run_install() {
 
   nixos-install --flake "$REPO_DIR#$HOST_NAME"
 
-  log "Set a password for the declared katossh account before rebooting."
-  nixos-enter --root "$INSTALL_ROOT" -c 'passwd katossh'
+  log "Set a password for the declared '$username' account before rebooting."
+  nixos-enter --root "$INSTALL_ROOT" -c "passwd $username"
 
   log "Installation completed. Review the installer output, then reboot when ready."
 }
