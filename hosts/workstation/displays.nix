@@ -1,4 +1,4 @@
-{ ... }:
+_:
 
 {
   # Physical display topology for this workstation. Discover output names with
