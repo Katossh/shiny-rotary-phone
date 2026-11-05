@@ -16,6 +16,7 @@ let
       nixfmt
       procps
       systemd
+      util-linux
     ];
     text = builtins.readFile ../../scripts/starforge.sh;
   };
