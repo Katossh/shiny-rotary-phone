@@ -50,6 +50,8 @@ show_status() {
   printf '\nSystem generation: %s\n\n' "${system_generation:-unavailable}"
 }
 
+SUDO_AVAILABLE=false
+
 run_diagnostic() {
   local privilege="$1"
   shift
@@ -66,7 +68,7 @@ run_diagnostic() {
   printf '\n'
 
   if [[ "$privilege" == "root" ]] && (( EUID != 0 )); then
-    if [[ "$sudo_available" != "true" ]]; then
+    if [[ "$SUDO_AVAILABLE" != "true" ]]; then
       printf '[skipped] Root privileges are unavailable.\n'
       return 0
     fi
@@ -89,11 +91,11 @@ run_diagnostic() {
 
 security_audit() {
   local path group device
-  local sudo_available=false
+  SUDO_AVAILABLE=false
 
   if (( EUID != 0 )); then
     if command -v sudo >/dev/null 2>&1 && sudo -v; then
-      sudo_available=true
+      SUDO_AVAILABLE=true
     else
       printf 'Root-only checks will be skipped. Re-run with sudo for a complete audit.\n'
     fi
