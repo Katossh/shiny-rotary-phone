@@ -1,4 +1,9 @@
-{ config, inputs, pkgs, ... }:
+{
+  config,
+  inputs,
+  pkgs,
+  ...
+}:
 
 {
   imports = [
@@ -13,7 +18,8 @@
 
   # This workstation has an AK620 Digital; its display daemon runs in the
   # configured user's Home Manager session, not as a system-wide service.
-  home-manager.users.${config.starforge.user.username}.starforge.user.hardware.deepcoolDigital.enable = true;
+  home-manager.users.${config.starforge.user.username}.starforge.user.hardware.deepcoolDigital.enable =
+    true;
 
   # Device-specific hidraw permissions for this workstation's peripherals.
   services.udev.extraRules = ''
