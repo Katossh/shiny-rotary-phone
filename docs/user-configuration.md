@@ -60,15 +60,6 @@ Home Manager configuration.
 | `starforge.user.desktop.niri.gaps` | `12` | Niri layout gap in logical pixels; integer range 0–64. |
 | `starforge.user.desktop.monitors` | `{}` | Niri output map keyed by connector name; supports mode, scale, and position. |
 
-### Niri workspaces
-
-Niri starts with five persistent named workspaces: `"1"` through `"5"`.
-They remain available while empty. `Mod+1` through `Mod+5` focus those
-workspaces by name, and `Mod+Ctrl+1` through `Mod+Ctrl+5` move the focused
-column to the corresponding workspace. `Mod+Page_Down` and
-`Mod+Page_Up` continue to navigate between workspaces, including additional
-dynamic workspaces created beyond the initial five.
-
 Built-in Noctalia palettes supported by the currently pinned Noctalia input:
 
 - `Ayu`
@@ -87,6 +78,15 @@ terminal-dotfiles theme, install fonts, or guarantee that every third-party
 application supports automatic color-scheme switching. Noctalia's theme mode
 can synchronize the desktop color-scheme preference according to Noctalia's
 own `sync_color_scheme` setting.
+
+### Niri workspaces
+
+Niri starts with five persistent named workspaces: `"1"` through `"5"`.
+They remain available while empty. `Mod+1` through `Mod+5` focus those
+workspaces by name, and `Mod+Ctrl+1` through `Mod+Ctrl+5` move the focused
+column to the corresponding workspace. `Mod+Page_Down` and
+`Mod+Page_Up` continue to navigate between workspaces, including additional
+dynamic workspaces created beyond the initial five.
 
 ## Example
 
