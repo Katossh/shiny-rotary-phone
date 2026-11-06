@@ -44,9 +44,5 @@
     };
 
     supportedFilesystems = [ "btrfs" ];
-
-    # Use Nixpkgs' default maintained LTS kernel set instead of latest mainline.
-    kernelPackages = pkgs.linuxPackages;
   };
-
 }
