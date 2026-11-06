@@ -219,11 +219,10 @@ in
         "Mod+Page_Down"."focus-workspace-down" = { };
         "Mod+Page_Up"."focus-workspace-up" = { };
         "Mod+Tab"."focus-workspace-previous" = { };
-
-        # Keep shortcuts 1-5 tied to the named workspaces, not their current positions.
         "Mod+Ctrl+Page_Down"."move-column-to-workspace-down" = { };
         "Mod+Ctrl+Page_Up"."move-column-to-workspace-up" = { };
 
+        # Keep shortcuts 1-5 tied to the named workspaces, not their current positions.
         "Mod+1".focus-workspace._args = [ "1" ];
         "Mod+2".focus-workspace._args = [ "2" ];
         "Mod+3".focus-workspace._args = [ "3" ];
