@@ -3,6 +3,7 @@
 {
   imports = [
     ./preferences.nix
+    ./deepcool-digital.nix
     ./gtk.nix
     ./niri.nix
     ./noctalia.nix

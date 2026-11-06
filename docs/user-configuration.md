@@ -54,6 +54,7 @@ Home Manager configuration.
 | `starforge.user.appearance.themeMode` | `"dark"` | `"dark"`, `"light"`, or `"auto"`; controls Noctalia's theme mode. |
 | `starforge.user.appearance.palette` | `"Catppuccin"` | One of the built-in Noctalia palettes listed below. |
 | `starforge.user.appearance.fontFamily` | `"Inter"` | Fontconfig family name used for Noctalia's UI; the font must already be installed. |
+| `starforge.user.hardware.deepcoolDigital.enable` | `false` | Starts the DeepCool Digital daemon as a per-user systemd service; requires a compatible display and a host-specific hidraw udev ACL. |
 | `starforge.user.desktop.niri.keyboardLayout` | `"us,ru"` | Comma-separated XKB layout identifiers passed to Niri. |
 | `starforge.user.desktop.niri.keyboardLayoutOptions` | `"grp:alt_shift_toggle"` | XKB layout options passed to Niri. |
 | `starforge.user.desktop.niri.gaps` | `12` | Niri layout gap in logical pixels; integer range 0–64. |
@@ -154,8 +155,8 @@ on hardware that is not attached during the build.
 ### Hardware ownership
 
 - `hosts/workstation/hardware.nix` contains this host's AMD CPU/GPU modules,
-  early AMDGPU setup, and exact hidraw permissions for the VXE receiver and
-  LEKU keyboard.
+  early AMDGPU setup, and exact hidraw permissions for the AK620 Digital,
+  VXE receiver, and LEKU keyboard.
 - `modules/nixos/hardware.nix` contains common capabilities such as firmware,
   graphics, Bluetooth, fwupd, SMART monitoring, and common diagnostic tools.
 - `modules/nixos/storage.nix` owns filesystem mount policy and the Btrfs scrub
@@ -169,6 +170,35 @@ hardware modules and device rules with ones appropriate to the actual CPU/GPU
 and peripherals. Regenerate `hardware-configuration.nix` for the target
 machine and review it rather than copying this workstation's disk and device
 details.
+
+### DeepCool AK620 Digital display
+
+The upstream [`deepcool-digital-linux` project](https://github.com/Nortank12/deepcool-digital-linux)
+supports both AK620 Digital and AK620 Digital SE; these variants share the same USB product ID. The package is available from
+the repository's pinned Nixpkgs input. The Home Manager module in
+`home/deepcool-digital.nix` installs the CLI and runs the display daemon as a
+systemd **user** service.
+
+The typed option `starforge.user.hardware.deepcoolDigital.enable` defaults
+to `false`. The workstation opts in from `hosts/workstation/hardware.nix`
+because that machine has an AK620 Digital. Other machine profiles should leave
+the option disabled unless they have a supported display and provide their
+own matching device permissions.
+
+The daemon runs without root. The workstation udev rule grants the active
+local user access only to hidraw devices matching USB VID `3633` and PID
+`0002` (AK620 Digital / Digital SE). This is the narrowest USB ID shared by those two variants; it does not make all DeepCool devices world-writable
+or add a broad vendor-wide permission. No Intel RAPL permission is needed on
+this AMD workstation.
+
+After applying the configuration for the first time, reconnect the cooler's
+internal USB connection or reboot so udev/logind can apply the device ACL.
+Check the user service and its logs with:
+
+```sh
+systemctl --user status deepcool-digital-linux.service
+journalctl --user -u deepcool-digital-linux.service -b
+```
 
 ## Apply changes safely
 
@@ -206,10 +236,12 @@ Do not edit the generated Home Manager config file as a workaround.
 
 ### Scope and security
 
-This preference surface deliberately excludes hardware facts, boot settings,
-encryption, service enablement, security policy, lock-screen timeouts, and
-privileged features. Those remain owned by the host/system modules and should
-not become personal toggles merely for convenience.
+The user preference surface deliberately avoids general system policy,
+boot settings, encryption, security policy, lock-screen settings, or broad
+privileged-service controls. The DeepCool option is a narrow exception for a
+user-scoped daemon; its device ACL remains host-owned and restricted to the
+exact cooler HID ID. Keep host-specific hardware access in the corresponding
+host profile rather than adding it to `modules/nixos/`.
 
 Do not introduce a generic profile selector or multi-host abstraction until
 there is a concrete second supported host and a tested reason to share the
