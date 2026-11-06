@@ -52,6 +52,6 @@ in
     enable = true;
     systemd.enable = true;
     checkConfig = true;
-    settings = settings;
+    inherit settings;
   };
 }
