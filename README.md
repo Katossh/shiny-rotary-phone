@@ -60,7 +60,7 @@ GPU on an AM5 platform.
 
 - AMD CPU microcode and redistributable firmware are enabled.
 - AMD P-State active mode is enabled for modern Ryzen power/performance scaling.
-- The host uses pkgs.linuxPackages, Nixpkgs' default supported LTS kernel set, rather than the newest mainline kernel alias.
+- The workstation selects `pkgs.linuxPackages_latest` in `hosts/workstation/hardware.nix`. This tracks the newest maintained stable kernel exposed by the locked Nixpkgs revision; it is not a release-candidate or custom kernel. The kernel-specific module set is selected with it.
 - The AMDGPU kernel driver is loaded in the initrd for early KMS.
 - Mesa graphics acceleration and 32-bit graphics support are enabled.
 - Vulkan and VA-API diagnostic tools are installed.
