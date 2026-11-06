@@ -51,6 +51,31 @@ in
         '';
       };
 
+      paletteSource = mkOption {
+        type = types.enum [
+          "builtin"
+          "community"
+          "wallpaper"
+        ];
+        default = "community";
+        description = ''
+          Noctalia palette source. Use "builtin", "community", or "wallpaper"
+          to select a bundled palette, a named community palette, or a
+          wallpaper-derived palette.
+        '';
+      };
+
+      communityPalette = mkOption {
+        type = types.str;
+        default = "Catppuccin Frappe Peach";
+        example = "Catppuccin Frappe Mocha";
+        description = ''
+          Noctalia community palette name used when paletteSource is
+          "community". The selected palette is fetched by Noctalia and cached
+          in its app-managed state directory.
+        '';
+      };
+
       fontFamily = mkOption {
         type = types.str;
         default = "Inter";

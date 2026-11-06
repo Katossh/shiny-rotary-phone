@@ -1,5 +1,43 @@
-{ config, inputs, ... }:
+{ config, inputs, lib, ... }:
 
+let
+  exportedSettings = builtins.fromTOML (builtins.readFile ./noctalia/settings.toml);
+
+  picturesDirectory =
+    if config.xdg.userDirs.pictures == null then
+      "${config.home.homeDirectory}/Pictures"
+    else
+      config.xdg.userDirs.pictures;
+
+  wallpaperDirectory = "${picturesDirectory}/Wallpapers";
+
+  favoriteWallpapers = map
+    (wallpaper: wallpaper // {
+      path = "${wallpaperDirectory}/${wallpaper.path}";
+    })
+    exportedSettings.wallpaper.favorite;
+
+  settings = lib.recursiveUpdate exportedSettings {
+    bar.default.font_family = config.starforge.user.appearance.fontFamily;
+    shell.font_family = config.starforge.user.appearance.fontFamily;
+
+    theme = {
+      mode = config.starforge.user.appearance.themeMode;
+      source = config.starforge.user.appearance.paletteSource;
+      builtin = config.starforge.user.appearance.palette;
+      community_palette = config.starforge.user.appearance.communityPalette;
+    };
+
+    plugin_settings."noctalia/wallhaven".download_dir = wallpaperDirectory;
+
+    wallpaper = {
+      directory = wallpaperDirectory;
+      default.path = "${wallpaperDirectory}/${exportedSettings.wallpaper.default.path}";
+      last.path = "${wallpaperDirectory}/${exportedSettings.wallpaper.last.path}";
+      favorite = favoriteWallpapers;
+    };
+  };
+in
 {
   imports = [ inputs.noctalia.homeModules.default ];
 
@@ -7,48 +45,6 @@
     enable = true;
     systemd.enable = true;
     checkConfig = true;
-
-    settings = {
-      # Require authentication after locking and lock automatically before sleep.
-      lockscreen = {
-        enabled = true;
-        lock_before_suspend = true;
-        grace_period_seconds = 0;
-      };
-
-      # Lock after ten idle minutes; turn displays off after fifteen.
-      # Noctalia respects active idle inhibitors (for example, video playback).
-      idle = {
-        behavior_order = [
-          "lock"
-          "screen-off"
-        ];
-        pre_action_fade_seconds = 2.0;
-        behavior = {
-          lock = {
-            enabled = true;
-            timeout = 600;
-            action = "lock";
-          };
-          "screen-off" = {
-            enabled = true;
-            timeout = 900;
-            action = "screen_off";
-          };
-        };
-      };
-      shell = {
-        clipboard_enabled = true;
-        font_family = config.starforge.user.appearance.fontFamily;
-        settings_show_advanced = true;
-        launch_apps_as_systemd_services = true;
-      };
-
-      theme = {
-        mode = config.starforge.user.appearance.themeMode;
-        source = "builtin";
-        builtin = config.starforge.user.appearance.palette;
-      };
-    };
+    settings = settings;
   };
 }
