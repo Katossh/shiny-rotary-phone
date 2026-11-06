@@ -1,4 +1,9 @@
-{ config, inputs, lib, ... }:
+{
+  config,
+  inputs,
+  lib,
+  ...
+}:
 
 let
   exportedSettings = builtins.fromTOML (builtins.readFile ./noctalia/settings.toml);
@@ -11,11 +16,13 @@ let
 
   wallpaperDirectory = "${picturesDirectory}/Wallpapers";
 
-  favoriteWallpapers = map
-    (wallpaper: wallpaper // {
+  favoriteWallpapers = map (
+    wallpaper:
+    wallpaper
+    // {
       path = "${wallpaperDirectory}/${wallpaper.path}";
-    })
-    exportedSettings.wallpaper.favorite;
+    }
+  ) exportedSettings.wallpaper.favorite;
 
   settings = lib.recursiveUpdate exportedSettings {
     bar.default.font_family = config.starforge.user.appearance.fontFamily;
