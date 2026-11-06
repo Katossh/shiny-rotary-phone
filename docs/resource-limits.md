@@ -29,8 +29,9 @@ Both should report `2097152` (KiB). To inspect an already-running inference
 process, use its PID:
 
 ```sh
-grep 'Max locked memory' /proc/<PID>/limits
-grep '^VmLck:' /proc/<PID>/status
+PID=12345 # Replace with the inference process ID
+grep 'Max locked memory' "/proc/$PID/limits"
+grep '^VmLck:' "/proc/$PID/status"
 ```
 
 `VmLck` reports how much memory is actually locked, while the limits file
