@@ -11,8 +11,6 @@
     ./containers.nix
   ];
 
-  services.polkit-gnome.enable = true;
-
   home = {
     username = starforgeUsername;
     homeDirectory = "/home/${starforgeUsername}";

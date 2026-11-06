@@ -52,8 +52,10 @@ Home Manager configuration.
 | Option | Default | Accepted values / effect |
 |---|---|---|
 | `starforge.user.appearance.themeMode` | `"dark"` | `"dark"`, `"light"`, or `"auto"`; controls Noctalia's theme mode. |
-| `starforge.user.appearance.palette` | `"Catppuccin"` | One of the built-in Noctalia palettes listed below. |
-| `starforge.user.appearance.fontFamily` | `"Inter"` | Fontconfig family name used for Noctalia's UI; the font must already be installed. |
+| `starforge.user.appearance.paletteSource` | `"community"` | `"builtin"`, `"community"`, or `"wallpaper"`; selects the palette source. |
+| `starforge.user.appearance.palette` | `"Catppuccin"` | Built-in palette used when `paletteSource = "builtin"`. |
+| `starforge.user.appearance.communityPalette` | `"Catppuccin Frappe Peach"` | Community palette name used when `paletteSource = "community"`. |
+| `starforge.user.appearance.fontFamily` | `"Inter"` | Fontconfig family name used for Noctalia's UI and bar; the font must already be installed. |
 | `starforge.user.hardware.deepcoolDigital.enable` | `false` | Starts the DeepCool Digital daemon as a per-user systemd service; requires a compatible display and a host-specific hidraw udev ACL. |
 | `starforge.user.desktop.niri.keyboardLayout` | `"us,ru"` | Comma-separated XKB layout identifiers passed to Niri. |
 | `starforge.user.desktop.niri.keyboardLayoutOptions` | `"grp:alt_shift_toggle"` | XKB layout options passed to Niri. |
@@ -73,11 +75,56 @@ Built-in Noctalia palettes supported by the currently pinned Noctalia input:
 - `Rosé Pine`
 - `Tokyo-Night`
 
-The palette option selects a Noctalia built-in palette. It does not change the
-terminal-dotfiles theme, install fonts, or guarantee that every third-party
-application supports automatic color-scheme switching. Noctalia's theme mode
-can synchronize the desktop color-scheme preference according to Noctalia's
-own `sync_color_scheme` setting.
+The `palette` option selects a Noctalia built-in palette when
+`paletteSource = "builtin"`. `communityPalette` selects the community palette
+when the source is `"community"`; the current default is Catppuccin Frappe
+Peach. The wallpaper source derives its palette from the active wallpaper.
+
+These choices do not change the terminal-dotfiles theme or install fonts.
+Noctalia's theme mode can synchronize the desktop color-scheme preference
+according to Noctalia's own `sync_color_scheme` setting.
+
+## Noctalia configuration and portable assets
+
+The curated Noctalia configuration is stored in
+`home/noctalia/settings.toml` and loaded by the existing
+`home/noctalia.nix` Home Manager module. Typed appearance preferences from
+`home/preferences.nix` override the corresponding font and palette values.
+Do not edit generated files under `~/.config/noctalia/`.
+
+Wallpaper paths are resolved from the Home Manager Pictures directory:
+`<XDG Pictures>/Wallpapers` (normally `~/Pictures/Wallpapers`). The
+configuration retains the six wallpaper filenames from the export, but the
+image files are not committed to this repository. Copy those files to the same
+directory on another installation; the Wallhaven plugin downloads there too.
+
+Lock-screen widgets no longer pin themselves to the workstation's `DP-1`
+connector. They retain the original 3440×1440 placement canvas, allowing
+Noctalia to scale their coordinates for a different output. Adjust the widgets
+in Noctalia Settings if a new display layout needs a different composition.
+
+The exported city address is not stored in this public repository.
+`location.auto_locate = true` lets Noctalia resolve approximate coordinates
+from the current public IP through its location service. This avoids a
+machine-specific city value, but means Noctalia's location service receives
+the approximate network-derived location. The Weather service is enabled
+because the exported bar layout includes its widget. See the
+[Noctalia location documentation](https://docs.noctalia.dev/noctalia/services/location/).
+
+Noctalia's native Polkit agent is enabled in the shell configuration. The
+separate Home Manager `polkit-gnome` agent is therefore not started; do not
+enable a second session agent alongside Noctalia. This does not disable the
+system Polkit service or its authorization rules. See
+[Noctalia's shell configuration](https://docs.noctalia.dev/noctalia/configuration/shell/).
+
+The export contains no `[theme.templates]` selection and no custom palette
+files. No template IDs have been guessed or enabled. Built-in and community
+templates are opt-in; inspect available IDs with
+`noctalia theme --list-templates` and add the chosen IDs to the declarative
+configuration when ready. See
+[Noctalia App Theming](https://docs.noctalia.dev/noctalia/theming/app-theming/).
+The originally uploaded archive was only a symlink into `/nix/store`, so it
+did not provide any additional template or palette files to migrate.
 
 ## Example
 
@@ -234,14 +281,23 @@ take effect, inspect:
 Use Noctalia Settings to reset or change the conflicting GUI-managed value.
 Do not edit the generated Home Manager config file as a workaround.
 
+The exported GUI configuration contained a 5-second passwordless lock-screen
+grace period. The declarative configuration deliberately keeps this at
+0 seconds, preserving the repository's existing security policy. Reset that
+GUI-managed lock-screen value (or remove only its
+`lockscreen.grace_period_seconds` override from the state file after making a
+backup); otherwise the app-managed state value wins over Home Manager. Do not
+delete the entire state file blindly if it contains other app-managed settings.
+
 ### Scope and security
 
-The user preference surface deliberately avoids general system policy,
-boot settings, encryption, security policy, lock-screen settings, or broad
-privileged-service controls. The DeepCool option is a narrow exception for a
-user-scoped daemon; its device ACL remains host-owned and restricted to the
-exact cooler HID ID. Keep host-specific hardware access in the corresponding
-host profile rather than adding it to `modules/nixos/`.
+The typed preference surface deliberately avoids general system
+policy, boot settings, encryption, or broad privileged-service controls.
+Noctalia's session and lock-screen behavior remains user-scoped in its Home
+Manager configuration; system-wide Polkit policy and hardware access remain
+owned by NixOS modules and the corresponding host profile. The DeepCool
+option is a narrow exception for a user-scoped daemon; its device ACL remains
+host-owned and restricted to the exact cooler HID ID.
 
 Do not introduce a generic profile selector or multi-host abstraction until
 there is a concrete second supported host and a tested reason to share the
