@@ -50,7 +50,8 @@ The existing `nixcfg status` and `nixcfg audit` commands remain available;
 `nixcfg check` evaluates and builds the configuration without activating it.
 See [`docs/diagnostics-recovery.md`](./docs/diagnostics-recovery.md) for
 result states, exit codes, generation rollback, snapshot limitations, and
-host-specific recovery guidance.
+host-specific recovery guidance. See [`docs/resource-limits.md`](./docs/resource-limits.md)
+for the local AI inference memory-locking limit and verification steps.
 
 ## Hardware profile
 
