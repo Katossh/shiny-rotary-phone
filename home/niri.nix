@@ -94,6 +94,22 @@ in
       # Repeated top-level KDL nodes must use root _children.
       # Output nodes are generated from starforge.user.desktop.monitors.
       _children = monitorOutputNodes ++ [
+        # Keep five named workspaces available even when they are empty.
+        {
+          workspace._args = [ "1" ];
+        }
+        {
+          workspace._args = [ "2" ];
+        }
+        {
+          workspace._args = [ "3" ];
+        }
+        {
+          workspace._args = [ "4" ];
+        }
+        {
+          workspace._args = [ "5" ];
+        }
         {
           # Float Noctalia's settings window.
           window-rule = {
@@ -216,21 +232,21 @@ in
         "Mod+Ctrl+Page_Down"."move-column-to-workspace-down" = { };
         "Mod+Ctrl+Page_Up"."move-column-to-workspace-up" = { };
 
-        "Mod+1".focus-workspace._args = [ 1 ];
-        "Mod+2".focus-workspace._args = [ 2 ];
-        "Mod+3".focus-workspace._args = [ 3 ];
-        "Mod+4".focus-workspace._args = [ 4 ];
-        "Mod+5".focus-workspace._args = [ 5 ];
+        "Mod+1".focus-workspace._args = [ "1" ];
+        "Mod+2".focus-workspace._args = [ "2" ];
+        "Mod+3".focus-workspace._args = [ "3" ];
+        "Mod+4".focus-workspace._args = [ "4" ];
+        "Mod+5".focus-workspace._args = [ "5" ];
         "Mod+6".focus-workspace._args = [ 6 ];
         "Mod+7".focus-workspace._args = [ 7 ];
         "Mod+8".focus-workspace._args = [ 8 ];
         "Mod+9".focus-workspace._args = [ 9 ];
 
-        "Mod+Ctrl+1".move-column-to-workspace._args = [ 1 ];
-        "Mod+Ctrl+2".move-column-to-workspace._args = [ 2 ];
-        "Mod+Ctrl+3".move-column-to-workspace._args = [ 3 ];
-        "Mod+Ctrl+4".move-column-to-workspace._args = [ 4 ];
-        "Mod+Ctrl+5".move-column-to-workspace._args = [ 5 ];
+        "Mod+Ctrl+1".move-column-to-workspace._args = [ "1" ];
+        "Mod+Ctrl+2".move-column-to-workspace._args = [ "2" ];
+        "Mod+Ctrl+3".move-column-to-workspace._args = [ "3" ];
+        "Mod+Ctrl+4".move-column-to-workspace._args = [ "4" ];
+        "Mod+Ctrl+5".move-column-to-workspace._args = [ "5" ];
         "Mod+Ctrl+6".move-column-to-workspace._args = [ 6 ];
         "Mod+Ctrl+7".move-column-to-workspace._args = [ 7 ];
         "Mod+Ctrl+8".move-column-to-workspace._args = [ 8 ];
