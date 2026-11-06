@@ -13,6 +13,10 @@
     inputs.nixos-hardware.nixosModules.common-gpu-amd
   ];
 
+  # Track the newest maintained stable kernel exposed by the locked Nixpkgs.
+  # Keep this host-specific rather than changing the reusable boot module.
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+
   hardware.cpu.amd.updateMicrocode = true;
   hardware.amdgpu.initrd.enable = true;
 
