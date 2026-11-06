@@ -174,7 +174,7 @@ details.
 ### DeepCool AK620 Digital display
 
 The upstream [`deepcool-digital-linux` project](https://github.com/Nortank12/deepcool-digital-linux)
-supports the AK620 Digital and AK620 Digital SE. The package is available from
+supports both AK620 Digital and AK620 Digital SE; these variants share the same USB product ID. The package is available from
 the repository's pinned Nixpkgs input. The Home Manager module in
 `home/deepcool-digital.nix` installs the CLI and runs the display daemon as a
 systemd **user** service.
@@ -187,7 +187,7 @@ own matching device permissions.
 
 The daemon runs without root. The workstation udev rule grants the active
 local user access only to hidraw devices matching USB VID `3633` and PID
-`0002` (AK620 Digital). It does not make all DeepCool devices world-writable
+`0002` (AK620 Digital / Digital SE). This is the narrowest USB ID shared by those two variants; it does not make all DeepCool devices world-writable
 or add a broad vendor-wide permission. No Intel RAPL permission is needed on
 this AMD workstation.
 

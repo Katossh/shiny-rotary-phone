@@ -25,7 +25,7 @@
   services.udev.extraRules = ''
     SUBSYSTEM=="hidraw", ATTRS{idVendor}=="373b", TAG+="uaccess"
 
-    # DeepCool AK620 Digital display (USB VID 3633, PID 0002).
+    # DeepCool AK620 Digital / Digital SE display (shared USB VID 3633, PID 0002).
     SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3633", ATTRS{idProduct}=="0002", TAG+="uaccess"
 
     # VXE NordicMouse 1K receiver.
