@@ -95,21 +95,11 @@ in
       # Output nodes are generated from starforge.user.desktop.monitors.
       _children = monitorOutputNodes ++ [
         # Keep five named workspaces available even when they are empty.
-        {
-          workspace._args = [ "1" ];
-        }
-        {
-          workspace._args = [ "2" ];
-        }
-        {
-          workspace._args = [ "3" ];
-        }
-        {
-          workspace._args = [ "4" ];
-        }
-        {
-          workspace._args = [ "5" ];
-        }
+        { workspace._args = [ "1" ]; }
+        { workspace._args = [ "2" ]; }
+        { workspace._args = [ "3" ]; }
+        { workspace._args = [ "4" ]; }
+        { workspace._args = [ "5" ]; }
         {
           # Float Noctalia's settings window.
           window-rule = {
@@ -229,6 +219,8 @@ in
         "Mod+Page_Down"."focus-workspace-down" = { };
         "Mod+Page_Up"."focus-workspace-up" = { };
         "Mod+Tab"."focus-workspace-previous" = { };
+
+        # Keep shortcuts 1-5 tied to the named workspaces, not their current positions.
         "Mod+Ctrl+Page_Down"."move-column-to-workspace-down" = { };
         "Mod+Ctrl+Page_Up"."move-column-to-workspace-up" = { };
 
