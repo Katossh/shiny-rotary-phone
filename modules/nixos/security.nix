@@ -1,9 +1,26 @@
-_:
+{ config, ... }:
 
 {
   security = {
     polkit.enable = true;
     protectKernelImage = true;
+
+    # Local inference can mlock model/runtime buffers. PAM limits are in KiB;
+    # keep this scoped to the configured interactive user.
+    pam.loginLimits = [
+      {
+        domain = config.starforge.user.username;
+        type = "soft";
+        item = "memlock";
+        value = "2097152";
+      }
+      {
+        domain = config.starforge.user.username;
+        type = "hard";
+        item = "memlock";
+        value = "2097152";
+      }
+    ];
 
     sudo = {
       wheelNeedsPassword = true;
