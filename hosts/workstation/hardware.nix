@@ -1,4 +1,4 @@
-{ inputs, pkgs, ... }:
+{ config, inputs, pkgs, ... }:
 
 {
   imports = [
@@ -11,9 +11,16 @@
   hardware.cpu.amd.updateMicrocode = true;
   hardware.amdgpu.initrd.enable = true;
 
+  # This workstation has an AK620 Digital; its display daemon runs in the
+  # configured user's Home Manager session, not as a system-wide service.
+  home-manager.users.${config.starforge.user.username}.starforge.user.hardware.deepcoolDigital.enable = true;
+
   # Device-specific hidraw permissions for this workstation's peripherals.
   services.udev.extraRules = ''
     SUBSYSTEM=="hidraw", ATTRS{idVendor}=="373b", TAG+="uaccess"
+
+    # DeepCool AK620 Digital display (USB VID 3633, PID 0002).
+    SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3633", ATTRS{idProduct}=="0002", TAG+="uaccess"
 
     # VXE NordicMouse 1K receiver.
     KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3554", ATTRS{idProduct}=="f58a", TAG+="uaccess"

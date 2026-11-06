@@ -5,6 +5,18 @@ let
 in
 {
   options.starforge.user = {
+    hardware = {
+      deepcoolDigital.enable = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Run the DeepCool Digital display daemon as a user systemd service.
+          The host must grant the active local user access to the matching
+          hidraw device through a device-specific udev rule.
+        '';
+      };
+    };
+
     appearance = {
       themeMode = mkOption {
         type = types.enum [
