@@ -311,6 +311,35 @@ Podman is the host's OCI container runtime; Docker Engine is not enabled.
 - Home Manager installs Distrobox for user-managed development environments
   and `podman-compose` as the explicitly selected external provider for
   `podman compose`. Distrobox is explicitly pinned to the Podman backend.
+- The rootless `podman-restart.service` user unit is enabled at
+  `default.target`. NixOS also enables lingering for the workstation account,
+  so its systemd user manager starts at boot without waiting for an interactive
+  login. On shutdown, Podman's unit stops its managed containers cleanly.
+- Podman's restart unit only starts containers whose restart policy is
+  `always` or `unless-stopped`. Set `restart: unless-stopped` for persistent
+  services in Compose files, or `--restart=unless-stopped` when creating a
+  container with `podman run`.
+
+For containers that already exist, apply the restart policy once as the normal
+workstation user (without `sudo`):
+
+```sh
+podman ps -aq | xargs -r podman update --restart=unless-stopped
+```
+
+This updates the restart policy of every existing rootless container for this
+user. It does not recreate containers or alter their images and volumes.
+Containers explicitly stopped by the user remain stopped under the
+`unless-stopped` policy; use `always` instead only for containers that must
+start after every reboot regardless of a previous manual stop.
+
+Verify the service and lingering state with:
+
+```sh
+systemctl --user status podman-restart.service
+loginctl show-user "$USER" -p Linger
+podman ps -a
+```
 
 Prefer rootless commands without `sudo`:
 
