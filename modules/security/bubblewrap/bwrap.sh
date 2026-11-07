@@ -102,6 +102,23 @@ if [[ -n "$workspace_input" ]]; then
     if [[ "$home_real" == "$workspace" || "$home_real" == "$workspace/"* ]]; then
       die "refusing to expose a directory that contains the host home directory"
     fi
+
+    protected_home_paths=(
+      "$home_real/.ssh"
+      "$home_real/.gnupg"
+      "$home_real/.aws"
+      "$home_real/.kube"
+      "$home_real/.docker"
+      "$home_real/.password-store"
+      "$home_real/.config"
+      "$home_real/.local/share"
+      "$home_real/.mozilla"
+    )
+    for protected_path in "${protected_home_paths[@]}"; do
+      if [[ "$workspace" == "$protected_path" || "$workspace" == "$protected_path/"* || "$protected_path" == "$workspace/"* ]]; then
+        die "workspace overlaps a protected credential or application-data path: $protected_path"
+      fi
+    done
   fi
 fi
 
