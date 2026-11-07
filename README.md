@@ -368,10 +368,11 @@ podman info --debug
 - Nix builds remain sandboxed; only root and wheel members may use the daemon,
   while only root is a trusted Nix user.
 - AppArmor enforces the existing `curl` profile. Firefox, Chromium,
-  LocalSend, Telegram, Discord, mpv, yt-dlp, FFmpeg, jq, llama-server, VS Code,
-  and Zed have separate complain-mode profiles. Selected profiles explicitly
-  deny direct access to developer credentials; the editor and local-inference
-  profiles remain observational pending workstation runtime review.
+  LocalSend, Telegram, Discord, mpv, yt-dlp, FFmpeg, jq, btop, fastfetch,
+  pavucontrol, virt-manager, VS Code, and Zed have separate complain-mode
+  profiles. Selected profiles explicitly deny direct access to developer
+  credentials; editor and VM-management profiles remain observational pending
+  workstation runtime review.
 - USBGuard runs with a default-allow policy. It preserves devices already
   connected at daemon startup, evaluates newly inserted devices against its
   rule file, and allows unmatched devices. It is an audit/selective-control
@@ -436,11 +437,15 @@ Separate profiles are also loaded for:
 - **jq:** `complain` mode with read-only home-file access and no network
   permissions declared. Its explicit credential denials remain effective;
   ordinary unmatched operations are logged but allowed.
-- **llama-server:** `complain` mode with expected model/cache paths and
-  developer-credential denials. No network permissions are declared yet:
-  inspect the actual listen address, API clients, and model-download workflow
-  before considering enforcement. AppArmor network rules are not a port-level
-  firewall.
+- **btop and fastfetch:** `complain` mode with read-only process and hardware
+  telemetry paths; btop may write its own configuration/cache. Neither profile
+  declares network access.
+- **pavucontrol:** `complain` mode with its own settings file and the user
+  session's audio, IPC, and display sockets.
+- **virt-manager:** `complain` mode with its application state and the local
+  libvirt management socket. It is a complex GTK/Python frontend that launches
+  helpers and connects to hypervisor services; review those process workflows
+  before considering enforcement.
 - **VS Code and Zed:** `complain` mode with no hard-coded credential denies.
   These editors launch terminals, language servers, build scripts, Git/SSH and
   extensions, so their actual process trees must be reviewed before introducing
