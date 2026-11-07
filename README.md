@@ -515,6 +515,12 @@ not follow the root Nixpkgs input: this preserves derivation compatibility
 with the Noctalia Cachix binary cache. The nested Nixpkgs revision is pinned
 in `flake.lock`.
 
+## Development tools
+
+- OpenCode CLI (`opencode`) is installed per-user through Home Manager.
+- Its version follows the root flake's locked Nixpkgs revision; update it through
+  the existing flake-lock update workflow.
+
 ## CI and build caching
 
 GitHub Actions runs two independent jobs in parallel:
