@@ -141,6 +141,86 @@ let
     }
   '';
 
+  jsonToolProfile = executable: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+      include <abstractions/user-tmp>
+
+      /nix/store/** mr,
+
+      # jq reads input files and writes transformed JSON to stdout.
+      # Keep filesystem access read-only and protect local developer credentials.
+      owner @{HOME}/** r,
+
+      ${credentialDenials}
+    }
+  '';
+
+  mediaProcessorProfile = executable: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+      include <abstractions/nameservice>
+      include <abstractions/ssl_certs>
+      include <abstractions/user-tmp>
+
+      /nix/store/** mr,
+
+      owner @{HOME}/.config/ffmpeg/** r,
+      owner @{HOME}/.cache/ffmpeg/** rwk,
+
+      # Read source media and write converted files in normal media locations.
+      owner @{HOME}/Documents/** r,
+      owner @{HOME}/Downloads/** rwk,
+      owner @{HOME}/Music/** rwk,
+      owner @{HOME}/Pictures/** rwk,
+      owner @{HOME}/Videos/** rwk,
+
+      # Optional VA-API/Vulkan-capable hardware paths; Unix DAC still applies.
+      /dev/dri/renderD* rw,
+
+      ${networkClientRules}
+      ${credentialDenials}
+    }
+  '';
+
+  localInferenceProfile = executable: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+      include <abstractions/nameservice>
+      include <abstractions/ssl_certs>
+      include <abstractions/user-tmp>
+
+      /nix/store/** mr,
+
+      # Expected local model and cache locations. Keep other paths observational
+      # until the actual model layout has been reviewed on the workstation.
+      owner @{HOME}/models/** r,
+      owner @{HOME}/AI/** r,
+      owner @{HOME}/Downloads/** r,
+      owner @{HOME}/.cache/huggingface/hub/** r,
+      owner @{HOME}/.cache/llama.cpp/** rwk,
+      owner @{HOME}/.cache/llama-cpp/** rwk,
+      owner @{HOME}/.config/llama.cpp/** r,
+
+      /dev/dri/renderD* rw,
+
+      # Network rules are intentionally absent until the API bind address,
+      # client traffic, and model-download workflow have been inspected.
+      # In complain mode these operations are logged, not blocked.
+
+      ${credentialDenials}
+    }
+  '';
+
   editorProfile = executable: ''
     abi <abi/4.0>,
     include <tunables/global>
@@ -272,6 +352,21 @@ in
       yt-dlp = {
         state = "complain";
         profile = downloaderProfile (lib.getExe pkgs.yt-dlp);
+      };
+
+      ffmpeg = {
+        state = "complain";
+        profile = mediaProcessorProfile (lib.getExe pkgs.ffmpeg-headless);
+      };
+
+      jq = {
+        state = "complain";
+        profile = jsonToolProfile (lib.getExe pkgs.jq);
+      };
+
+      llama-server = {
+        state = "complain";
+        profile = localInferenceProfile (lib.getExe' pkgs.llama-cpp "llama-server");
       };
 
       vscode = {
