@@ -280,7 +280,6 @@ let
       /run/libvirt/libvirt-sock-ro r,
 
       ${desktopRuntimeRules}
-      ${networkClientRules}
       ${credentialDenials}
     }
   '';
@@ -451,6 +450,11 @@ in
       vscode = {
         state = "complain";
         profile = editorProfile "${pkgs.vscode}/lib/vscode/code";
+      };
+
+      neovim = {
+        state = "complain";
+        profile = editorProfile (lib.getExe pkgs.neovim);
       };
 
       zed = {
