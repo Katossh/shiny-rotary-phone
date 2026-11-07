@@ -189,33 +189,98 @@ let
     }
   '';
 
-  localInferenceProfile = executable: ''
+  systemMonitorProfile = executable: ''
     abi <abi/4.0>,
     include <tunables/global>
 
     profile ${executable} {
       include <abstractions/base>
+      include <abstractions/user-tmp>
+
+      /nix/store/** mr,
+
+      # btop reads process, CPU, memory, network and hardware telemetry.
+      /proc/** r,
+      /sys/class/hwmon/** r,
+      /sys/class/thermal/** r,
+      /sys/class/drm/** r,
+      /sys/devices/system/cpu/** r,
+      /sys/devices/system/node/** r,
+      /sys/devices/virtual/** r,
+      /dev/dri/** r,
+
+      owner @{HOME}/.config/btop/** rwk,
+      owner @{HOME}/.cache/btop/** rwk,
+
+      ${credentialDenials}
+    }
+  '';
+
+  systemInfoProfile = executable: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+
+      /nix/store/** mr,
+
+      # fastfetch collects system information from procfs/sysfs and OS metadata.
+      /proc/** r,
+      /sys/** r,
+      /etc/os-release r,
+      /etc/hostname r,
+      /etc/lsb-release r,
+      /dev/dri/** r,
+
+      owner @{HOME}/.config/fastfetch/** r,
+
+      ${credentialDenials}
+    }
+  '';
+
+  audioControlProfile = executable: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+      include <abstractions/user-tmp>
+
+      /nix/store/** mr,
+
+      owner @{HOME}/.config/pavucontrol.ini rwk,
+      owner @{HOME}/.config/pulse/** r,
+
+      ${desktopRuntimeRules}
+      ${credentialDenials}
+    }
+  '';
+
+  virtualMachineManagerProfile = executable: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+      include <abstractions/nameservice>
       include <abstractions/ssl_certs>
       include <abstractions/user-tmp>
 
       /nix/store/** mr,
 
-      # Expected local model and cache locations. Keep other paths observational
-      # until the actual model layout has been reviewed on the workstation.
-      owner @{HOME}/models/** r,
-      owner @{HOME}/AI/** r,
+      owner @{HOME}/.config/virt-manager/** rwk,
+      owner @{HOME}/.cache/virt-manager/** rwk,
+      owner @{HOME}/.local/share/virt-manager/** rwk,
       owner @{HOME}/Downloads/** r,
-      owner @{HOME}/.cache/huggingface/hub/** r,
-      owner @{HOME}/.cache/llama.cpp/** rwk,
-      owner @{HOME}/.cache/llama-cpp/** rwk,
-      owner @{HOME}/.config/llama.cpp/** r,
+      owner @{HOME}/Documents/** r,
 
-      /dev/dri/renderD* rw,
+      # This host manages local QEMU/KVM through libvirt's system socket.
+      /run/libvirt/libvirt-sock rw,
+      /run/libvirt/libvirt-sock-ro r,
 
-      # Network rules are intentionally absent until the API bind address,
-      # client traffic, and model-download workflow have been inspected.
-      # In complain mode these operations are logged, not blocked.
-
+      ${desktopRuntimeRules}
+      ${networkClientRules}
       ${credentialDenials}
     }
   '';
@@ -363,9 +428,24 @@ in
         profile = jsonToolProfile (lib.getExe pkgs.jq);
       };
 
-      llama-server = {
+      btop = {
         state = "complain";
-        profile = localInferenceProfile (lib.getExe' pkgs.llama-cpp "llama-server");
+        profile = systemMonitorProfile (lib.getExe pkgs.btop);
+      };
+
+      fastfetch = {
+        state = "complain";
+        profile = systemInfoProfile (lib.getExe pkgs.fastfetch);
+      };
+
+      pavucontrol = {
+        state = "complain";
+        profile = audioControlProfile (lib.getExe pkgs.pavucontrol);
+      };
+
+      virt-manager = {
+        state = "complain";
+        profile = virtualMachineManagerProfile (lib.getExe pkgs.virt-manager);
       };
 
       vscode = {
