@@ -347,46 +347,70 @@ podman info --debug
 
 ### Bubblewrap
 
-Bubblewrap is installed as a low-level, unprivileged sandbox builder. It creates
-Linux namespaces and a private mount layout; it does not provide ready-made
-application policies. The NixOS module does not create a setuid wrapper, grant
-extra capabilities, or change the kernel's unprivileged-user-namespace policy.
-The normal unprivileged user-namespace path must be available.
+The workstation installs a small `bwrap` command dispatcher on top of the
+unprivileged Bubblewrap engine. The module lives in
+`modules/security/bubblewrap/`: `default.nix` packages the command, while
+`bwrap.sh` defines its profiles. The lower-level engine remains available as
+`bubblewrap` for advanced manual invocations.
 
-A minimal CLI smoke test, run from the directory you want to expose as the
-sandbox workspace:
+The profiles are explicit and opt-in:
+
+| Command | Filesystem | Network | Intended use |
+| --- | --- | --- | --- |
+| `bwrap dev PROJECT -- COMMAND` | Selected project read-write | Disabled | Builds and tests |
+| `bwrap dev --network PROJECT -- COMMAND` | Selected project read-write | Host network | Fetching dependencies or networked tests |
+| `bwrap network -- COMMAND` | Nix store plus private temporary files | Host network | Network clients without home access |
+| `bwrap network --workspace DIR -- COMMAND` | Optional workspace read-only | Host network | Running a local tool that only needs input files |
+| `bwrap isolated -- COMMAND` | Nix store plus private temporary files | Disabled | Running store-installed command-line tools |
+| `bwrap isolated --workspace DIR -- COMMAND` | Optional workspace read-only | Disabled | Inspecting/running a local executable without allowing it to alter its directory |
+
+Examples:
 
 ```sh
-workspace="$(pwd -P)"
-true_path="$(readlink -f "$(command -v true)")"
+# Rust: use an existing Cargo registry cache; keep the project writable.
+bwrap dev --cargo-cache ~/Projects/my-rust-app -- cargo test --offline
 
-bwrap \
-  --unshare-all \
-  --die-with-parent \
-  --new-session \
-  --ro-bind /nix/store /nix/store \
-  --proc /proc \
-  --dev /dev \
-  --tmpfs /tmp \
-  --dir /workspace \
-  --bind "$workspace" /workspace \
-  --chdir /workspace \
-  -- "$true_path"
+# C++: compile inside the project workspace.
+bwrap dev ~/Projects/my-cpp-app -- cmake --build build
+
+# Explicitly permit network access when dependencies must be fetched.
+bwrap dev --network --cargo-cache ~/Projects/my-rust-app -- cargo fetch
+
+# Run a network client without exposing the home directory.
+bwrap network -- curl https://example.com
+
+# Run a local executable with its workspace mounted read-only.
+bwrap isolated --workspace ~/Downloads/test-area -- ./unknown-program
+
+bwrap help
 ```
 
-This smoke test verifies that an unprivileged user can create the namespaces
-and mount layout. The example exposes the Nix store read-only and only the
-current directory as a writable workspace; it does not expose the host home
-directory, network, desktop sockets, or other host files. The workspace itself
-remains writable, so untrusted code can modify its contents. Use a disposable
-working copy when that matters.
+The sandbox starts from Bubblewrap's empty mount namespace. It mounts the Nix
+store read-only, creates private `/proc`, `/dev`, and `/tmp`, and exposes only
+the selected workspace. The workspace is the only persistent writable path in
+the `dev` profile. The host home directory, `/run`, session sockets, SSH
+credentials, browser profiles, and arbitrary host environment variables are
+not mounted or inherited. The command's `PATH` is rebuilt from host PATH
+entries that resolve into `/nix/store`; a small allowlist of compiler/build
+variables is passed to `dev`.
 
-This is a starting point for command-line workloads, not a universal desktop
-application sandbox. GUI applications need deliberate, minimal access to
-Wayland/X11, audio, GPU, portals, and session IPC; do not bind the entire
-user-session runtime directory just to make an application start. Keep
-long-running services and AI workloads in the existing rootless Podman setup.
+`dev` disables networking by default. Use `--network` only when the build
+really needs it. Network-enabled profiles share the host network namespace:
+they can reach not only the Internet, but also LAN and localhost services
+reachable from the host. They do not receive host network sockets or the
+host's filesystem.
 
+`--cargo-cache` is an explicit convenience option for Rust development. It
+mounts only `~/.cargo/registry` read-write; it does not expose
+`~/.cargo/config.toml`, Cargo credentials, or the Git checkout cache. Since
+sandboxed code can modify this shared registry cache, use the option only
+with projects you trust. Without it, Cargo's home is temporary and disappears
+when the sandbox exits.
+
+The Nix store is readable in every profile, so do not put secrets in the Nix
+store. These profiles are command-line isolation conveniences, not virtual
+machines or a defence against kernel vulnerabilities. Use a VM for code that
+must be isolated from a potentially hostile kernel-level workload.
 ## Security baseline
 
 - The NixOS firewall is explicitly enabled. No inbound ports are opened
