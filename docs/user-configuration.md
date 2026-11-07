@@ -252,6 +252,12 @@ local user access only to hidraw devices matching USB VID `3633` and PID
 or add a broad vendor-wide permission. No Intel RAPL permission is needed on
 this AMD workstation.
 
+These HID rules are provided through `services.udev.packages` as
+`70-workstation-hidraw.rules`, rather than `services.udev.extraRules`.
+The latter is emitted as `99-local.rules`, which is processed too late for
+systemd's `73-seat-late.rules` to apply the `uaccess` ACL. Keep the local
+rule file ordered before `73-seat-late.rules`.
+
 After applying the configuration for the first time, reconnect the cooler's
 internal USB connection or reboot so udev/logind can apply the device ACL.
 Check the user service and its logs with:
