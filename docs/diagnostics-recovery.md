@@ -47,6 +47,10 @@ Interpret the results carefully:
   expose the relevant EFI measurements.
 - Compare results across boots before treating a one-off delay as a regression.
 
+The command exits with status `0` when all three probes succeed, `1` when
+one or more `systemd-analyze` probes fail, and `2` when `systemd-analyze` is
+unavailable.
+
 ## Doctor result states
 
 - **OK** — the expected state was verified.
