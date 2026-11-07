@@ -246,26 +246,50 @@ because that machine has an AK620 Digital. Other machine profiles should leave
 the option disabled unless they have a supported display and provide their
 own matching device permissions.
 
-The daemon runs without root. For the AK620 only, the workstation udev rule
-assigns the matching hidraw node (USB VID `3633`, PID `0002`) to the
-configured workstation account with `OWNER` and `MODE="0600"`. This keeps
-access restricted to that account and avoids relying on logind's active-seat
-ACL timing for a persistent user service. Unlike `uaccess`, this permission
-is not revoked when the user's session becomes inactive; this is intentional
-for this single-user workstation. Other interactive HID peripherals continue
-to use seat-scoped `uaccess` permissions. No Intel RAPL permission is needed
-on this AMD workstation.
+The workstation grants access to the following HID interfaces without
+running the applications as root:
 
-These HID rules are provided through `services.udev.packages` as
-`70-workstation-hidraw.rules`. The VXE and LEKU rules use `TAG+="uaccess"`,
-so they must be processed before systemd's `73-seat-late.rules`. The
-`services.udev.extraRules` option emits `99-local.rules`, which is too late
-for that purpose.
+- ATK Hub: USB vendor ID `373b` (all product IDs exposed by the ATK receiver
+  family).
+- VXE NordicMouse 1K receiver: USB ID `3554:f58a`.
+- LEKU NUT65 keyboard for VIA: USB ID `342d:e51a`.
+- DeepCool AK620 Digital / Digital SE: USB ID `3633:0002`.
 
-After applying the configuration, reconnect the cooler's internal USB
-connection or reboot so udev applies the owner and mode to the device node.
-The cooler's `/dev/hidraw*` node should be owned by the configured user with
-permissions `crw-------`.
+Each matching `/dev/hidraw*` node is assigned to the configured workstation
+account with `OWNER` and `MODE="0600"`. This lets that account's Chromium
+session open the devices through WebHID while keeping access unavailable to
+other local users. It deliberately avoids `MODE="0666"` and does not grant
+access to unrelated HID devices. Unlike `uaccess`, this ownership is not
+revoked when the user's session becomes inactive; that is intentional for
+this single-user workstation. No Intel RAPL permission is needed on this AMD
+workstation.
+
+These rules are provided through `services.udev.packages` as
+`70-workstation-hidraw.rules`. Only the listed vendor/product matches are
+affected. When the rules change, already-connected devices may retain their
+old node ownership until udev processes a fresh event. After applying the
+configuration, run:
+
+```sh
+sudo udevadm control --reload-rules
+sudo udevadm trigger --action=add --subsystem-match=hidraw
+sudo udevadm settle
+```
+
+Alternatively, unplug and reconnect the keyboard and mouse receiver. Verify
+the relevant node's USB IDs and ownership with:
+
+```sh
+udevadm info --attribute-walk --name=/dev/hidrawN
+stat -c '%A %U:%G %n' /dev/hidrawN
+```
+
+Replace `/dev/hidrawN` with the node whose parent attributes show the target
+VID/PID. It should be owned by the configured user and have permissions
+`crw-------`. After that, reload VIA or `hub.atk.pro` in Chromium. If ATK
+Hub still reports the mouse asleep, verify that the mouse itself is awake and
+the receiver is connected; the permission rule cannot wake a powered-off or
+disconnected mouse.
 Check the user service and its logs with:
 
 ```sh
