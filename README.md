@@ -369,10 +369,10 @@ podman info --debug
   while only root is a trusted Nix user.
 - AppArmor enforces the existing `curl` profile. Firefox, Chromium,
   LocalSend, Telegram, Discord, mpv, yt-dlp, FFmpeg, jq, btop, fastfetch,
-  pavucontrol, virt-manager, VS Code, and Zed have separate complain-mode
-  profiles. Selected profiles explicitly deny direct access to developer
-  credentials; editor and VM-management profiles remain observational pending
-  workstation runtime review.
+  pavucontrol, virt-manager, Neovim, VS Code, and Zed have separate
+  complain-mode profiles. Selected profiles explicitly deny direct access to
+  developer credentials; editor and VM-management profiles remain
+  observational pending workstation runtime review.
 - USBGuard runs with a default-allow policy. It preserves devices already
   connected at daemon startup, evaluates newly inserted devices against its
   rule file, and allows unmatched devices. It is an audit/selective-control
@@ -446,10 +446,14 @@ Separate profiles are also loaded for:
   libvirt management socket. It is a complex GTK/Python frontend that launches
   helpers and connects to hypervisor services; review those process workflows
   before considering enforcement.
-- **VS Code and Zed:** `complain` mode with no hard-coded credential denies.
-  These editors launch terminals, language servers, build scripts, Git/SSH and
-  extensions, so their actual process trees must be reviewed before introducing
-  enforcing restrictions.
+- **Neovim, VS Code, and Zed:** `complain` mode with no hard-coded credential
+  denies. These editors launch shells, language servers, build scripts, Git/SSH
+  and extensions, so their actual process trees must be reviewed before
+  introducing enforcing restrictions.
+
+There is no host `llama-server` profile: local AI workloads are intended to
+run in Podman containers. Container-specific AppArmor policy must be reviewed
+at the container boundary rather than attached to a host executable.
 
 These profiles are a staging baseline, not full application confinement:
 complain mode does not block ordinary unmatched operations. Explicit `deny`
