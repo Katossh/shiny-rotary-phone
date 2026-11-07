@@ -35,6 +35,11 @@
     # auditing every syscall, which would create substantial desktop noise.
     audit = {
       enable = true;
+
+      # The kernel reported backlog exhaustion at the 1024-entry Nixpkgs
+      # default. Increase the queue to absorb larger audit-event bursts.
+      backlogLimit = 8192;
+
       rules = [
         "-a always,exit -F arch=b64 -S execve -F euid=0 -k privileged_exec"
         "-a always,exit -F arch=b32 -S execve -F euid=0 -k privileged_exec"
