@@ -19,7 +19,7 @@
     ../../modules/nixos/networking.nix
     ../../modules/nixos/security.nix
     ../../modules/nixos/apparmor.nix
-    ../../modules/nixos/bubblewrap.nix
+    ../../modules/security/bubblewrap
     ../../modules/nixos/usbguard.nix
     ../../modules/nixos/users.nix
 
