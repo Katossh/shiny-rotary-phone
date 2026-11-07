@@ -12,13 +12,13 @@
         domain = config.starforge.user.username;
         type = "soft";
         item = "memlock";
-        value = "2097152";
+        value = "8388608";
       }
       {
         domain = config.starforge.user.username;
         type = "hard";
         item = "memlock";
-        value = "2097152";
+        value = "8388608";
       }
     ];
 
@@ -43,6 +43,14 @@
 
     auditd.enable = true;
   };
+
+  # user@.service owns the per-user systemd manager. PAM limits do not cover
+  # this unit, so raise its ceiling explicitly; the manager then passes the
+  # configured default to services it starts.
+  systemd.services."user@".serviceConfig.LimitMEMLOCK = "8G:8G";
+
+  # Default RLIMIT_MEMLOCK for services launched by the per-user manager.
+  systemd.user.settings.Manager.DefaultLimitMEMLOCK = "8G:8G";
 
   # Kernel and network-stack hardening belongs to the security policy even
   # though some of the affected sysctls are networking-related.
