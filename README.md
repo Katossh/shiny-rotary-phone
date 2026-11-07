@@ -451,9 +451,9 @@ Separate profiles are also loaded for:
   and extensions, so their actual process trees must be reviewed before
   introducing enforcing restrictions.
 
-There is no host `llama-server` profile: local AI workloads are intended to
-run in Podman containers. Container-specific AppArmor policy must be reviewed
-at the container boundary rather than attached to a host executable.
+Local AI workloads are expected to run in Podman containers. Their
+AppArmor policy should be reviewed at the container boundary rather than
+attached to a host executable.
 
 These profiles are a staging baseline, not full application confinement:
 complain mode does not block ordinary unmatched operations. Explicit `deny`
