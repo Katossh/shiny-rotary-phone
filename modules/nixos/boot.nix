@@ -1,7 +1,27 @@
-{ pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   environment.systemPackages = [ pkgs.sbctl ];
+
+  # Embed the certificates for signed kernel modules in the kernel image.
+  # Nixpkgs' kernel-module-verification test uses the same rebuildImage
+  # integration to make those module signatures trusted by the running kernel.
+  system.systemBuilderCommands =
+    let
+      target =
+        if pkgs.stdenv.hostPlatform.isAarch64 then
+          "vmlinuz.efi"
+        else
+          config.boot.kernelPackages.kernel.target;
+      finalKernel = config.boot.kernelPackages.rebuildImage {
+        inherit target;
+        inherit (config.system) modulesTree;
+      };
+      kernelPath = "${finalKernel}/${target}";
+    in
+    lib.mkAfter ''
+      ln -sf -- ${lib.escapeShellArg kernelPath} "$out/kernel"
+    '';
 
   boot = {
     loader = {
