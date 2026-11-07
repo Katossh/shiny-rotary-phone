@@ -345,6 +345,48 @@ grep "^$(id -un):" /etc/subuid /etc/subgid
 podman info --debug
 ```
 
+### Bubblewrap
+
+Bubblewrap is installed as a low-level, unprivileged sandbox builder. It creates
+Linux namespaces and a private mount layout; it does not provide ready-made
+application policies. The NixOS module does not create a setuid wrapper, grant
+extra capabilities, or change the kernel's unprivileged-user-namespace policy.
+The normal unprivileged user-namespace path must be available.
+
+A minimal CLI smoke test, run from the directory you want to expose as the
+sandbox workspace:
+
+```sh
+workspace="$(pwd -P)"
+true_path="$(readlink -f "$(command -v true)")"
+
+bwrap \
+  --unshare-all \
+  --die-with-parent \
+  --new-session \
+  --ro-bind /nix/store /nix/store \
+  --proc /proc \
+  --dev /dev \
+  --tmpfs /tmp \
+  --dir /workspace \
+  --bind "$workspace" /workspace \
+  --chdir /workspace \
+  -- "$true_path"
+```
+
+This smoke test verifies that an unprivileged user can create the namespaces
+and mount layout. The example exposes the Nix store read-only and only the
+current directory as a writable workspace; it does not expose the host home
+directory, network, desktop sockets, or other host files. The workspace itself
+remains writable, so untrusted code can modify its contents. Use a disposable
+working copy when that matters.
+
+This is a starting point for command-line workloads, not a universal desktop
+application sandbox. GUI applications need deliberate, minimal access to
+Wayland/X11, audio, GPU, portals, and session IPC; do not bind the entire
+user-session runtime directory just to make an application start. Keep
+long-running services and AI workloads in the existing rootless Podman setup.
+
 ## Security baseline
 
 - The NixOS firewall is explicitly enabled. No inbound ports are opened
