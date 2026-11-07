@@ -25,19 +25,26 @@
   home-manager.users.${config.starforge.user.username}.starforge.user.hardware.deepcoolDigital.enable =
     true;
 
-  # Device-specific hidraw permissions for this workstation's peripherals.
-  services.udev.extraRules = ''
-    SUBSYSTEM=="hidraw", ATTRS{idVendor}=="373b", TAG+="uaccess"
+  # uaccess must be assigned before systemd's 73-seat-late.rules applies ACLs.
+  # services.udev.extraRules writes 99-local.rules, which is too late.
+  services.udev.packages = [
+    (pkgs.writeTextFile {
+      name = "workstation-hidraw-rules";
+      destination = "/etc/udev/rules.d/70-workstation-hidraw.rules";
+      text = ''
+        SUBSYSTEM=="hidraw", ATTRS{idVendor}=="373b", TAG+="uaccess"
 
-    # DeepCool AK620 Digital / Digital SE display (shared USB VID 3633, PID 0002).
-    SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3633", ATTRS{idProduct}=="0002", TAG+="uaccess"
+        # DeepCool AK620 Digital / Digital SE display (shared USB VID 3633, PID 0002).
+        SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3633", ATTRS{idProduct}=="0002", TAG+="uaccess"
 
-    # VXE NordicMouse 1K receiver.
-    KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3554", ATTRS{idProduct}=="f58a", TAG+="uaccess"
+        # VXE NordicMouse 1K receiver.
+        KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3554", ATTRS{idProduct}=="f58a", TAG+="uaccess"
 
-    # LEKU NUT65 keyboard.
-    KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="342d", ATTRS{idProduct}=="e51a", TAG+="uaccess"
-  '';
+        # LEKU NUT65 keyboard.
+        KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="342d", ATTRS{idProduct}=="e51a", TAG+="uaccess"
+      '';
+    })
+  ];
 
   environment.systemPackages = with pkgs; [
     amdgpu_top
