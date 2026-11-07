@@ -131,9 +131,14 @@ did not provide any additional template or palette files to migrate.
 Niri starts with five persistent named workspaces: `"1"` through `"5"`.
 They remain available while empty. `Mod+1` through `Mod+5` focus those
 workspaces by name, and `Mod+Ctrl+1` through `Mod+Ctrl+5` move the focused
-column to the corresponding workspace. `Mod+Page_Down` and
-`Mod+Page_Up` continue to navigate between workspaces, including additional
-dynamic workspaces created beyond the initial five.
+column to the corresponding workspace.
+
+Navigate vertically between workspaces with either `Mod+Up` / `Mod+Down`
+or the Vim-style `Mod+K` / `Mod+J` shortcuts. `Mod+Page_Up` and
+`Mod+Page_Down` remain available as alternatives. The original vertical
+window-focus actions are preserved on `Mod+Alt+Up` / `Mod+Alt+Down` and
+`Mod+Alt+K` / `Mod+Alt+J`. Dynamic workspaces continue to work beyond the
+initial five.
 
 ## Example
 

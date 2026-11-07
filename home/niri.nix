@@ -185,16 +185,19 @@ in
           "reverse"
         ];
 
+        # Focus columns horizontally; workspace navigation is vertical in Niri.
         "Mod+Left"."focus-column-left" = { };
-        "Mod+Down"."focus-window-down" = { };
-        "Mod+Up"."focus-window-up" = { };
         "Mod+Right"."focus-column-right" = { };
         "Mod+H"."focus-column-left" = { };
-        "Mod+J"."focus-window-down" = { };
-        "Mod+K"."focus-window-up" = { };
         "Mod+L"."focus-column-right" = { };
         "Mod+Home"."focus-column-first" = { };
         "Mod+End"."focus-column-last" = { };
+
+        # Preserve vertical window focus on Alt-modified bindings.
+        "Mod+Alt+Up"."focus-window-up" = { };
+        "Mod+Alt+Down"."focus-window-down" = { };
+        "Mod+Alt+K"."focus-window-up" = { };
+        "Mod+Alt+J"."focus-window-down" = { };
 
         "Mod+Ctrl+Left"."move-column-left" = { };
         "Mod+Ctrl+Down"."move-window-down" = { };
@@ -218,6 +221,10 @@ in
 
         "Mod+Page_Down"."focus-workspace-down" = { };
         "Mod+Page_Up"."focus-workspace-up" = { };
+        "Mod+Down"."focus-workspace-down" = { };
+        "Mod+Up"."focus-workspace-up" = { };
+        "Mod+J"."focus-workspace-down" = { };
+        "Mod+K"."focus-workspace-up" = { };
         "Mod+Tab"."focus-workspace-previous" = { };
         "Mod+Ctrl+Page_Down"."move-column-to-workspace-down" = { };
         "Mod+Ctrl+Page_Up"."move-column-to-workspace-up" = { };
