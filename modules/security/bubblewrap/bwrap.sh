@@ -186,6 +186,7 @@ bwrap_args=(
   --dir /usr/bin
   --symlink "$ENV_BIN" /usr/bin/env
   --clearenv
+  --unsetenv PWD
   --setenv PATH "$sandbox_path"
   --setenv HOME /tmp/home
   --setenv TMPDIR /tmp
@@ -242,9 +243,9 @@ if [[ -n "$workspace" ]]; then
   else
     bwrap_args+=(--ro-bind "$workspace" /workspace)
   fi
-  bwrap_args+=(--chdir /workspace)
+  bwrap_args+=(--chdir /workspace --setenv PWD /workspace)
 else
-  bwrap_args+=(--chdir /tmp)
+  bwrap_args+=(--chdir /tmp --setenv PWD /tmp)
 fi
 
 # Pass only conventional, non-secret compiler/build variables from a Nix
