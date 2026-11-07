@@ -302,9 +302,18 @@ in
         };
         "Mod+J"."focus-workspace-down" = { };
         "Mod+K"."focus-workspace-up" = { };
-        "Mod+Tab"."focus-workspace-previous" = { };
-        "Mod+Ctrl+Page_Down"."move-column-to-workspace-down" = { };
-        "Mod+Ctrl+Page_Up"."move-column-to-workspace-up" = { };
+        "Mod+Tab" = {
+          _props."hotkey-overlay-title" = "Return to previous workspace";
+          "focus-workspace-previous" = { };
+        };
+        "Mod+Ctrl+Page_Down" = {
+          _props."hotkey-overlay-title" = "Move column to next workspace";
+          "move-column-to-workspace-down" = { };
+        };
+        "Mod+Ctrl+Page_Up" = {
+          _props."hotkey-overlay-title" = "Move column to previous workspace";
+          "move-column-to-workspace-up" = { };
+        };
 
         # Keep shortcuts 1-5 tied to the named workspaces, not their current positions.
         "Mod+1" = {
@@ -359,8 +368,14 @@ in
         "Mod+Ctrl+C"."center-visible-columns" = { };
         "Mod+BracketLeft"."consume-or-expel-window-left" = { };
         "Mod+BracketRight"."consume-or-expel-window-right" = { };
-        "Mod+Ctrl+Comma"."consume-window-into-column" = { };
-        "Mod+Period"."expel-window-from-column" = { };
+        "Mod+Ctrl+Comma" = {
+          _props."hotkey-overlay-title" = "Group window into focused column";
+          "consume-window-into-column" = { };
+        };
+        "Mod+Period" = {
+          _props."hotkey-overlay-title" = "Expel window into its own column";
+          "expel-window-from-column" = { };
+        };
         "Mod+Shift+F" = {
           _props."hotkey-overlay-title" = "Toggle fullscreen";
           "fullscreen-window" = { };
@@ -378,7 +393,10 @@ in
             "clipboard"
           ];
         };
-        "Mod+Ctrl+V"."toggle-window-floating" = { };
+        "Mod+Ctrl+V" = {
+          _props."hotkey-overlay-title" = "Toggle floating window";
+          "toggle-window-floating" = { };
+        };
         "Mod+W"."toggle-column-tabbed-display" = { };
 
         Print = {
