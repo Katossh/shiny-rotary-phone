@@ -126,6 +126,15 @@ configuration when ready. See
 The originally uploaded archive was only a symlink into `/nix/store`, so it
 did not provide any additional template or palette files to migrate.
 
+### Niri workspaces
+
+Niri starts with five persistent named workspaces: `"1"` through `"5"`.
+They remain available while empty. `Mod+1` through `Mod+5` focus those
+workspaces by name, and `Mod+Ctrl+1` through `Mod+Ctrl+5` move the focused
+column to the corresponding workspace. `Mod+Page_Down` and
+`Mod+Page_Up` continue to navigate between workspaces, including additional
+dynamic workspaces created beyond the initial five.
+
 ## Example
 
 To use automatic light/dark switching, change the corresponding defaults in
