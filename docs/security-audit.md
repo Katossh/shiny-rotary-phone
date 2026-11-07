@@ -76,7 +76,7 @@ do not alter the working NixOS or Windows boot files to test enforcement.
 
 The current baseline enforces the curl profile. Firefox, Chromium, LocalSend,
 Telegram, Discord, mpv, yt-dlp, FFmpeg, jq, btop, fastfetch, pavucontrol,
-virt-manager, VS Code, and Zed are intentionally configured in complain mode.
+virt-manager, Neovim, VS Code, and Zed are intentionally configured in complain mode.
 
 Review `aa-status` and the kernel journal entries. In complain mode, operations
 that would have been denied are generally logged as `apparmor="ALLOWED"`
