@@ -10,6 +10,7 @@ different purposes and side-effect profiles.
 |---|---|---|
 | `nixcfg status` | Hardware and resource snapshot, including failed systemd units. | No |
 | `nixcfg doctor` | Checks required system services, the active desktop session, systemd failures, root filesystem capacity, and the active system profile. | No |
+| `nixcfg boot` | Shows boot timing, the 15 slowest systemd units, and the critical dependency chain. | No |
 | `nixcfg recovery` | Lists available system generations and prints host-specific recovery instructions. | No |
 | `nixcfg audit` | Performs the existing P0 security checks for Secure Boot, AppArmor, USBGuard, kernel mitigations, and AMD IOMMU. | No; it may request sudo for read-only checks and may show the documented fwupd upload prompt. |
 | `nixcfg check` | Runs formatting, static analysis, flake evaluation, and the full system build. | Does not activate a generation; it may download/build Nix store paths. |
@@ -17,6 +18,38 @@ different purposes and side-effect profiles.
 Run `nixcfg doctor` for a concise health report. It does not prompt for sudo,
 restart units, repair services, alter configuration, or change boot entries.
 Desktop checks are skipped when no Wayland session is active.
+
+## Boot analysis
+
+Run:
+
+```sh
+nixcfg boot
+```
+
+The command uses `systemd-analyze` to display firmware/loader, kernel, initrd,
+and userspace timing when the firmware exposes those measurements. It then
+lists the 15 units with the longest recorded activation times and prints the
+systemd critical dependency chain for the current boot.
+
+This is a read-only inspection. It does not restart, stop, disable, or
+reconfigure any unit. Use the output to identify candidates for investigation,
+not as an instruction to disable services.
+
+Interpret the results carefully:
+
+- `systemd-analyze blame` durations are not additive because units start in
+  parallel; a long duration does not necessarily delay reaching the graphical
+  session.
+- `systemd-analyze critical-chain` shows a dependency path that affected the
+  target's timing, not every possible source of boot delay.
+- Firmware and boot-loader timing may be unavailable on systems that do not
+  expose the relevant EFI measurements.
+- Compare results across boots before treating a one-off delay as a regression.
+
+The command exits with status `0` when all three probes succeed, `1` when
+one or more `systemd-analyze` probes fail, and `2` when `systemd-analyze` is
+unavailable.
 
 ## Doctor result states
 

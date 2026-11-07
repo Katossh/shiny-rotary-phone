@@ -5,6 +5,7 @@ usage() {
 Usage:
   nixcfg status          Show a concise workstation hardware/status snapshot.
   nixcfg doctor          Run read-only system and desktop health checks.
+  nixcfg boot            Show boot timing, slow units, and the critical chain.
   nixcfg recovery        List system generations and show recovery guidance.
   nixcfg audit           Collect read-only P0 security diagnostics.
   nixcfg check           Run local formatting, lint, evaluation, and build checks.
@@ -531,6 +532,45 @@ run_doctor() {
   return 0
 }
 
+
+show_boot_analysis() {
+  local failed=0
+
+  if ! command -v systemd-analyze >/dev/null 2>&1; then
+    printf 'systemd-analyze is unavailable; boot analysis cannot run.\n' >&2
+    return 2
+  fi
+
+  printf '\nSystemd boot analysis (read-only)\n'
+  printf '%s\n' '=================================='
+  printf 'This command inspects the current boot; it does not change services or configuration.\n'
+
+  printf '\nBoot timing\n'
+  if ! systemd-analyze time --no-pager; then
+    printf 'Could not read boot timing information.\n' >&2
+    failed=1
+  fi
+
+  printf '\nSlowest units (top 15)\n'
+  if ! systemd-analyze blame --no-pager | awk 'NR <= 15 { print }'; then
+    printf 'Could not read systemd unit timing information.\n' >&2
+    failed=1
+  fi
+
+  printf '\nCritical chain\n'
+  if ! systemd-analyze critical-chain --no-pager; then
+    printf 'Could not read the systemd critical chain.\n' >&2
+    failed=1
+  fi
+
+  printf '\nInterpretation notes\n'
+  printf '%s\n' \
+    '- Blame durations are not additive: many units start in parallel.' \
+    '- The critical chain shows one dependency path, not every source of delay.' \
+    '- A slow unit is not automatically safe to disable or change.'
+
+  return "$failed"
+}
 show_recovery() {
   local system_profile="/nix/var/nix/profiles/system"
   local current_generation
@@ -680,6 +720,9 @@ case "${1:-status}" in
     ;;
   doctor)
     run_doctor
+    ;;
+  boot)
+    show_boot_analysis
     ;;
   recovery)
     show_recovery

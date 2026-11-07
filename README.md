@@ -43,6 +43,7 @@ Use the following read-only commands for routine maintenance:
 
 ```sh
 nixcfg doctor
+nixcfg boot
 nixcfg recovery
 ```
 
