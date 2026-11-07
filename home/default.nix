@@ -25,6 +25,7 @@
       slurp
       telegram-desktop
       localsend
+      opencode
       wl-clipboard
     ];
 
