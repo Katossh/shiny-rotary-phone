@@ -141,6 +141,148 @@ let
     }
   '';
 
+  jsonToolProfile = executable: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+      include <abstractions/user-tmp>
+
+      /nix/store/** mr,
+
+      # jq reads input files and writes transformed JSON to stdout.
+      # Keep filesystem access read-only and protect local developer credentials.
+      owner @{HOME}/** r,
+
+      ${credentialDenials}
+    }
+  '';
+
+  mediaProcessorProfile = executable: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+      include <abstractions/nameservice>
+      include <abstractions/ssl_certs>
+      include <abstractions/user-tmp>
+
+      /nix/store/** mr,
+
+      owner @{HOME}/.config/ffmpeg/** r,
+      owner @{HOME}/.cache/ffmpeg/** rwk,
+
+      # Read source media and write converted files in normal media locations.
+      owner @{HOME}/Documents/** r,
+      owner @{HOME}/Downloads/** rwk,
+      owner @{HOME}/Music/** rwk,
+      owner @{HOME}/Pictures/** rwk,
+      owner @{HOME}/Videos/** rwk,
+
+      # Optional VA-API/Vulkan-capable hardware paths; Unix DAC still applies.
+      /dev/dri/renderD* rw,
+
+      ${networkClientRules}
+      ${credentialDenials}
+    }
+  '';
+
+  systemMonitorProfile = executable: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+      include <abstractions/user-tmp>
+
+      /nix/store/** mr,
+
+      # btop reads process, CPU, memory, network and hardware telemetry.
+      /proc/** r,
+      /sys/class/hwmon/** r,
+      /sys/class/thermal/** r,
+      /sys/class/drm/** r,
+      /sys/devices/system/cpu/** r,
+      /sys/devices/system/node/** r,
+      /sys/devices/virtual/** r,
+      /dev/dri/** r,
+
+      owner @{HOME}/.config/btop/** rwk,
+      owner @{HOME}/.cache/btop/** rwk,
+
+      ${credentialDenials}
+    }
+  '';
+
+  systemInfoProfile = executable: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+
+      /nix/store/** mr,
+
+      # fastfetch collects system information from procfs/sysfs and OS metadata.
+      /proc/** r,
+      /sys/** r,
+      /etc/os-release r,
+      /etc/hostname r,
+      /etc/lsb-release r,
+      /dev/dri/** r,
+
+      owner @{HOME}/.config/fastfetch/** r,
+
+      ${credentialDenials}
+    }
+  '';
+
+  audioControlProfile = executable: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+      include <abstractions/user-tmp>
+
+      /nix/store/** mr,
+
+      owner @{HOME}/.config/pavucontrol.ini rwk,
+      owner @{HOME}/.config/pulse/** r,
+
+      ${desktopRuntimeRules}
+      ${credentialDenials}
+    }
+  '';
+
+  virtualMachineManagerProfile = executable: ''
+    abi <abi/4.0>,
+    include <tunables/global>
+
+    profile ${executable} {
+      include <abstractions/base>
+      include <abstractions/ssl_certs>
+      include <abstractions/user-tmp>
+
+      /nix/store/** mr,
+
+      owner @{HOME}/.config/virt-manager/** rwk,
+      owner @{HOME}/.cache/virt-manager/** rwk,
+      owner @{HOME}/.local/share/virt-manager/** rwk,
+      owner @{HOME}/Downloads/** r,
+      owner @{HOME}/Documents/** r,
+
+      # This host manages local QEMU/KVM through libvirt's system socket.
+      /run/libvirt/libvirt-sock rw,
+      /run/libvirt/libvirt-sock-ro r,
+
+      ${desktopRuntimeRules}
+      ${credentialDenials}
+    }
+  '';
+
   editorProfile = executable: ''
     abi <abi/4.0>,
     include <tunables/global>
@@ -274,9 +416,44 @@ in
         profile = downloaderProfile (lib.getExe pkgs.yt-dlp);
       };
 
+      ffmpeg = {
+        state = "complain";
+        profile = mediaProcessorProfile (lib.getExe pkgs.ffmpeg-headless);
+      };
+
+      jq = {
+        state = "complain";
+        profile = jsonToolProfile (lib.getExe pkgs.jq);
+      };
+
+      btop = {
+        state = "complain";
+        profile = systemMonitorProfile (lib.getExe pkgs.btop);
+      };
+
+      fastfetch = {
+        state = "complain";
+        profile = systemInfoProfile (lib.getExe pkgs.fastfetch);
+      };
+
+      pavucontrol = {
+        state = "complain";
+        profile = audioControlProfile (lib.getExe pkgs.pavucontrol);
+      };
+
+      virt-manager = {
+        state = "complain";
+        profile = virtualMachineManagerProfile (lib.getExe pkgs.virt-manager);
+      };
+
       vscode = {
         state = "complain";
         profile = editorProfile "${pkgs.vscode}/lib/vscode/code";
+      };
+
+      neovim = {
+        state = "complain";
+        profile = editorProfile (lib.getExe pkgs.neovim);
       };
 
       zed = {

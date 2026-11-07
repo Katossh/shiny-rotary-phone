@@ -367,11 +367,12 @@ podman info --debug
   to three, and limits credential caching to five minutes.
 - Nix builds remain sandboxed; only root and wheel members may use the daemon,
   while only root is a trusted Nix user.
-- AppArmor enforces the existing `curl` profile and loads separate
-  complain-mode profiles for Firefox, Chromium, VS Code, and Zed. The browser
-  profiles explicitly deny direct access to selected credential stores; the
-  editor profiles remain observational while their child-process workflows
-  are reviewed.
+- AppArmor enforces the existing `curl` profile. Firefox, Chromium,
+  LocalSend, Telegram, Discord, mpv, yt-dlp, FFmpeg, jq, btop, fastfetch,
+  pavucontrol, virt-manager, Neovim, VS Code, and Zed have separate
+  complain-mode profiles. Selected profiles explicitly deny direct access to
+  developer credentials; editor and VM-management profiles remain
+  observational pending workstation runtime review.
 - USBGuard runs with a default-allow policy. It preserves devices already
   connected at daemon startup, evaluates newly inserted devices against its
   rule file, and allows unmatched devices. It is an audit/selective-control
@@ -424,16 +425,40 @@ Separate profiles are also loaded for:
   and `.password-store`) are explicitly denied. Explicit `deny` rules remain
   effective even in complain mode; other unlisted operations are logged but
   allowed.
-- **VS Code and Zed:** `complain` mode with no hard-coded credential denies.
-  These editors launch terminals, language servers, build scripts, Git/SSH and
-  extensions, so their actual process trees must be reviewed before introducing
-  enforcing restrictions.
+- **LocalSend, Telegram, Discord, and mpv:** `complain` mode with application
+  state, normal media/download paths, desktop IPC, and required device access
+  described in their individual profiles. These are still observation profiles,
+  not enforced sandboxes.
+- **yt-dlp and FFmpeg:** `complain` mode. yt-dlp has explicit media output
+  locations and denies direct access to selected browser cookie stores.
+  Standalone FFmpeg has media read/write paths, optional render-device access,
+  and network client rules. When yt-dlp launches FFmpeg, the existing
+  `ix` execution rule deliberately keeps that child in yt-dlp's profile.
+- **jq:** `complain` mode with read-only home-file access and no network
+  permissions declared. Its explicit credential denials remain effective;
+  ordinary unmatched operations are logged but allowed.
+- **btop and fastfetch:** `complain` mode with read-only process and hardware
+  telemetry paths; btop may write its own configuration/cache. Neither profile
+  declares network access.
+- **pavucontrol:** `complain` mode with its own settings file and the user
+  session's audio, IPC, and display sockets.
+- **virt-manager:** `complain` mode with its application state and the local
+  libvirt management socket. It is a complex GTK/Python frontend that launches
+  helpers and connects to hypervisor services; review those process workflows
+  before considering enforcement.
+- **Neovim, VS Code, and Zed:** `complain` mode with no hard-coded credential
+  denies. These editors launch shells, language servers, build scripts, Git/SSH
+  and extensions, so their actual process trees must be reviewed before
+  introducing enforcing restrictions.
 
-The desktop profiles are a staging baseline, not full application confinement:
-complain mode does not block ordinary unmatched operations. In particular,
-the editor profiles currently provide telemetry rather than a security boundary.
-Do not promote them to `enforce` until the observed accesses and normal
-workflows have been reviewed.
+Local AI workloads are expected to run in Podman containers. Their
+AppArmor policy should be reviewed at the container boundary rather than
+attached to a host executable.
+
+These profiles are a staging baseline, not full application confinement:
+complain mode does not block ordinary unmatched operations. Explicit `deny`
+rules remain effective. Do not promote a profile to `enforce` until observed
+accesses and normal workflows have been reviewed on the workstation.
 
 After deploying, verify the loaded profiles and inspect AppArmor events:
 
