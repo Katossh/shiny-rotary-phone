@@ -347,8 +347,10 @@ podman info --debug
 
 ## Security baseline
 
-- The NixOS firewall is explicitly enabled, with no extra inbound TCP or UDP
-  ports opened.
+- The NixOS firewall is explicitly enabled. No inbound ports are opened
+  globally. The llama.cpp API's TCP port `1234` is allowed only for IPv4
+  traffic entering `wlp7s0` from `192.168.0.0/24`; do not add a router
+  port-forward for this service.
 - The OpenSSH server is explicitly disabled; this machine does not accept
   inbound SSH sessions. This does not prevent outbound SSH when a client is installed.
 - The existing iptables-based firewall backend is retained for compatibility
