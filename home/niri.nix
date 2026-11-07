@@ -131,89 +131,160 @@ in
       ];
 
       binds = {
-        "Mod+Shift+Slash"."show-hotkey-overlay" = { };
-        "Mod+Return".spawn = [ "kitty" ];
-        "Mod+Space".spawn = [
-          "noctalia"
-          "msg"
-          "panel-toggle"
-          "launcher"
-        ];
-        "Mod+S".spawn = [
-          "noctalia"
-          "msg"
-          "panel-toggle"
-          "control-center"
-        ];
-        "Mod+Comma".spawn = [
-          "noctalia"
-          "msg"
-          "settings-toggle"
-        ];
-        "Super+Alt+L".spawn = [
-          "noctalia"
-          "msg"
-          "session"
-          "lock"
-        ];
+        "Mod+Shift+Slash" = {
+          _props."hotkey-overlay-title" = "Show keyboard shortcuts";
+          "show-hotkey-overlay" = { };
+        };
+        "Mod+Return" = {
+          _props."hotkey-overlay-title" = "Open terminal";
+          spawn = [ "kitty" ];
+        };
+        "Mod+Space" = {
+          _props."hotkey-overlay-title" = "Open application launcher";
+          spawn = [
+            "noctalia"
+            "msg"
+            "panel-toggle"
+            "launcher"
+          ];
+        };
+        "Mod+S" = {
+          _props."hotkey-overlay-title" = "Open control center";
+          spawn = [
+            "noctalia"
+            "msg"
+            "panel-toggle"
+            "control-center"
+          ];
+        };
+        "Mod+Comma" = {
+          _props."hotkey-overlay-title" = "Open Noctalia settings";
+          spawn = [
+            "noctalia"
+            "msg"
+            "settings-toggle"
+          ];
+        };
+        "Super+Alt+L" = {
+          _props."hotkey-overlay-title" = "Lock the screen";
+          spawn = [
+            "noctalia"
+            "msg"
+            "session"
+            "lock"
+          ];
+        };
         "Mod+O" = {
           _props.repeat = false;
+          _props."hotkey-overlay-title" = "Toggle workspace overview";
           "toggle-overview" = { };
         };
         "Mod+Q" = {
           _props.repeat = false;
+          _props."hotkey-overlay-title" = "Close focused window";
           "close-window" = { };
         };
         "Alt+F4" = {
           _props.repeat = false;
+          _props."hotkey-overlay-title" = null;
           "close-window" = { };
         };
 
         # Noctalia window switcher: hold Alt to browse, release to activate.
-        "Alt+Tab".spawn = [
-          "noctalia"
-          "msg"
-          "window-switcher"
-          "hold"
-        ];
+        "Alt+Tab" = {
+          _props."hotkey-overlay-title" = "Switch windows";
+          spawn = [
+            "noctalia"
+            "msg"
+            "window-switcher"
+            "hold"
+          ];
+        };
         # Keep reverse switching separate from the Alt+Shift XKB layout toggle.
-        "Alt+Ctrl+Tab".spawn = [
-          "noctalia"
-          "msg"
-          "window-switcher"
-          "hold"
-          "reverse"
-        ];
+        "Alt+Ctrl+Tab" = {
+          _props."hotkey-overlay-title" = "Switch windows backwards";
+          spawn = [
+            "noctalia"
+            "msg"
+            "window-switcher"
+            "hold"
+            "reverse"
+          ];
+        };
 
         # Focus columns horizontally; workspace navigation is vertical in Niri.
-        "Mod+Left"."focus-column-left" = { };
-        "Mod+Right"."focus-column-right" = { };
+        "Mod+Left" = {
+          _props."hotkey-overlay-title" = "Focus column to the left";
+          "focus-column-left" = { };
+        };
+        "Mod+Right" = {
+          _props."hotkey-overlay-title" = "Focus column to the right";
+          "focus-column-right" = { };
+        };
         "Mod+H"."focus-column-left" = { };
         "Mod+L"."focus-column-right" = { };
         "Mod+Home"."focus-column-first" = { };
         "Mod+End"."focus-column-last" = { };
 
         # Preserve vertical window focus on Alt-modified bindings.
-        "Mod+Alt+Up"."focus-window-up" = { };
-        "Mod+Alt+Down"."focus-window-down" = { };
+        "Mod+Alt+Up" = {
+          _props."hotkey-overlay-title" = "Focus window above in column";
+          "focus-window-up" = { };
+        };
+        "Mod+Alt+Down" = {
+          _props."hotkey-overlay-title" = "Focus window below in column";
+          "focus-window-down" = { };
+        };
         "Mod+Alt+K"."focus-window-up" = { };
         "Mod+Alt+J"."focus-window-down" = { };
 
-        "Mod+Ctrl+Left"."move-column-left" = { };
-        "Mod+Ctrl+Down"."move-window-down" = { };
-        "Mod+Ctrl+Up"."move-window-up" = { };
-        "Mod+Ctrl+Right"."move-column-right" = { };
+        "Mod+Ctrl+Left" = {
+          _props."hotkey-overlay-title" = "Move column left";
+          "move-column-left" = { };
+        };
+        "Mod+Ctrl+Down" = {
+          _props."allow-inhibiting" = false;
+          _props."hotkey-overlay-title" = "Move window down within column";
+          "move-window-down" = { };
+        };
+        "Mod+Ctrl+Up" = {
+          _props."allow-inhibiting" = false;
+          _props."hotkey-overlay-title" = "Move window up within column";
+          "move-window-up" = { };
+        };
+        "Mod+Ctrl+Right" = {
+          _props."hotkey-overlay-title" = "Move column right";
+          "move-column-right" = { };
+        };
         "Mod+Ctrl+H"."move-column-left" = { };
-        "Mod+Ctrl+J"."move-window-down" = { };
-        "Mod+Ctrl+K"."move-window-up" = { };
+        "Mod+Ctrl+J" = {
+          _props."allow-inhibiting" = false;
+          "move-window-down" = { };
+        };
+        "Mod+Ctrl+K" = {
+          _props."allow-inhibiting" = false;
+          "move-window-up" = { };
+        };
         "Mod+Ctrl+L"."move-column-right" = { };
         "Mod+Ctrl+Home"."move-column-to-first" = { };
         "Mod+Ctrl+End"."move-column-to-last" = { };
 
-        "Mod+Shift+Left"."focus-monitor-left" = { };
-        "Mod+Shift+Down"."focus-monitor-down" = { };
-        "Mod+Shift+Up"."focus-monitor-up" = { };
-        "Mod+Shift+Right"."focus-monitor-right" = { };
+        "Mod+Shift+Left" = {
+          _props."hotkey-overlay-title" = "Focus monitor to the left";
+          "focus-monitor-left" = { };
+        };
+        "Mod+Shift+Down" = {
+          _props."hotkey-overlay-title" = "Focus monitor below";
+          "focus-monitor-down" = { };
+        };
+        "Mod+Shift+Up" = {
+          _props."hotkey-overlay-title" = "Focus monitor above";
+          "focus-monitor-up" = { };
+        };
+        "Mod+Shift+Right" = {
+          _props."hotkey-overlay-title" = "Focus monitor to the right";
+          "focus-monitor-right" = { };
+        };
         "Mod+Shift+H"."focus-monitor-left" = { };
         "Mod+Shift+J"."focus-monitor-down" = { };
         "Mod+Shift+K"."focus-monitor-up" = { };
@@ -221,20 +292,50 @@ in
 
         "Mod+Page_Down"."focus-workspace-down" = { };
         "Mod+Page_Up"."focus-workspace-up" = { };
-        "Mod+Down"."focus-workspace-down" = { };
-        "Mod+Up"."focus-workspace-up" = { };
+        "Mod+Down" = {
+          _props."hotkey-overlay-title" = "Focus next workspace";
+          "focus-workspace-down" = { };
+        };
+        "Mod+Up" = {
+          _props."hotkey-overlay-title" = "Focus previous workspace";
+          "focus-workspace-up" = { };
+        };
         "Mod+J"."focus-workspace-down" = { };
         "Mod+K"."focus-workspace-up" = { };
-        "Mod+Tab"."focus-workspace-previous" = { };
-        "Mod+Ctrl+Page_Down"."move-column-to-workspace-down" = { };
-        "Mod+Ctrl+Page_Up"."move-column-to-workspace-up" = { };
+        "Mod+Tab" = {
+          _props."hotkey-overlay-title" = "Return to previous workspace";
+          "focus-workspace-previous" = { };
+        };
+        "Mod+Ctrl+Page_Down" = {
+          _props."hotkey-overlay-title" = "Move column to next workspace";
+          "move-column-to-workspace-down" = { };
+        };
+        "Mod+Ctrl+Page_Up" = {
+          _props."hotkey-overlay-title" = "Move column to previous workspace";
+          "move-column-to-workspace-up" = { };
+        };
 
         # Keep shortcuts 1-5 tied to the named workspaces, not their current positions.
-        "Mod+1".focus-workspace._args = [ "1" ];
-        "Mod+2".focus-workspace._args = [ "2" ];
-        "Mod+3".focus-workspace._args = [ "3" ];
-        "Mod+4".focus-workspace._args = [ "4" ];
-        "Mod+5".focus-workspace._args = [ "5" ];
+        "Mod+1" = {
+          _props."hotkey-overlay-title" = "Switch to workspace 1";
+          focus-workspace._args = [ "1" ];
+        };
+        "Mod+2" = {
+          _props."hotkey-overlay-title" = "Switch to workspace 2";
+          focus-workspace._args = [ "2" ];
+        };
+        "Mod+3" = {
+          _props."hotkey-overlay-title" = "Switch to workspace 3";
+          focus-workspace._args = [ "3" ];
+        };
+        "Mod+4" = {
+          _props."hotkey-overlay-title" = "Switch to workspace 4";
+          focus-workspace._args = [ "4" ];
+        };
+        "Mod+5" = {
+          _props."hotkey-overlay-title" = "Switch to workspace 5";
+          focus-workspace._args = [ "5" ];
+        };
         "Mod+6".focus-workspace._args = [ 6 ];
         "Mod+7".focus-workspace._args = [ 7 ];
         "Mod+8".focus-workspace._args = [ 8 ];
@@ -258,29 +359,58 @@ in
         "Mod+Equal".set-column-width._args = [ "+10%" ];
         "Mod+Shift+Minus".set-window-height._args = [ "-10%" ];
         "Mod+Shift+Equal".set-window-height._args = [ "+10%" ];
-        "Mod+F"."maximize-column" = { };
+        "Mod+F" = {
+          _props."hotkey-overlay-title" = "Maximize column";
+          "maximize-column" = { };
+        };
         "Mod+M"."maximize-window-to-edges" = { };
         "Mod+Ctrl+F"."expand-column-to-available-width" = { };
         "Mod+Ctrl+C"."center-visible-columns" = { };
         "Mod+BracketLeft"."consume-or-expel-window-left" = { };
         "Mod+BracketRight"."consume-or-expel-window-right" = { };
-        "Mod+Ctrl+Comma"."consume-window-into-column" = { };
-        "Mod+Period"."expel-window-from-column" = { };
-        "Mod+Shift+F"."fullscreen-window" = { };
-        "Mod+C"."center-column" = { };
-        "Mod+V".spawn = [
-          "noctalia"
-          "msg"
-          "panel-toggle"
-          "clipboard"
-        ];
-        "Mod+Ctrl+V"."toggle-window-floating" = { };
-        "Mod+Shift+V"."switch-focus-between-floating-and-tiling" = { };
+        "Mod+Ctrl+Comma" = {
+          _props."hotkey-overlay-title" = "Group window into focused column";
+          "consume-window-into-column" = { };
+        };
+        "Mod+Period" = {
+          _props."hotkey-overlay-title" = "Expel window into its own column";
+          "expel-window-from-column" = { };
+        };
+        "Mod+Shift+F" = {
+          _props."hotkey-overlay-title" = "Toggle fullscreen";
+          "fullscreen-window" = { };
+        };
+        "Mod+C" = {
+          _props."hotkey-overlay-title" = "Center focused column";
+          "center-column" = { };
+        };
+        "Mod+V" = {
+          _props."hotkey-overlay-title" = "Open clipboard history";
+          spawn = [
+            "noctalia"
+            "msg"
+            "panel-toggle"
+            "clipboard"
+          ];
+        };
+        "Mod+Ctrl+V" = {
+          _props."hotkey-overlay-title" = "Toggle floating window";
+          "toggle-window-floating" = { };
+        };
         "Mod+W"."toggle-column-tabbed-display" = { };
 
-        Print.screenshot = { };
-        "Ctrl+Print".screenshot-screen = { };
-        "Alt+Print".screenshot-window = { };
+        Print = {
+          _props."hotkey-overlay-title" = "Interactive screenshot";
+          screenshot = { };
+        };
+        "Ctrl+Print" = {
+          _props."hotkey-overlay-title" = "Screenshot current monitor";
+          screenshot-screen = { };
+        };
+        "Alt+Print" = {
+          _props."hotkey-overlay-title" = "Screenshot focused window";
+          screenshot-window = { };
+        };
 
         "Mod+Escape" = {
           _props."allow-inhibiting" = false;

@@ -135,10 +135,16 @@ column to the corresponding workspace.
 
 Navigate vertically between workspaces with either `Mod+Up` / `Mod+Down`
 or the Vim-style `Mod+K` / `Mod+J` shortcuts. `Mod+Page_Up` and
-`Mod+Page_Down` remain available as alternatives. The original vertical
-window-focus actions are preserved on `Mod+Alt+Up` / `Mod+Alt+Down` and
-`Mod+Alt+K` / `Mod+Alt+J`. Dynamic workspaces continue to work beyond the
-initial five.
+`Mod+Page_Down` remain available as alternatives. Vertical window focus is
+available on `Mod+Alt+Up` / `Mod+Alt+Down` and `Mod+Alt+K` / `Mod+Alt+J`.
+
+Reorder windows inside a column with `Mod+Ctrl+Up` / `Mod+Ctrl+Down` or
+the Vim-style `Mod+Ctrl+K` / `Mod+Ctrl+J`. These shortcuts bypass application
+shortcut inhibition. They only visibly reorder windows when the column contains
+multiple windows; Niri otherwise lays windows out as separate horizontal
+columns. Use `Mod+Ctrl+Comma` to consume a neighbouring window into the
+focused column, or `Mod+Period` to expel a window from its column. Dynamic
+workspaces continue to work beyond the initial five.
 
 ## Example
 
