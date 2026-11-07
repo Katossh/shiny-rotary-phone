@@ -263,7 +263,6 @@ let
 
     profile ${executable} {
       include <abstractions/base>
-      include <abstractions/nameservice>
       include <abstractions/ssl_certs>
       include <abstractions/user-tmp>
 
