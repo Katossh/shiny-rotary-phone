@@ -34,6 +34,10 @@ in
       # Rootless Podman needs subordinate UID/GID mappings for user namespaces.
       autoSubUidGidRange = true;
 
+      # Start the user systemd manager at boot, even before interactive login.
+      # This is required for the rootless podman-restart.service unit.
+      linger = true;
+
       extraGroups = [
         "wheel"
         "networkmanager"
