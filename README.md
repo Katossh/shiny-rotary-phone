@@ -390,9 +390,14 @@ store read-only, creates private `/proc`, `/dev`, and `/tmp`, and exposes only
 the selected workspace. The workspace is the only persistent writable path in
 the `dev` profile. The host home directory, `/run`, session sockets, SSH
 credentials, browser profiles, and arbitrary host environment variables are
-not mounted or inherited. The command's `PATH` is rebuilt from host PATH
-entries that resolve into `/nix/store`; a small allowlist of compiler/build
-variables is passed to `dev`.
+not mounted or inherited. Workspace arguments are treated as an explicit
+trust boundary: the wrapper refuses the home directory itself and known
+credential/application-data locations such as `.ssh`, `.gnupg`, `.aws`,
+`.kube`, `.docker`, `.password-store`, `.config`, `.local/share`, and
+`.mozilla`. Do not point a workspace at directories containing personal
+documents or other data you do not want the command to access. The command's
+`PATH` is rebuilt from host PATH entries that resolve into `/nix/store`; a
+small allowlist of compiler/build variables is passed to `dev`.
 
 `dev` disables networking by default. Use `--network` only when the build
 really needs it. Network-enabled profiles share the host network namespace:
