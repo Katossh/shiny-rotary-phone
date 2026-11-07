@@ -25,8 +25,10 @@
   home-manager.users.${config.starforge.user.username}.starforge.user.hardware.deepcoolDigital.enable =
     true;
 
-  # uaccess must be assigned before systemd's 73-seat-late.rules applies ACLs.
+  # Seat-scoped uaccess rules must run before systemd's 73-seat-late.rules.
   # services.udev.extraRules writes 99-local.rules, which is too late.
+  # The AK620 daemon instead uses a fixed owner because it is a persistent
+  # user service and should not depend on the timing of logind seat ACLs.
   services.udev.packages = [
     (pkgs.writeTextFile {
       name = "workstation-hidraw-rules";
@@ -35,7 +37,8 @@
         SUBSYSTEM=="hidraw", ATTRS{idVendor}=="373b", TAG+="uaccess"
 
         # DeepCool AK620 Digital / Digital SE display (shared USB VID 3633, PID 0002).
-        SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3633", ATTRS{idProduct}=="0002", TAG+="uaccess"
+        # The daemon runs as the configured workstation user; keep access private to that account.
+        SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3633", ATTRS{idProduct}=="0002", OWNER="${config.starforge.user.username}", MODE="0600"
 
         # VXE NordicMouse 1K receiver.
         KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3554", ATTRS{idProduct}=="f58a", TAG+="uaccess"

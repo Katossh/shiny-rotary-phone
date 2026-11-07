@@ -246,20 +246,26 @@ because that machine has an AK620 Digital. Other machine profiles should leave
 the option disabled unless they have a supported display and provide their
 own matching device permissions.
 
-The daemon runs without root. The workstation udev rule grants the active
-local user access only to hidraw devices matching USB VID `3633` and PID
-`0002` (AK620 Digital / Digital SE). This is the narrowest USB ID shared by those two variants; it does not make all DeepCool devices world-writable
-or add a broad vendor-wide permission. No Intel RAPL permission is needed on
-this AMD workstation.
+The daemon runs without root. For the AK620 only, the workstation udev rule
+assigns the matching hidraw node (USB VID `3633`, PID `0002`) to the
+configured workstation account with `OWNER` and `MODE="0600"`. This keeps
+access restricted to that account and avoids relying on logind's active-seat
+ACL timing for a persistent user service. Unlike `uaccess`, this permission
+is not revoked when the user's session becomes inactive; this is intentional
+for this single-user workstation. Other interactive HID peripherals continue
+to use seat-scoped `uaccess` permissions. No Intel RAPL permission is needed
+on this AMD workstation.
 
 These HID rules are provided through `services.udev.packages` as
-`70-workstation-hidraw.rules`, rather than `services.udev.extraRules`.
-The latter is emitted as `99-local.rules`, which is processed too late for
-systemd's `73-seat-late.rules` to apply the `uaccess` ACL. Keep the local
-rule file ordered before `73-seat-late.rules`.
+`70-workstation-hidraw.rules`. The VXE and LEKU rules use `TAG+="uaccess"`,
+so they must be processed before systemd's `73-seat-late.rules`. The
+`services.udev.extraRules` option emits `99-local.rules`, which is too late
+for that purpose.
 
-After applying the configuration for the first time, reconnect the cooler's
-internal USB connection or reboot so udev/logind can apply the device ACL.
+After applying the configuration, reconnect the cooler's internal USB
+connection or reboot so udev applies the owner and mode to the device node.
+The cooler's `/dev/hidraw*` node should be owned by the configured user with
+permissions `crw-------`.
 Check the user service and its logs with:
 
 ```sh
