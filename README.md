@@ -180,6 +180,15 @@ Limine is configured for Secure Boot signing with the locally provisioned
 operations; the NixOS configuration signs the Limine EFI executable during
 bootloader installation but does not generate or enroll keys automatically.
 
+The Limine interface uses the official
+[Catppuccin Frappé Sapphire palette](https://github.com/catppuccin/limine):
+the menu branding and help accents use Sapphire, and the graphical terminal
+uses the Frappé base, text, and ANSI palettes. These settings are declared
+through NixOS' `boot.loader.limine.style` options in
+`modules/nixos/boot.nix`; they do not replace Limine's menu layout or add
+per-entry icons. The default NixOS boot wallpaper is retained because the
+upstream palette theme does not include a wallpaper.
+
 Secure Boot is enabled on the workstation and both `sbctl status` and
 `bootctl status` report it active in User Mode. The enrollment retained the
 Microsoft and firmware-builtin certificates so Windows Boot Manager remains
