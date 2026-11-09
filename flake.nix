@@ -2,9 +2,13 @@
   description = "NixOS workstation configuration with Niri and Noctalia";
 
   nixConfig = {
-    extra-substituters = [ "https://noctalia.cachix.org" ];
+    extra-substituters = [
+      "https://noctalia.cachix.org"
+      "https://ezkea.cachix.org"
+    ];
     extra-trusted-public-keys = [
       "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
+      "ezkea.cachix.org-1:ioBmUbJTZIKsHmWWXPe1FSFbeVe+afhfgqgTSNd34eI="
     ];
   };
 
@@ -23,6 +27,13 @@
 
     # Keep Noctalia's own pinned nixpkgs: this is required for Cachix hits.
     noctalia.url = "github:noctalia-dev/noctalia/cachix";
+
+    # Use the matching 26.11 branch of the community Genshin launcher module.
+    aagl = {
+      url = "github:ezKEa/aagl-gtk-on-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     terminal-dotfiles = {
       url = "github:Katossh/terminal-dotfiles";
