@@ -101,6 +101,41 @@ in
         { workspace._args = [ "4" ]; }
         { workspace._args = [ "5" ]; }
         {
+          # Web browsers: Chromium and Firefox.
+          window-rule = {
+            match._props."app-id" = "(?i)(chromium|firefox)";
+            "open-on-workspace" = "1";
+          };
+        }
+        {
+          # Development: Zed and Kitty.
+          window-rule = {
+            match._props."app-id" = "^(dev\\.zed\\.Zed|kitty)$";
+            "open-on-workspace" = "2";
+          };
+        }
+        {
+          # Games: Steam and its game windows, osu!, and Genshin/Anime Game Launcher.
+          window-rule = {
+            match._props."app-id" = "(?i)(steam|osu|genshin|anime.?game)";
+            "open-on-workspace" = "3";
+          };
+        }
+        {
+          # Communication: Discord, Telegram, and LocalSend.
+          window-rule = {
+            match._props."app-id" = "(?i)(discord|telegram|localsend)";
+            "open-on-workspace" = "4";
+          };
+        }
+        {
+          # Utilities and media: Dolphin, mpv, pavucontrol, and virt-manager.
+          window-rule = {
+            match._props."app-id" = "(?i)(dolphin|mpv|pavucontrol|virt-manager)";
+            "open-on-workspace" = "5";
+          };
+        }
+        {
           # Float Noctalia's settings window.
           window-rule = {
             match._props."app-id" = "^dev\\.noctalia\\.Noctalia$";
