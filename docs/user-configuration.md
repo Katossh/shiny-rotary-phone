@@ -133,6 +133,25 @@ They remain available while empty. `Mod+1` through `Mod+5` focus those
 workspaces by name, and `Mod+Ctrl+1` through `Mod+Ctrl+5` move the focused
 column to the corresponding workspace.
 
+#### Automatic application placement
+
+New windows are routed to these workspaces by their Niri application ID:
+
+| Workspace | Purpose | Applications |
+| --- | --- | --- |
+| `1` | Web | Chromium, Firefox |
+| `2` | Development | Zed, Kitty |
+| `3` | Games | Steam and Steam games, osu!, Genshin / Anime Game Launcher |
+| `4` | Communication | Discord, Telegram, LocalSend |
+| `5` | Utilities and media | Dolphin, mpv, pavucontrol, virt-manager |
+
+These are opening rules: they apply when a window is created, not retroactively
+to windows that are already open. Move an existing window with `Mod+Ctrl+1`
+through `Mod+Ctrl+5`. If an application is not routed as expected, run
+`niri msg pick-window` and click it to inspect its actual app ID; adjust the
+matching expression in `home/niri.nix` if the application reports a different
+identifier.
+
 Navigate vertically between workspaces with either `Mod+Up` / `Mod+Down`
 or the Vim-style `Mod+K` / `Mod+J` shortcuts. `Mod+Page_Up` and
 `Mod+Page_Down` remain available as alternatives. Vertical window focus is
