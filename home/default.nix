@@ -38,8 +38,18 @@
     enableZshIntegration = true;
   };
 
-  xdg.userDirs = {
-    enable = true;
-    createDirectories = true;
+  xdg = {
+    userDirs = {
+      enable = true;
+      createDirectories = true;
+    };
+
+    mimeApps = {
+      enable = true;
+      defaultApplications = {
+        "inode/directory" = [ "org.kde.dolphin.desktop" ];
+        "application/x-gnome-saved-search" = [ "org.kde.dolphin.desktop" ];
+      };
+    };
   };
 }
