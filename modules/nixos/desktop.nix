@@ -15,6 +15,7 @@
   # portable terminal environment.
   environment.systemPackages = [
     pkgs.chromium
+    pkgs.kdePackages.dolphin
     pkgs.xwayland-satellite
   ];
 
