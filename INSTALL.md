@@ -50,6 +50,32 @@ git pull --ff-only
 sudo ./install.sh
 ~~~
 
+## Gaming
+
+The workstation profile enables Steam through `programs.steam.enable` and installs
+`osu-lazer-bin`. The latter is the upstream AppImage build that supports online
+score submission and multiplayer. Its version follows the pinned Nixpkgs revision
+in `flake.lock`.
+
+Genshin Impact has no native Linux client. The profile enables Flatpak; install
+the community-maintained An Anime Game Launcher from Flathub in the user scope:
+
+~~~sh
+flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install --user flathub moe.launcher.an-anime-game-launcher
+~~~
+
+Open **An Anime Game Launcher** from the application menu and follow its setup
+to download and install Genshin Impact. This is an unofficial third-party
+launcher, not a HoYoverse product; Linux compatibility is not officially
+supported and can break after game updates. Its Flatpak manifest also grants
+broad device and X11 access, so it should not be treated as a tightly isolated
+sandbox. Review its permissions with:
+
+~~~sh
+flatpak info --show-permissions moe.launcher.an-anime-game-launcher
+~~~
+
 ## Terminal environment
 
 The workstation profile pins [terminal-dotfiles](https://github.com/Katossh/terminal-dotfiles) as a
