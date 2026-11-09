@@ -34,6 +34,7 @@
     ../../modules/nixos/desktop.nix
     ../../modules/nixos/development.nix
     ../../modules/nixos/media.nix
+    ../../modules/nixos/gaming.nix
     ../../modules/nixos/terminal.nix
     ../../modules/nixos/containers.nix
     ../../modules/nixos/virtualisation.nix
