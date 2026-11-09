@@ -52,6 +52,27 @@
         # Keep it disabled now so the configuration is ready for Secure Boot.
         enableEditor = false;
 
+        # Catppuccin Frappé Sapphire, using Limine's structured NixOS options.
+        # The default NixOS wallpaper and Limine menu layout remain unchanged.
+        style = {
+          interface = {
+            branding = "NixOS";
+            brandingColor = "85C1DC";
+            helpColor = "85C1DC";
+            helpColorBright = "85C1DC";
+          };
+
+          graphicalTerminal = {
+            enable = true;
+            palette = "303446;E78284;A6D189;E5C890;8CAAEE;F4B8E4;81C8BE;C6D0F5";
+            brightPalette = "626880;E78284;A6D189;E5C890;8CAAEE;F4B8E4;81C8BE;C6D0F5";
+            foreground = "C6D0F5";
+            background = "303446";
+            brightForeground = "C6D0F5";
+            brightBackground = "626880";
+          };
+        };
+
         # Windows has its own ESP on the same NVMe disk. Limine can chainload
         # its Microsoft-signed Boot Manager directly by GPT partition GUID.
         extraEntries = ''
