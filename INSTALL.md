@@ -52,29 +52,27 @@ sudo ./install.sh
 
 ## Gaming
 
-The workstation profile enables Steam through `programs.steam.enable` and installs
-`osu-lazer-bin`. The latter is the upstream AppImage build that supports online
-score submission and multiplayer. Its version follows the pinned Nixpkgs revision
-in `flake.lock`.
+The workstation profile enables Steam through `programs.steam.enable`, installs
+`osu-lazer-bin`, and imports the upstream
+[aagl-gtk-on-nix](https://github.com/ezKEa/aagl-gtk-on-nix) NixOS module for
+Genshin Impact. All three are installed declaratively through the system
+configuration; Flatpak is not required.
 
-Genshin Impact has no native Linux client. The profile enables Flatpak; install
-the community-maintained An Anime Game Launcher from Flathub in the user scope:
+The launcher is enabled with `programs.anime-game-launcher.enable = true`.
+The AAGL flake and its dependencies are pinned in `flake.lock`, and its
+Cachix binary cache is configured to avoid compiling the launcher locally.
+The upstream module also enables its `networking.mihoyo-telemetry.block`
+hosts rules when the launcher is enabled.
 
-~~~sh
-flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-flatpak install --user flathub moe.launcher.an-anime-game-launcher
-~~~
+After applying the NixOS generation, launch **An Anime Game Launcher** from the
+application menu (or run `anime-game-launcher`) and follow its setup to
+download Genshin Impact. This is an unofficial community launcher, not a
+HoYoverse product; Linux compatibility is not officially supported and may
+break after game updates.
 
-Open **An Anime Game Launcher** from the application menu and follow its setup
-to download and install Genshin Impact. This is an unofficial third-party
-launcher, not a HoYoverse product; Linux compatibility is not officially
-supported and can break after game updates. Its Flatpak manifest also grants
-broad device and X11 access, so it should not be treated as a tightly isolated
-sandbox. Review its permissions with:
-
-~~~sh
-flatpak info --show-permissions moe.launcher.an-anime-game-launcher
-~~~
+`osu-lazer-bin` is the upstream AppImage build with online score submission
+and multiplayer. Its version follows the pinned Nixpkgs revision in
+`flake.lock`.
 
 ## Terminal environment
 
