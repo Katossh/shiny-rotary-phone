@@ -25,7 +25,7 @@
     sudo = {
       wheelNeedsPassword = true;
       extraConfig = ''
-        Defaults timestamp_timeout=5
+        Defaults timestamp_timeout=15
         Defaults passwd_tries=3
         Defaults use_pty
       '';
