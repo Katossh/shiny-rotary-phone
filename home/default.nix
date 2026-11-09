@@ -26,10 +26,16 @@
       telegram-desktop
       localsend
       opencode
+      kalker
       wl-clipboard
     ];
 
     file."Pictures/Screenshots/.keep".text = "";
+  };
+
+  programs.yazi = {
+    enable = true;
+    enableZshIntegration = true;
   };
 
   xdg.userDirs = {
