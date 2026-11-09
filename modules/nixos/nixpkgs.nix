@@ -10,5 +10,10 @@
       "code"
       "discord"
       "discord-unwrapped"
+      "osu-lazer-bin"
+      "steam"
+      "steam-original"
+      "steam-run"
+      "steam-unwrapped"
     ];
 }
