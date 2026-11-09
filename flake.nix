@@ -53,12 +53,88 @@
     {
       formatter.${system} = pkgs.nixfmt;
 
-      # Keep Nix analysis tools on the same locked Nixpkgs revision as the host.
-      devShells.${system}.default = pkgs.mkShell {
-        packages = with pkgs; [
-          deadnix
-          statix
-        ];
+      devShells.${system} = {
+        # Keep the default shell lightweight: CI uses it for Nix static analysis.
+        default = pkgs.mkShell {
+          packages = with pkgs; [
+            deadnix
+            statix
+          ];
+        };
+
+        # General-purpose toolchain for experiments and projects without their
+        # own flake. Project flakes can still pin narrower or different versions.
+        general = pkgs.mkShell {
+          packages = with pkgs; [
+            # Rust
+            rustc
+            cargo
+            rustfmt
+            clippy
+            rust-analyzer
+
+            # Python
+            python3
+            uv
+            ruff
+            basedpyright
+
+            # Go
+            go
+            gopls
+            golangci-lint
+
+            # JavaScript and TypeScript
+            nodejs
+            pnpm
+            typescript
+            typescript-language-server
+            eslint
+            prettier
+
+            # C and C++
+            gcc
+            clang
+            clang-tools
+            cmake
+            ninja
+            gnumake
+            pkg-config
+            gdb
+
+            # Nix and shell tooling
+            nixd
+            nixfmt
+            deadnix
+            statix
+            shellcheck
+            shfmt
+
+            # Everyday development utilities
+            git
+            gh
+            jq
+            ripgrep
+            fd
+            fzf
+            just
+            tree
+            curl
+            wget
+            unzip
+          ];
+
+          # Native libraries commonly needed by Rust crates and Python wheels.
+          buildInputs = with pkgs; [
+            libffi
+            openssl
+            sqlite
+            zlib
+          ];
+
+          # Make the standard library sources available to rust-analyzer.
+          RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
+        };
       };
 
       nixosConfigurations.workstation = nixpkgs.lib.nixosSystem {

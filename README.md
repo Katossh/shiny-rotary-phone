@@ -67,8 +67,9 @@ GPU on an AM5 platform.
 - Vulkan and VA-API diagnostic tools are installed.
 - `amdgpu_top`, `lm_sensors`, `nvme-cli`, `smartmontools`, `pciutils`,
   and `usbutils` provide hardware monitoring and diagnostics.
-- Clang, GCC, Rust, and Go provide the system development toolchain; jq, yt-dlp,
-  and mpv provide JSON processing, media downloading, and playback.
+- GCC, Clang, Rust, Go, Python, and Node.js toolchains are available in the
+  reusable flake development shell; jq, yt-dlp, and mpv provide JSON processing,
+  media downloading, and playback.
 - Bluetooth, NetworkManager, UPower, and power-profiles-daemon remain enabled.
 - `fwupd` is enabled for firmware updates on devices supported by LVFS.
 - `smartd` automatically monitors detected SMART-capable storage devices.
@@ -694,9 +695,33 @@ CI never activates a NixOS generation or deploys to the workstation.
 
 ## Static analysis
 
-The flake provides a development shell with `statix` and `deadnix` from the
-locked Nixpkgs revision. Formatting and static analysis cover maintained Nix
-files and deliberately exclude the NixOS-generated
+The flake exports two development shells from the locked Nixpkgs revision:
+
+- `default` is intentionally lightweight and contains only `statix` and
+  `deadnix`. CI uses it for repository static analysis.
+- `general` is a reusable programming environment with Rust, Python, Go,
+  JavaScript/TypeScript, C/C++, Nix, and shell tooling. It also provides common
+  native libraries used by Rust crates and Python packages.
+
+Enter the general-purpose shell from the repository root:
+
+```sh
+nix develop .#general
+```
+
+It can also be used from any working directory without entering this repository:
+
+```sh
+nix develop github:Katossh/shiny-rotary-phone#general
+```
+
+The system configuration keeps editors and workstation utilities globally
+available; language compilers and runtimes are supplied by this shell instead.
+For project-specific work, a project's own flake and lock file should still
+define any different compiler versions or additional native dependencies.
+
+Formatting and static analysis cover maintained Nix files and deliberately
+exclude the NixOS-generated
 `hosts/workstation/hardware-configuration.nix`, which is owned by
 `nixos-generate-config` and is still evaluated by the flake checks and full
 system build. Run them locally before opening a PR:
