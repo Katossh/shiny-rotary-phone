@@ -53,17 +53,18 @@
     {
       formatter.${system} = pkgs.nixfmt;
 
-      # Keep the default shell lightweight: CI uses it for Nix static analysis.
-      devShells.${system}.default = pkgs.mkShell {
-        packages = with pkgs; [
-          deadnix
-          statix
-        ];
-      };
+      devShells.${system} = {
+        # Keep the default shell lightweight: CI uses it for Nix static analysis.
+        default = pkgs.mkShell {
+          packages = with pkgs; [
+            deadnix
+            statix
+          ];
+        };
 
-      # General-purpose toolchain for experiments and projects without their
-      # own flake. Project flakes can still pin narrower or different versions.
-      devShells.${system}.general = pkgs.mkShell {
+        # General-purpose toolchain for experiments and projects without their
+        # own flake. Project flakes can still pin narrower or different versions.
+        general = pkgs.mkShell {
         packages = with pkgs; [
           # Rust
           rustc
@@ -131,8 +132,9 @@
           zlib
         ];
 
-        # Make the standard library sources available to rust-analyzer.
-        RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
+          # Make the standard library sources available to rust-analyzer.
+          RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
+        };
       };
 
       nixosConfigurations.workstation = nixpkgs.lib.nixosSystem {
