@@ -65,72 +65,72 @@
         # General-purpose toolchain for experiments and projects without their
         # own flake. Project flakes can still pin narrower or different versions.
         general = pkgs.mkShell {
-        packages = with pkgs; [
-          # Rust
-          rustc
-          cargo
-          rustfmt
-          clippy
-          rust-analyzer
+          packages = with pkgs; [
+            # Rust
+            rustc
+            cargo
+            rustfmt
+            clippy
+            rust-analyzer
 
-          # Python
-          python3
-          uv
-          ruff
-          basedpyright
+            # Python
+            python3
+            uv
+            ruff
+            basedpyright
 
-          # Go
-          go
-          gopls
-          golangci-lint
+            # Go
+            go
+            gopls
+            golangci-lint
 
-          # JavaScript and TypeScript
-          nodejs
-          pnpm
-          typescript
-          typescript-language-server
-          eslint
-          prettier
+            # JavaScript and TypeScript
+            nodejs
+            pnpm
+            typescript
+            typescript-language-server
+            eslint
+            prettier
 
-          # C and C++
-          gcc
-          clang
-          clang-tools
-          cmake
-          ninja
-          gnumake
-          pkg-config
-          gdb
+            # C and C++
+            gcc
+            clang
+            clang-tools
+            cmake
+            ninja
+            gnumake
+            pkg-config
+            gdb
 
-          # Nix and shell tooling
-          nixd
-          nixfmt
-          deadnix
-          statix
-          shellcheck
-          shfmt
+            # Nix and shell tooling
+            nixd
+            nixfmt
+            deadnix
+            statix
+            shellcheck
+            shfmt
 
-          # Everyday development utilities
-          git
-          gh
-          jq
-          ripgrep
-          fd
-          fzf
-          just
-          tree
-          curl
-          wget
-          unzip
-        ];
+            # Everyday development utilities
+            git
+            gh
+            jq
+            ripgrep
+            fd
+            fzf
+            just
+            tree
+            curl
+            wget
+            unzip
+          ];
 
-        # Native libraries commonly needed by Rust crates and Python wheels.
-        buildInputs = with pkgs; [
-          libffi
-          openssl
-          sqlite
-          zlib
-        ];
+          # Native libraries commonly needed by Rust crates and Python wheels.
+          buildInputs = with pkgs; [
+            libffi
+            openssl
+            sqlite
+            zlib
+          ];
 
           # Make the standard library sources available to rust-analyzer.
           RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
