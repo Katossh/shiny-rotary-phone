@@ -105,6 +105,12 @@ order = [ "default" ]
         opacity = 1.0
         padding = 6.0
 
+# Blurred and tinted copy of the current wallpaper for Niri Overview.
+[backdrop]
+enabled = true
+blur_intensity = 0.5
+tint_intensity = 0.3
+
 [bluetooth]
 connect_when_enabled = true
 connection_notifications = true
