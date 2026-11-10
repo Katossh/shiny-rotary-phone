@@ -24,6 +24,7 @@
       pavucontrol
       slurp
       telegram-desktop
+      tor-browser
       localsend
       opencode
       kalker
@@ -47,6 +48,15 @@
     mimeApps = {
       enable = true;
       defaultApplications = {
+        # Web pages and URL schemes.
+        "text/html" = [ "firefox.desktop" ];
+        "application/xhtml+xml" = [ "firefox.desktop" ];
+        "x-scheme-handler/http" = [ "firefox.desktop" ];
+        "x-scheme-handler/https" = [ "firefox.desktop" ];
+        "x-scheme-handler/about" = [ "firefox.desktop" ];
+        "x-scheme-handler/unknown" = [ "firefox.desktop" ];
+
+        # File manager.
         "inode/directory" = [ "org.kde.dolphin.desktop" ];
         "application/x-gnome-saved-search" = [ "org.kde.dolphin.desktop" ];
       };
