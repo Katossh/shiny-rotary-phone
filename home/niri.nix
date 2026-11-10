@@ -25,6 +25,13 @@ in
         "disable-primary" = { };
       };
 
+      # Disable the top-left hot corner; keep Overview available through Mod+O.
+      gestures = {
+        "hot-corners" = {
+          off = { };
+        };
+      };
+
       input = {
         keyboard = {
           xkb.layout = config.starforge.user.desktop.niri.keyboardLayout;
@@ -142,6 +149,13 @@ in
             "open-floating" = true;
             "default-column-width".fixed = 1080;
             "default-window-height".fixed = 920;
+          };
+        }
+        {
+          # Show Noctalia's blurred/tinted wallpaper backdrop in Niri Overview.
+          layer-rule = {
+            match._props.namespace = "^noctalia-backdrop";
+            "place-within-backdrop" = true;
           };
         }
         {
