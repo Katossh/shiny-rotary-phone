@@ -48,11 +48,11 @@
     "terminal-dotfiles": {
       "flake": false,
       "locked": {
-        "lastModified": 1794335361,
-        "narHash": "sha256-SQW0cqA9I7OE+MltYGMnwyGTqFVBXXNPOVQckBO/ZRU=",
+        "lastModified": 1794348837,
+        "narHash": "sha256-DodRXz6BDsASIOt4jy9ia+l5c8tNUpZXcu+t3ylJyms=",
         "owner": "Katossh",
         "repo": "terminal-dotfiles",
-        "rev": "c48654c09a1a01d10a78f3069133c63a14bc50c1",
+        "rev": "4e2af73aa4293e3197410b786aa8854489c814ad",
         "type": "github"
       },
       "original": {
