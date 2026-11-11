@@ -112,8 +112,8 @@ check_home_manager_target_permissions() {
 
   managed_paths="$(
     nix eval --raw \
-      "path:$REPO_DIR#nixosConfigurations.$HOST_NAME.config.home-manager.users.\\"$username\\".home.file" \
-      --apply 'files: builtins.concatStringsSep "\\n" (builtins.attrNames files)'
+      "path:$REPO_DIR#nixosConfigurations.$HOST_NAME.config.home-manager.users.\"$username\".home.file" \
+      --apply 'files: builtins.concatStringsSep "\n" (builtins.attrNames files)'
   )" || die "Could not enumerate the Home Manager-managed files for $username."
 
   [[ -n "$managed_paths" ]] || return 0
