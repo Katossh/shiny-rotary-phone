@@ -12,11 +12,16 @@ NixOS system or the official NixOS installer environment.
 > from the actual mount tree rather than fixed identifiers.
 
 The script never partitions disks, formats filesystems, creates Btrfs
-subvolumes, changes LUKS keys, or enrolls Secure Boot keys. It detects the
-currently mounted target layout with \`nixos-generate-config\` and replaces
-\`hosts/workstation/hardware-configuration.nix\` in the local clone with the
-result before installation. For an encrypted root, open the LUKS container
-before mounting it so the NixOS hardware generator can detect the mapping.
+subvolumes, changes LUKS keys, or enrolls Secure Boot keys. Before evaluating
+the flake, it prepares the machine-local
+\`hosts/workstation/hardware-configuration.nix\` file. When
+\`/etc/nixos/hardware-configuration.nix\` exists, it is copied into the host
+profile immediately. Otherwise, the installer reuses a valid local copy or
+asks for confirmation before running \`nixos-generate-config\` against the
+current root or the filesystems mounted below \`/mnt\`. This local file is
+Git-ignored and is not part of the repository. For an encrypted fresh-install
+root, open the LUKS container before mounting it so the generator can detect
+the mapping.
 
 ## Existing NixOS installation
 
@@ -28,9 +33,11 @@ cd ~/nixos-config
 sudo ./install.sh
 ~~~
 
-The script runs \`nixos-rebuild switch --flake .#workstation\`. Nix evaluates and
-builds the new generation before activating it. The existing \`flake.lock\` is
-used; dependencies are not deliberately updated as part of installation.
+The script runs \`nixos-rebuild switch\` against the local flake directory.
+It uses a \`path:\` flake reference so the Git-ignored hardware configuration
+is included during evaluation. Nix evaluates and builds the new generation
+before activating it. The existing \`flake.lock\` is used; dependencies are not
+deliberately updated as part of installation.
 
 For a temporary activation that does not change the default boot generation:
 
@@ -100,11 +107,14 @@ cd /mnt/etc/nixos
 
 With no mode specified, \`install.sh\` detects the clone at \`/mnt/etc/nixos\`
 and selects fresh-install mode. It verifies the supported root filesystem,
-the FAT32 ESP at \`/mnt/boot\`, and UEFI boot. It then generates a fresh
-hardware configuration from the actual mount tree, including filesystem
-UUIDs, optional mountpoints, Btrfs subvolume names, and detected LUKS mappings.
-It does not need a Windows ESP or any Windows partition. The boot menu is
-configured for NixOS single boot.
+the FAT32 ESP at \`/mnt/boot\`, and UEFI boot. If
+\`/etc/nixos/hardware-configuration.nix\` exists, it copies that file into the
+host profile. Otherwise, if no valid local copy exists, the installer asks
+for confirmation and generates the hardware configuration from the actual
+mount tree, including filesystem UUIDs, optional mountpoints, Btrfs subvolume
+names, and detected LUKS mappings. The local file is ignored by Git. It does
+not need a Windows ESP or any Windows partition. The boot menu is configured
+for NixOS single boot.
 
 After \`nixos-install\` completes, the script prompts you to set the password
 for the account configured by \`starforge.user.username\` in

@@ -17,7 +17,7 @@ These priorities do not authorize unrelated architectural rewrites or changes to
 Treat the checked-out repository as the source of truth. At the time this guide was written, the project documentation describes the following layout and boundaries:
 
 - `flake.nix`, `flake.lock` — flake inputs, pinned dependencies, formatter, development shell, and the `workstation` NixOS output.
-- `hosts/workstation/` — the current machine-specific host profile, including generated hardware configuration.
+- `hosts/workstation/` — the current machine-specific host profile. Its generated `hardware-configuration.nix` is a local, Git-ignored file prepared by `install.sh`.
 - `modules/nixos/` — reusable system-level NixOS modules.
 - `home/` — Home Manager modules for the workstation user; the login name is configured once through `starforge.user.username` in `hosts/workstation/default.nix`.
 - `terminal-dotfiles` — a separate pinned input and the source of truth for terminal configuration and package manifests. Do not duplicate or take ownership of those files in Starforge.
@@ -249,24 +249,24 @@ The project contains machine-specific storage, bootloader, Secure Boot, encrypti
 - Follow the existing formatting and module conventions. Do not reformat unrelated files.
 - Keep `flake.lock` unchanged unless dependency updates are part of the task. Review lock-file changes deliberately.
 - Do not change `system.stateVersion` as a routine maintenance action.
-- Preserve generated `hosts/workstation/hardware-configuration.nix`; edit it only when the task explicitly concerns regenerating or correcting hardware detection.
+- Treat `hosts/workstation/hardware-configuration.nix` as local machine data: never commit it or copy its device identifiers/UUIDs into public docs. `install.sh` copies `/etc/nixos/hardware-configuration.nix` when present; otherwise, it asks before generating the local file. Preserve it during unrelated changes.
 - Verify new option names against the project's locked Nixpkgs/Home Manager sources or authoritative upstream documentation.
 - Prefer evaluation and build checks over assuming that syntactically valid Nix is operationally correct.
 
 Use the repository's documented checks when applicable. The README currently describes these local validation steps:
 
 ```sh
-mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/workstation/hardware-configuration.nix")
+mapfile -t nix_files < <(git ls-files "*.nix")
 nix fmt -- "${nix_files[@]}"
 
-nix develop
+nix develop path:.#default
 for nix_file in "${nix_files[@]}"; do
   statix check "$nix_file"
 done
 deadnix --fail "${nix_files[@]}"
 
-nix flake check --no-build --no-update-lock-file --show-trace
-nix build .#nixosConfigurations.workstation.config.system.build.toplevel --no-link
+nix flake check path:. --no-build --no-update-lock-file --show-trace
+nix build path:.#nixosConfigurations.workstation.config.system.build.toplevel --no-link
 ```
 
 Adjust commands only when the current repository has changed. Do not claim that a check passed unless it was actually run and its exit status was inspected. If a check cannot be run, state exactly which check was skipped and why.
