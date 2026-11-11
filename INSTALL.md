@@ -1,19 +1,22 @@
 # Installing the NixOS configuration
 
-`install.sh` applies the workstation NixOS flake from a minimal NixOS environment.
-The only extra package you need to fetch the repository is Git; Nix and the
-NixOS installation tools are supplied by NixOS itself.
+\`install.sh\` applies the workstation NixOS flake from either an installed
+NixOS system or the official NixOS installer environment.
 
-> **Hardware scope:** this flake is currently a profile for the existing
-> `workstation` host profile, not a generic multi-host installer. It expects the
-> encrypted Btrfs root UUID `fb18dd0b-4f76-449f-9d00-67cc9d49b4ee`, the FAT32
-> `/boot` UUID `FD77-5C81`, the Btrfs subvolumes `@root`, `@home`, `@nix`, and
-> `@var-log`, UEFI boot, and the Windows ESP partition GUID
-> `68a6f3c1-1eee-4845-8c3e-7108cec34c4a`. The script checks these identifiers
-> and refuses to apply the profile when they do not match.
+> **Hardware scope:** this remains a workstation profile for the current AMD
+> Ryzen 7000 desktop (not a universal configuration for every computer). The
+> installer adapts to different storage layouts: root can be Btrfs, ext4, or
+> XFS; the UEFI System Partition must be FAT32 and mounted at \`/mnt/boot\`.
+> Separate \`/home\`, \`/nix\`, and \`/var/log\` mounts are optional. Filesystem
+> UUIDs, device names, Btrfs subvolumes, and open LUKS mappings are discovered
+> from the actual mount tree rather than fixed identifiers.
 
 The script never partitions disks, formats filesystems, creates Btrfs
-subvolumes, changes LUKS keys, or enrolls Secure Boot keys.
+subvolumes, changes LUKS keys, or enrolls Secure Boot keys. It detects the
+currently mounted target layout with \`nixos-generate-config\` and replaces
+\`hosts/workstation/hardware-configuration.nix\` in the local clone with the
+result before installation. For an encrypted root, open the LUKS container
+before mounting it so the NixOS hardware generator can detect the mapping.
 
 ## Existing NixOS installation
 
@@ -25,10 +28,9 @@ cd ~/nixos-config
 sudo ./install.sh
 ~~~
 
-The script verifies the host's disk identifiers and mount layout, then runs
-`nixos-rebuild switch --flake .#workstation`. Nix evaluates and builds the new
-generation before activating it. The existing `flake.lock` is used; dependencies
-are not deliberately updated as part of installation.
+The script runs \`nixos-rebuild switch --flake .#workstation\`. Nix evaluates and
+builds the new generation before activating it. The existing \`flake.lock\` is
+used; dependencies are not deliberately updated as part of installation.
 
 For a temporary activation that does not change the default boot generation:
 
@@ -43,111 +45,92 @@ hardware, make the configuration permanent with:
 sudo ./install.sh --switch
 ~~~
 
-To update the repository and apply the reviewed changes:
+To update the repository and apply reviewed changes:
 
 ~~~sh
 git pull --ff-only
 sudo ./install.sh
 ~~~
 
-## Gaming
+## Fresh single-boot installation from the NixOS ISO
 
-The workstation profile enables Steam through `programs.steam.enable`, installs
-`osu-lazer-bin`, and imports the upstream
-[aagl-gtk-on-nix](https://github.com/ezKEa/aagl-gtk-on-nix) NixOS module for
-Genshin Impact. All three are installed declaratively through the system
-configuration; Flatpak is not required.
-
-The launcher is enabled with `programs.anime-game-launcher.enable = true`.
-The AAGL flake and its dependencies are pinned in `flake.lock`, and its
-Cachix binary cache is configured to avoid compiling the launcher locally.
-The upstream module also enables its `networking.mihoyo-telemetry.block`
-hosts rules when the launcher is enabled.
-
-After applying the NixOS generation, launch **An Anime Game Launcher** from the
-application menu (or run `anime-game-launcher`) and follow its setup to
-download Genshin Impact. This is an unofficial community launcher, not a
-HoYoverse product; Linux compatibility is not officially supported and may
-break after game updates.
-
-`osu-lazer-bin` is the upstream AppImage build with online score submission
-and multiplayer. Its version follows the pinned Nixpkgs revision in
-`flake.lock`.
-
-## Terminal environment
-
-The workstation profile pins [terminal-dotfiles](https://github.com/Katossh/terminal-dotfiles) as a
-non-flake input. Home Manager reads its `manifest/configs.tsv` and links the
-declared terminal configurations into the user's XDG config directories and
-home directory. The dotfiles repository remains the single source of truth;
-the files are not copied into this repository.
-
-The NixOS terminal module also reads `manifest/packages.tsv` to install the
-declared terminal packages. Home Manager supplies the user-level integration:
-Zsh startup files, Oh My Zsh and its plugins, Kitty's generated palette, the
-tmux palette adapter, and the executable helper scripts (excluding the
-imperative `dots` installer).
-
-Do not run `dots install` on this NixOS system: Home Manager owns the managed paths.
-Existing files that collide with Home Manager targets are preserved using the
-configured `.hm-backup` suffix.
-
-To update the terminal environment, update the pinned input, review the lock
-file change, and rebuild:
-
-~~~sh
-nix flake lock --update-input terminal-dotfiles
-sudo nixos-rebuild switch --flake .#workstation
-~~~
-
-## Fresh installation from the NixOS ISO
-
-This path reinstalls the workstation profile onto its **existing disk layout**.
-Boot the official NixOS x86_64 installer in UEFI mode, connect to the network,
-and open the existing LUKS container. The NixOS installer already provides Nix
-and the NixOS installation tools; Git is the only additional tool needed to
-fetch this repository.
-
-The following commands only open and mount existing filesystems. They do not
-format disks. Confirm the UUIDs and existing Btrfs subvolumes before running
-them:
+1. Boot the official NixOS x86_64 installer in **UEFI mode** and connect to the
+   network.
+2. Partition and format the disk yourself. Create a FAT32 EFI System Partition
+   and a root filesystem using Btrfs, ext4, or XFS. If the root is encrypted,
+   open the LUKS container before mounting it.
+3. Mount the root filesystem at \`/mnt\`, the EFI partition at \`/mnt/boot\`,
+   and any separate filesystems/subvolumes at their final mount points. For
+   example, with an encrypted Btrfs filesystem and subvolumes named \`@\`,
+   \`@home\`, \`@nix\`, and \`@log\`:
 
 ~~~sh
 sudo -i
-cryptsetup open /dev/disk/by-uuid/fb18dd0b-4f76-449f-9d00-67cc9d49b4ee cryptroot
+cryptsetup open /dev/nvme0n1p2 cryptroot
 
-mount -o subvol=@root /dev/mapper/cryptroot /mnt
+mount -o subvol=@ /dev/mapper/cryptroot /mnt
 mkdir -p /mnt/{boot,home,nix,var/log,etc/nixos}
 mount -o subvol=@home /dev/mapper/cryptroot /mnt/home
 mount -o subvol=@nix /dev/mapper/cryptroot /mnt/nix
-mount -o subvol=@var-log /dev/mapper/cryptroot /mnt/var/log
-mount /dev/disk/by-uuid/FD77-5C81 /mnt/boot
-
-git clone https://github.com/Katossh/shiny-rotary-phone.git /mnt/etc/nixos
-cd /mnt/etc/nixos
-./install.sh --install
+mount -o subvol=@log /dev/mapper/cryptroot /mnt/var/log
+mount /dev/nvme0n1p1 /mnt/boot
 ~~~
 
-The script verifies that `/mnt`, `/mnt/home`, `/mnt/nix`, `/mnt/var/log`, and
-`/mnt/boot` are mounted with the expected filesystem types and Btrfs subvolumes.
-It then runs `nixos-install --flake ...#workstation`, asks you to set the root
-password, and prompts you to set the password for the account configured by
-`starforge.user.username` in `hosts/workstation/default.nix` (currently
-`katossh`). Set both passwords before rebooting.
+Replace the example device paths and subvolume names with the actual layout.
+For a simpler Btrfs, ext4, or XFS layout, mount only the root filesystem and
+ESP; the profile keeps \`/home\`, \`/nix\`, and \`/var/log\` inside the root
+filesystem. The installer records every additional filesystem mounted below
+\`/mnt\`.
 
-Do not run the fresh-install mode against a newly partitioned or different
-computer. The committed hardware configuration and Limine Windows entry are
-specific to the hardware currently described by this profile. A different machine needs its own host profile and
-hardware configuration first.
+For Btrfs, Snapper is enabled only for mountpoints that the generated hardware
+configuration identifies as separate Btrfs subvolumes. It is disabled when
+the layout contains no suitable Btrfs subvolume, so an ext4 or XFS root does
+not receive invalid Btrfs snapshot services.
 
-## Why this does not run on an arbitrary Linux distribution
+4. Clone this repository into the target root and run the installer:
 
-A Git-only Ubuntu, Fedora, or other Linux installation cannot directly activate
-a NixOS system configuration: it does not provide `nixos-rebuild` or the NixOS
-boot and service infrastructure. Boot the NixOS installer ISO first. The
-standard installation flow still requires the target filesystems to be
-prepared and mounted manually; `nixos-install --flake` then installs the
-selected flake configuration.
+~~~sh
+git clone https://github.com/Katossh/shiny-rotary-phone.git /mnt/etc/nixos
+cd /mnt/etc/nixos
+./install.sh
 
-See the [NixOS installation manual](https://nixos.org/manual/nixos/stable/#sec-installation) for
-preparing and mounting target filesystems and installing a flake.
+# Explicit equivalent:
+# ./install.sh --install
+~~~
+
+With no mode specified, \`install.sh\` detects the clone at \`/mnt/etc/nixos\`
+and selects fresh-install mode. It verifies the supported root filesystem,
+the FAT32 ESP at \`/mnt/boot\`, and UEFI boot. It then generates a fresh
+hardware configuration from the actual mount tree, including filesystem
+UUIDs, optional mountpoints, Btrfs subvolume names, and detected LUKS mappings.
+It does not need a Windows ESP or any Windows partition. The boot menu is
+configured for NixOS single boot.
+
+After \`nixos-install\` completes, the script prompts you to set the password
+for the account configured by \`starforge.user.username\` in
+\`hosts/workstation/default.nix\` (currently \`katossh\`). Set the root password
+during the installation when prompted.
+
+### Secure Boot keys
+
+This profile enables Limine Secure Boot signing. The signing keys are not
+stored in Git and must exist at \`/var/lib/sbctl/keys\` in the target system.
+If the old root filesystem was erased, restore the backed-up \`/var/lib/sbctl\`
+directory to \`/mnt/var/lib/sbctl\` before installing. Disabling Secure Boot in
+firmware does not preserve or recreate deleted signing keys. The installer
+warns if the keys are missing; the bootloader installation may fail until
+they are restored or Secure Boot signing is temporarily disabled in
+\`modules/nixos/boot.nix\`.
+
+## Scope and limitations
+
+The installer adapts the mounted storage layout; it does not automatically
+partition disks or decide which disk to erase. The workstation profile itself
+still contains hardware-specific AMD GPU, CPU, display, and peripheral
+settings. A different computer needs a separately reviewed hardware profile.
+
+A Git-only Ubuntu, Fedora, or other Linux installation cannot directly
+activate a NixOS system configuration. Boot the NixOS installer ISO first.
+
+See the [NixOS installation manual](https://nixos.org/manual/nixos/stable/#sec-installation)
+for preparing and mounting target filesystems and installing a flake.

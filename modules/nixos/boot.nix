@@ -5,6 +5,9 @@
   ...
 }:
 
+let
+  rootIsXfs = config.fileSystems."/".fsType == "xfs";
+in
 {
   environment.systemPackages = [ pkgs.sbctl ];
 
@@ -28,10 +31,16 @@
       ln -sf -- ${lib.escapeShellArg kernelPath} "$out/kernel"
     '';
 
+  # XFS is not enabled in the initrd by default. Enable its kernel module when
+  # the detected root filesystem is XFS; ext4 and Btrfs retain their defaults.
+  boot.initrd.supportedFilesystems = lib.mkIf rootIsXfs [ "xfs" ];
+
   boot = {
+    supportedFilesystems = [ "btrfs" ] ++ lib.optionals rootIsXfs [ "xfs" ];
+
     loader = {
-      # Keep the existing FAT32 /boot partition. Limine installs its EFI
-      # executable there and creates a dedicated UEFI boot entry.
+      # The installer detects the EFI partition mounted at /boot and writes
+      # its UUID into the generated hardware configuration.
       efi = {
         canTouchEfiVariables = true;
         efiSysMountPoint = "/boot";
@@ -43,17 +52,10 @@
         enable = true;
         efiSupport = true;
         biosSupport = false;
-
-        # Retain several known-good NixOS generations without allowing /boot
-        # to grow indefinitely.
         maxGenerations = 5;
-
-        # The Limine editor permits changing the kernel command line at boot.
-        # Keep it disabled now so the configuration is ready for Secure Boot.
         enableEditor = false;
 
-        # Catppuccin Frappé Sapphire, using Limine's structured NixOS options.
-        # The default NixOS wallpaper and Limine menu layout remain unchanged.
+        # Catppuccin Frappé Sapphire.
         style = {
           interface = {
             branding = "NixOS";
@@ -73,22 +75,12 @@
           };
         };
 
-        # Windows has its own ESP on the same NVMe disk. Limine can chainload
-        # its Microsoft-signed Boot Manager directly by GPT partition GUID.
-        extraEntries = ''
-          /Windows 11
-            protocol: efi
-            path: guid(68a6f3c1-1eee-4845-8c3e-7108cec34c4a):/EFI/Microsoft/Boot/bootmgfw.efi
-        '';
-
-        # Sign Limine's EFI executable with the sbctl key provisioned locally.
-        # Keep the private key material out of the repository.
+        # Single-boot profile. Additional operating systems can be added later
+        # without tying this base configuration to a fixed partition GUID.
         secureBoot.enable = true;
       };
 
       timeout = 5;
     };
-
-    supportedFilesystems = [ "btrfs" ];
   };
 }
