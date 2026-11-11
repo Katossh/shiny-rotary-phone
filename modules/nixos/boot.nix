@@ -30,8 +30,9 @@
 
   boot = {
     loader = {
-      # Keep the existing FAT32 /boot partition. Limine installs its EFI
-      # executable there and creates a dedicated UEFI boot entry.
+      # Limine is installed on the unencrypted FAT32 /boot filesystem.
+      # This profile is single-boot; no machine-specific Windows ESP GUID is
+      # embedded in the reusable boot module.
       efi = {
         canTouchEfiVariables = true;
         efiSysMountPoint = "/boot";
@@ -72,14 +73,6 @@
             brightBackground = "626880";
           };
         };
-
-        # Windows has its own ESP on the same NVMe disk. Limine can chainload
-        # its Microsoft-signed Boot Manager directly by GPT partition GUID.
-        extraEntries = ''
-          /Windows 11
-            protocol: efi
-            path: guid(68a6f3c1-1eee-4845-8c3e-7108cec34c4a):/EFI/Microsoft/Boot/bootmgfw.efi
-        '';
 
         # Sign Limine's EFI executable with the sbctl key provisioned locally.
         # Keep the private key material out of the repository.

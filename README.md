@@ -17,7 +17,7 @@ Terminal packages and dotfiles remain integrated from
 
 ## Installation
 
-Use [`install.sh`](./install.sh) for one-command deployment. See [`INSTALL.md`](./INSTALL.md) for existing-system updates and a fresh install from the NixOS ISO. The installer validates the host profile's fixed LUKS/Btrfs/UEFI identifiers and never partitions or formats disks.
+Use [`install.sh`](./install.sh) for one-command deployment. See [`INSTALL.md`](./INSTALL.md) for existing-system updates and installation from the NixOS ISO. ISO mode detects the mounted root, EFI, and additional filesystems and regenerates the host hardware configuration; it never partitions or formats disks. The profile itself remains specific to the workstation hardware.
 
 ## User configuration
 
@@ -151,34 +151,26 @@ and optional logical position. See
 [`docs/user-configuration.md`](./docs/user-configuration.md) for examples.
 
 
-## Bootloader and Windows dual boot
+## Bootloader and single-boot installation
 
-The workstation profile uses Limine in UEFI mode. Limine is selected here because it supports
-direct EFI chainloading from another partition by GPT partition GUID, allowing
-Windows Boot Manager to remain on its own EFI partition without relying on an
-unsigned UEFI Shell intermediary.
+The workstation profile uses Limine in UEFI mode and provides a single NixOS
+boot entry. It does not embed a Windows ESP GUID or chainload another operating
+system. The Limine module is therefore independent of any secondary OS
+partition.
 
-The current disk layout is intentionally preserved:
-
-- NixOS keeps using the existing 1 GB FAT32 `/boot` partition
-  (currently `/dev/nvme0n1p5`, filesystem UUID `FD77-5C81`).
-- Windows keeps its existing 200 MB EFI System Partition
-  (`/dev/nvme0n1p1`).
-- The Windows entry targets the Windows ESP by its GPT partition GUID:
-  `68a6f3c1-1eee-4845-8c3e-7108cec34c4a`, loading
-  `/EFI/Microsoft/Boot/bootmgfw.efi`.
-
-The NixOS `/boot` partition is FAT32 and is already used by a working UEFI
-boot entry, although its GPT type is currently reported as `Linux filesystem`
-rather than `EFI System`. This configuration deliberately does not rewrite
-the partition table or create another Windows-visible EFI System Partition.
-Do not change its GPT type or resize either EFI-related partition as part of
-this bootloader migration.
+The ISO installer requires a separate, unencrypted FAT32 filesystem mounted at
+`/boot`. Its UUID and the target root device are detected from the filesystems
+mounted under `/mnt`; no fixed partition UUID or Btrfs subvolume name is
+embedded in the installation script. The installer regenerates
+`hosts/workstation/hardware-configuration.nix` from that mount layout. It
+never partitions, formats, resizes, or changes GPT partition types.
 
 Limine is configured for Secure Boot signing with the locally provisioned
-`sbctl` database key. Key creation and enrollment remain manual workstation
-operations; the NixOS configuration signs the Limine EFI executable during
-bootloader installation but does not generate or enroll keys automatically.
+`sbctl` database key. The installer checks that the target already contains
+the signing key and certificate under `/var/lib/sbctl/keys/db/`. Key creation
+and firmware enrollment remain manual operations; the configuration does not
+generate or enroll keys automatically. Back up the complete `/var/lib/sbctl`
+directory before reinstalling or formatting the root filesystem.
 
 The Limine interface uses the official
 [Catppuccin Frappé Sapphire palette](https://github.com/catppuccin/limine):
@@ -189,20 +181,10 @@ through NixOS' `boot.loader.limine.style` options in
 per-entry icons. The default NixOS boot wallpaper is retained because the
 upstream palette theme does not include a wallpaper.
 
-Secure Boot is enabled on the workstation and both `sbctl status` and
-`bootctl status` report it active in User Mode. The enrollment retained the
-Microsoft and firmware-builtin certificates so Windows Boot Manager remains
-chainloadable through Limine. The MSI firmware is configured for Custom mode
-and the Maximum Security preset.
-
-**Firmware caveat:** `sbctl` still reports MSI quirk FQ0001, which warns that
-the firmware may execute EFI images despite a Secure Boot policy violation.
-The Maximum Security preset is selected, but the persistent warning means
-fail-closed enforcement should not be assumed solely from the Secure Boot
-status. Keep the known-good recovery route and do not delete the existing
-`dbx` revocation database.
-
-The workstation profile does not configure Windows volume encryption.
+Secure Boot is enabled on the workstation. The MSI firmware reports quirk
+FQ0001, which warns that it may execute EFI images despite a Secure Boot policy
+violation. Keep a tested recovery route and do not treat the firmware's Secure
+Boot status alone as proof of fail-closed enforcement.
 
 ## Memory and session protection
 
