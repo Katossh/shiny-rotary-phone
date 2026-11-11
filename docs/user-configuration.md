@@ -128,10 +128,18 @@ did not provide any additional template or palette files to migrate.
 
 ### Niri workspaces
 
-Niri starts with five persistent named workspaces: `"1"` through `"5"`.
-They remain available while empty. `Mod+1` through `Mod+5` focus those
-workspaces by name, and `Mod+Ctrl+1` through `Mod+Ctrl+5` move the focused
-column to the corresponding workspace.
+Niri declares four persistent named workspaces: `"1"` through `"4"`.
+It also maintains one empty dynamic workspace at the end of each monitor, so
+the initial layout contains five workspaces without pre-creating a fifth named
+one. `Mod+1` through `Mod+4` focus the named workspaces; `Mod+5` targets the
+workspace currently in position 5. `Mod+Ctrl+1` through `Mod+Ctrl+4` move
+the focused column to the named workspaces, while `Mod+Ctrl+5` targets the
+workspace currently in position 5.
+
+The fifth workspace is dynamic, not persistent. Niri always keeps an empty
+workspace at the end; when a window is placed there, it creates another empty
+workspace below it. The count therefore starts at five but is not a hard
+maximum.
 
 #### Automatic application placement
 
@@ -143,14 +151,16 @@ New windows are routed to these workspaces by their Niri application ID:
 | `2` | Development | Zed, Kitty |
 | `3` | Games | Steam and Steam games, osu!, Genshin / Anime Game Launcher |
 | `4` | Communication | Discord, Telegram, LocalSend |
-| `5` | Utilities and media | Dolphin, mpv, pavucontrol, virt-manager |
 
 These are opening rules: they apply when a window is created, not retroactively
-to windows that are already open. Move an existing window with `Mod+Ctrl+1`
-through `Mod+Ctrl+5`. If an application is not routed as expected, run
-`niri msg pick-window` and click it to inspect its actual app ID; adjust the
-matching expression in `home/niri.nix` if the application reports a different
-identifier.
+to windows that are already open. Move an existing window to one of the four
+named workspaces with `Mod+Ctrl+1` through `Mod+Ctrl+4`; `Mod+Ctrl+5`
+targets whichever workspace currently occupies position 5. Utilities and
+media applications are no longer forced onto a separate named workspace and
+open on the currently focused workspace by default. If an application is not
+routed as expected, run `niri msg pick-window` and click it to inspect its
+actual app ID; adjust the matching expression in `home/niri.nix` if the
+application reports a different identifier.
 
 Navigate vertically between workspaces with either `Mod+Up` / `Mod+Down`
 or the Vim-style `Mod+K` / `Mod+J` shortcuts. `Mod+Page_Up` and
