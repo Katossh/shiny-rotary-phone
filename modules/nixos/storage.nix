@@ -1,9 +1,17 @@
-{ pkgs, ... }:
-
 {
-  # The root filesystem is Btrfs. The installer generates the mount table from
-  # the actual layout; separate /home, /nix, or /var/log mounts are optional.
-  services.btrfs.autoScrub = {
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+
+let
+  rootIsBtrfs = config.fileSystems."/".fsType == "btrfs";
+in
+{
+  # Btrfs maintenance is enabled only when the generated root filesystem is
+  # actually Btrfs. Other supported root filesystems remain valid install targets.
+  services.btrfs.autoScrub = lib.mkIf rootIsBtrfs {
     enable = true;
     fileSystems = [ "/" ];
     interval = "monthly";
@@ -16,10 +24,7 @@
     autodetect = true;
   };
 
-  # Keep compression and atime policy on the root Btrfs mount. Do not declare
-  # mount options for optional paths: doing so would create incomplete
-  # fileSystems entries when a layout keeps those directories on the root.
-  fileSystems."/".options = [
+  fileSystems."/".options = lib.mkIf rootIsBtrfs [
     "compress=zstd:1"
     "noatime"
   ];
