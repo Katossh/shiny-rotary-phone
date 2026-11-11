@@ -129,20 +129,9 @@ non-graphical installer session. Verify connectivity before continuing:
 curl -I https://github.com
 ~~~
 
-The NixOS installer provides Nix and the NixOS installation tools. If Git is
-already present, use it directly. Otherwise, run the clone and installer in a
-temporary shell that provides Git:
-
-~~~sh
-nix-shell -p git --run '
-  git clone https://github.com/Katossh/shiny-rotary-phone.git /mnt/etc/nixos
-  cd /mnt/etc/nixos
-  ./install.sh --install
-'
-~~~
-
-The commands below assume Git is available in the current shell; do not run
-the clone twice if you used the `nix-shell` command above.
+The NixOS installer provides Nix and the NixOS installation tools.
+Git may already be available in the ISO. If it is not, the final step below
+shows how to run the clone and installer in a temporary shell that provides Git.
 
 ### 2. Identify the existing filesystems
 
@@ -245,6 +234,22 @@ git clone https://github.com/Katossh/shiny-rotary-phone.git /mnt/etc/nixos
 cd /mnt/etc/nixos
 ./install.sh --install
 ~~~
+
+If Git is missing from the live ISO, run the same commands inside a temporary
+environment that provides it:
+
+~~~sh
+nix-shell -p git --run '
+  git clone https://github.com/Katossh/shiny-rotary-phone.git /mnt/etc/nixos
+  cd /mnt/etc/nixos
+  ./install.sh --install
+'
+~~~
+
+The target root must already be mounted and `/mnt/etc/nixos` must not contain
+an unrelated non-empty directory. If a previous configuration exists there,
+back it up and decide how to preserve it before cloning; the installer will
+not delete or replace an existing repository automatically.
 
 The script then:
 
