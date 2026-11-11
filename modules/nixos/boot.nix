@@ -82,7 +82,5 @@ in
 
       timeout = 5;
     };
-
-    supportedFilesystems = [ "btrfs" ];
   };
 }
