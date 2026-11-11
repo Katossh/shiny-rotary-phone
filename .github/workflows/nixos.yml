@@ -82,11 +82,11 @@ jobs:
         run: |
           username="$(nix eval --raw "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.starforge.user.username" --no-update-lock-file --accept-flake-config)"
           managed_files="$(nix eval --raw \
-            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.home-manager.users.\\"$username\\".home.file" \
-            --apply 'files: builtins.concatStringsSep "\\n" (builtins.attrNames files)' \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.home-manager.users.\"$username\".home.file" \
+            --apply 'files: builtins.concatStringsSep "\n" (builtins.attrNames files)' \
             --no-update-lock-file \
             --accept-flake-config)"
-          grep -Eq '^\\.config/niri/' <<< "$managed_files"
+          grep -Eq '^\.\config/niri/' <<< "$managed_files"
 
       - name: Run Nix static analysis
         run: |
