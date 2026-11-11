@@ -654,7 +654,7 @@ check_formatting() {
   local -a nix_files
 
   mapfile -t nix_files < <(
-    git ls-files --cached --others --exclude-standard -- '*.nix' ':!:hosts/workstation/hardware-configuration.nix'
+    git ls-files --cached --others --exclude-standard -- '*.nix'
   )
 
   for nix_file in "${nix_files[@]}"; do
@@ -680,14 +680,19 @@ run_checks() {
   fi
   cd "$repo_root"
 
+  if [[ ! -f "$repo_root/hosts/workstation/hardware-configuration.nix" ]]; then
+    printf 'Local hardware configuration is missing. Run sudo ./install.sh --test to copy or generate it before evaluating the system.\n' >&2
+    return 2
+  fi
+
   printf '== Formatting check ==\n'
   check_formatting
 
   printf '\n== Statix and Deadnix ==\n'
   # shellcheck disable=SC2016
-  nix develop --no-update-lock-file --accept-flake-config --command bash -euo pipefail -c '
+  nix develop "path:$repo_root#default" --no-update-lock-file --accept-flake-config --command bash -euo pipefail -c '
     mapfile -t nix_files < <(
-      git ls-files --cached --others --exclude-standard -- "*.nix" ":!:hosts/workstation/hardware-configuration.nix"
+      git ls-files --cached --others --exclude-standard -- "*.nix"
     )
     for nix_file in "${nix_files[@]}"; do
       statix check "$nix_file"
@@ -696,17 +701,16 @@ run_checks() {
   '
 
   printf '\n== Flake evaluation ==\n'
-  nix flake check \
+  nix flake check "path:$repo_root" \
     --no-build \
     --no-update-lock-file \
     --accept-flake-config \
     --show-trace
 
   printf '\n== Full NixOS system build ==\n'
-  nix build \
+  nix build "path:$repo_root#nixosConfigurations.workstation.config.system.build.toplevel" \
     --no-update-lock-file \
     --accept-flake-config \
-    .#nixosConfigurations.workstation.config.system.build.toplevel \
     --no-link \
     --fallback \
     --print-build-logs

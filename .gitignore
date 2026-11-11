@@ -4,3 +4,4 @@
 .devenv/
 *.swp
 *.tmp
+/hosts/workstation/hardware-configuration.nix

@@ -40,6 +40,24 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Prepare local hardware configuration fixture
+        run: |
+          cat > hosts/workstation/hardware-configuration.nix <<'NIX'
+          { modulesPath, ... }:
+          {
+            imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
+            boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" ];
+            fileSystems."/" = {
+              device = "/dev/disk/by-label/nixos";
+              fsType = "ext4";
+            };
+            fileSystems."/boot" = {
+              device = "/dev/disk/by-label/ESP";
+              fsType = "vfat";
+            };
+          }
+          NIX
+
       - name: Check shell syntax
         run: |
           bash -n install.sh
@@ -56,14 +74,14 @@ jobs:
 
       - name: Check formatting
         run: |
-          mapfile -t nix_files < <(git ls-files '*.nix' ':!:hosts/workstation/hardware-configuration.nix')
+          mapfile -t nix_files < <(git ls-files '*.nix')
           nix fmt -- "${nix_files[@]}"
           git diff --exit-code -- "${nix_files[@]}"
 
       - name: Run Nix static analysis
         run: |
           nix develop --no-update-lock-file --command bash -euo pipefail -c '
-            mapfile -t nix_files < <(git ls-files "*.nix" ":!:hosts/workstation/hardware-configuration.nix")
+            mapfile -t nix_files < <(git ls-files "*.nix")
             for nix_file in "${nix_files[@]}"; do
               statix check "$nix_file"
             done
@@ -72,7 +90,7 @@ jobs:
 
       - name: Evaluate flake outputs without building
         run: |
-          nix flake check \
+          nix flake check "path:$GITHUB_WORKSPACE" \
             --no-build \
             --no-update-lock-file \
             --accept-flake-config \
@@ -88,6 +106,24 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+
+      - name: Prepare local hardware configuration fixture
+        run: |
+          cat > hosts/workstation/hardware-configuration.nix <<'NIX'
+          { modulesPath, ... }:
+          {
+            imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
+            boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" ];
+            fileSystems."/" = {
+              device = "/dev/disk/by-label/nixos";
+              fsType = "ext4";
+            };
+            fileSystems."/boot" = {
+              device = "/dev/disk/by-label/ESP";
+              fsType = "vfat";
+            };
+          }
+          NIX
 
       # The full desktop closure exceeds the free space left by the stock
       # GitHub-hosted Ubuntu image. Remove runner-only SDKs and tools; this
@@ -159,7 +195,7 @@ jobs:
           nix build \
             --no-update-lock-file \
             --accept-flake-config \
-            .#nixosConfigurations.workstation.config.system.build.toplevel \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.system.build.toplevel" \
             --no-link \
             --fallback \
             --print-build-logs

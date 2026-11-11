@@ -25,7 +25,7 @@ Modes:
              default boot generation.
   --install  Install the workstation profile into an already mounted /mnt from a NixOS
              installer environment. This mode never partitions or formats disks.
-  --yes      Skip the interactive confirmation prompt.
+  --yes      Skip interactive confirmation prompts.
   --help     Show this help.
 
 Fresh installation:
@@ -38,8 +38,9 @@ Fresh installation:
 
 With no mode specified, the script selects --install when the clone is at
 /mnt/etc/nixos; otherwise it selects --switch. The installer detects the
-mounted filesystems and regenerates the host hardware configuration. It does
-not partition, format, create subvolumes, or alter LUKS keys.
+mounted filesystems. It copies /etc/nixos/hardware-configuration.nix when
+available; otherwise it asks before generating a local hardware configuration.
+It does not partition, format, create subvolumes, or alter LUKS keys.
 USAGE
 }
 
@@ -89,7 +90,7 @@ configure_nix() {
 
 get_workstation_username() {
   local username
-  username="$(nix eval --raw "$REPO_DIR#nixosConfigurations.$HOST_NAME.config.starforge.user.username")" \
+  username="$(nix eval --raw "path:$REPO_DIR#nixosConfigurations.$HOST_NAME.config.starforge.user.username")" \
     || die "Could not evaluate starforge.user.username for the workstation profile."
   [[ "$username" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] \
     || die "The evaluated workstation username is not a supported login name."
@@ -146,41 +147,112 @@ check_target_layout() {
   fi
 }
 
-generate_hardware_configuration() {
-  local hardware_file="$REPO_DIR/hosts/workstation/hardware-configuration.nix"
-  local generated_file
+validate_hardware_configuration() {
+  local hardware_file="$1"
 
-  require_command nixos-generate-config
+  if ! grep -Fq 'fileSystems."/"' "$hardware_file"; then
+    warn "Hardware configuration does not contain the root filesystem."
+    return 1
+  fi
+
+  if ! grep -Fq 'fileSystems."/boot"' "$hardware_file"; then
+    warn "Hardware configuration does not contain the /boot filesystem."
+    return 1
+  fi
+
+  if ! nix-instantiate --parse "$hardware_file" >/dev/null; then
+    warn "Hardware configuration is not valid Nix syntax: $hardware_file"
+    return 1
+  fi
+}
+
+ensure_hardware_configuration() {
+  local target_root="$1"
+  local source_file="/etc/nixos/hardware-configuration.nix"
+  local host_dir="$REPO_DIR/hosts/workstation"
+  local hardware_file="$host_dir/hardware-configuration.nix"
+  local temporary_file
+
+  require_command grep
   require_command nix-instantiate
   require_command install
-  require_command grep
+  require_command chmod
+  require_command mv
+  require_command mktemp
 
-  generated_file="$(mktemp)"
-  if ! nixos-generate-config --root "$INSTALL_ROOT" --show-hardware-config > "$generated_file"; then
-    rm -f "$generated_file"
-    die "nixos-generate-config could not inspect the mounted target filesystems."
+  if [[ -e "$source_file" && ! -f "$source_file" ]]; then
+    die "$source_file exists but is not a regular file."
   fi
 
-  if ! grep -Fq 'fileSystems."/"' "$generated_file"; then
-    rm -f "$generated_file"
-    die "Generated hardware configuration does not contain the mounted root filesystem."
+  # Prefer the currently installed NixOS hardware configuration when present.
+  # This intentionally avoids regenerating stable device and filesystem data.
+  if [[ -f "$source_file" ]]; then
+    if [[ "$source_file" -ef "$hardware_file" ]]; then
+      validate_hardware_configuration "$hardware_file" \
+        || die "The existing hardware configuration is invalid."
+      log "Using the existing hardware configuration at $source_file."
+      return
+    fi
+
+    temporary_file="$(mktemp "$host_dir/.hardware-configuration.nix.XXXXXX")"
+    if ! install -m 0644 -- "$source_file" "$temporary_file"; then
+      rm -f -- "$temporary_file"
+      die "Could not copy $source_file."
+    fi
+    if ! validate_hardware_configuration "$temporary_file"; then
+      rm -f -- "$temporary_file"
+      die "The existing hardware configuration at $source_file is invalid."
+    fi
+    if ! mv -f -- "$temporary_file" "$hardware_file"; then
+      rm -f -- "$temporary_file"
+      die "Could not place the copied hardware configuration in $hardware_file."
+    fi
+
+    log "Copied existing hardware configuration from $source_file."
+    return
   fi
 
-  if ! grep -Fq 'fileSystems."/boot"' "$generated_file"; then
-    rm -f "$generated_file"
-    die "Generated hardware configuration does not contain the EFI filesystem mounted at /mnt/boot."
+  # Reuse a previously prepared local copy when /etc/nixos is unavailable.
+  if [[ -e "$hardware_file" ]]; then
+    [[ -f "$hardware_file" ]] || die "$hardware_file exists but is not a regular file."
+    validate_hardware_configuration "$hardware_file" \
+      || die "The local hardware configuration is invalid."
+    log "Using the existing local hardware configuration at $hardware_file."
+    return
   fi
 
-  if ! nix-instantiate --parse "$generated_file" >/dev/null; then
-    rm -f "$generated_file"
-    die "The generated hardware configuration is not valid Nix syntax."
+  require_command nixos-generate-config
+  confirm "No existing hardware configuration was found. Generate one for $target_root from its currently mounted filesystems? This creates $hardware_file."
+
+  temporary_file="$(mktemp "$host_dir/.hardware-configuration.nix.XXXXXX")"
+  if [[ "$target_root" == "/" ]]; then
+    if ! nixos-generate-config --show-hardware-config > "$temporary_file"; then
+      rm -f -- "$temporary_file"
+      die "nixos-generate-config could not inspect the current root filesystem."
+    fi
+  else
+    if ! nixos-generate-config --root "$target_root" --show-hardware-config > "$temporary_file"; then
+      rm -f -- "$temporary_file"
+      die "nixos-generate-config could not inspect the mounted target filesystems."
+    fi
   fi
 
-  install -m 0644 "$generated_file" "$hardware_file"
-  rm -f "$generated_file"
+  if ! validate_hardware_configuration "$temporary_file"; then
+    rm -f -- "$temporary_file"
+    die "The generated hardware configuration is incomplete or invalid."
+  fi
 
-  log "Regenerated $hardware_file from the actual mounted filesystems."
-  log "Partition UUIDs, device names, Btrfs subvolume names, and detected LUKS mappings are no longer hard-coded."
+  if ! chmod 0644 "$temporary_file"; then
+    rm -f -- "$temporary_file"
+    die "Could not set permissions on the generated hardware configuration."
+  fi
+  if ! mv -f -- "$temporary_file" "$hardware_file"; then
+    rm -f -- "$temporary_file"
+    die "Could not place the generated hardware configuration in $hardware_file."
+  fi
+
+  log "Generated the local hardware configuration from the filesystems mounted under $target_root."
+  log "The file is Git-ignored and will not be included in repository commits."
 }
 
 check_secure_boot_keys() {
@@ -215,6 +287,7 @@ run_switch() {
 
   check_supported_root_fs "/"
   check_mount_type "/boot" "vfat"
+  ensure_hardware_configuration "/"
 
   log "Target profile: $HOST_NAME"
   log "Repository: $REPO_DIR"
@@ -227,7 +300,7 @@ run_switch() {
 
   # nixos-rebuild builds the complete toplevel before activating it. A failed
   # evaluation or build therefore leaves the currently active generation intact.
-  nixos-rebuild "$MODE" --flake "$REPO_DIR#$HOST_NAME" --show-trace
+  nixos-rebuild "$MODE" --flake "path:$REPO_DIR#$HOST_NAME" --show-trace
 
   log "NixOS $MODE completed."
   if [[ "$MODE" == "test" ]]; then
@@ -247,10 +320,9 @@ run_install() {
   [[ "$REPO_DIR" == "$INSTALL_REPO" ]] \
     || die "For a fresh install, clone this repository to $INSTALL_REPO and run the script from there."
 
-  # Generate the machine-specific hardware configuration from the exact
-  # filesystems mounted below /mnt. This discovers encrypted and unencrypted
-  # roots, UUIDs, device paths, Btrfs subvolumes, and optional mountpoints.
-  generate_hardware_configuration
+  # Use the existing /etc/nixos hardware configuration when available.
+  # Otherwise, ask before generating one from the filesystems mounted below /mnt.
+  ensure_hardware_configuration "$INSTALL_ROOT"
   username="$(get_workstation_username)"
   check_secure_boot_keys
 
@@ -259,7 +331,7 @@ run_install() {
   warn "This installs only to the existing mounted filesystems. It does not partition, format, create Btrfs subvolumes, change LUKS keys, or enroll Secure Boot keys."
   confirm "Install the workstation profile to $INSTALL_ROOT using the detected filesystem layout?"
 
-  nixos-install --root "$INSTALL_ROOT" --flake "$REPO_DIR#$HOST_NAME"
+  nixos-install --root "$INSTALL_ROOT" --flake "path:$REPO_DIR#$HOST_NAME"
 
   log "Set a password for the declared '$username' account before rebooting."
   nixos-enter --root "$INSTALL_ROOT" -c "passwd $username"
