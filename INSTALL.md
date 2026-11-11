@@ -86,7 +86,10 @@ installer records every mounted filesystem below \`/mnt\`.
 ~~~sh
 git clone https://github.com/Katossh/shiny-rotary-phone.git /mnt/etc/nixos
 cd /mnt/etc/nixos
-./install.sh --install
+./install.sh
+
+# Explicit equivalent:
+# ./install.sh --install
 ~~~
 
 The script verifies the Btrfs root subvolume, the FAT32 ESP at \`/mnt/boot\`,
