@@ -5,6 +5,9 @@
   ...
 }:
 
+let
+  rootIsXfs = config.fileSystems."/".fsType == "xfs";
+in
 {
   environment.systemPackages = [ pkgs.sbctl ];
 
@@ -28,7 +31,13 @@
       ln -sf -- ${lib.escapeShellArg kernelPath} "$out/kernel"
     '';
 
+  # XFS is not enabled in the initrd by default. Enable its kernel module when
+  # the detected root filesystem is XFS; ext4 and Btrfs retain their defaults.
+  boot.initrd.supportedFilesystems = lib.mkIf rootIsXfs [ "xfs" ];
+
   boot = {
+    supportedFilesystems = [ "btrfs" ] ++ lib.optionals rootIsXfs [ "xfs" ];
+
     loader = {
       # The installer detects the EFI partition mounted at /boot and writes
       # its UUID into the generated hardware configuration.
