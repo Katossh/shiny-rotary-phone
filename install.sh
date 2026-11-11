@@ -114,7 +114,7 @@ resolve_block_device() {
   # findmnt can append a Btrfs subvolume to SOURCE, for example
   # /dev/mapper/cryptroot[/@root]. The hardware configuration stores the
   # underlying block-device path instead.
-  source="${source%%\\[*}"
+  source="${source%%\[*}"
   case "$source" in
     UUID=*) source="/dev/disk/by-uuid/${source#UUID=}" ;;
     LABEL=*) source="/dev/disk/by-label/${source#LABEL=}" ;;
@@ -140,9 +140,9 @@ check_profile_mount() {
     || die "Could not determine the active device mounted at $mount_point."
   actual_fs="$(findmnt -n -o FSTYPE --target "$mount_point")" \
     || die "Could not determine the active filesystem type at $mount_point."
-  expected_source="$(profile_eval "fileSystems.\\"$mount_point\\".device")" \
+  expected_source="$(profile_eval "fileSystems.\"$mount_point\".device")" \
     || die "The workstation profile does not define a device for $mount_point."
-  expected_fs="$(profile_eval "fileSystems.\\"$mount_point\\".fsType")" \
+  expected_fs="$(profile_eval "fileSystems.\"$mount_point\".fsType")" \
     || die "The workstation profile does not define a filesystem type for $mount_point."
 
   [[ "$actual_fs" == "$expected_fs" ]] \
@@ -243,9 +243,9 @@ check_generated_mount() {
     || die "Could not determine the detected device mounted at $target_mount."
   actual_fs="$(findmnt -n -o FSTYPE --target "$target_mount")" \
     || die "Could not determine the detected filesystem type at $target_mount."
-  expected_source="$(profile_eval "fileSystems.\\"$config_mount\\".device")" \
+  expected_source="$(profile_eval "fileSystems.\"$config_mount\".device")" \
     || die "The generated hardware configuration has no device for $config_mount."
-  expected_fs="$(profile_eval "fileSystems.\\"$config_mount\\".fsType")" \
+  expected_fs="$(profile_eval "fileSystems.\"$config_mount\".fsType")" \
     || die "The generated hardware configuration has no filesystem type for $config_mount."
 
   [[ "$actual_fs" == "$expected_fs" ]] \
