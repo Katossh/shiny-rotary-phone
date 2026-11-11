@@ -5,73 +5,29 @@ sound_volume = 0.79999998211860657
 order = [ "default" ]
 
     [bar.default]
-    background_opacity = 0.39999999105930328
+    background_opacity = 0.0
+    compositor_blur = false
     capsule = true
-    capsule_border_width = 0.0
-    center = [ "group:time" ]
-    end = [ "group:tools", "group:audio", "group:connectivity", "group:notifications", "group:controls" ]
+    capsule_fill = "#38445B"
+    capsule_foreground = "#E8EAF2"
+    capsule_border = "#7386A5"
+    capsule_border_width = 1.0
+    capsule_thickness = 0.86
+    capsule_radius = 16.0
+    capsule_padding = 8.0
+    capsule_opacity = 0.98
     font_family = "Inter"
+    font_weight = 600
+    font_scale = 1.04
+    widget_spacing = 6
+    hover_highlight = true
     radius = 16
     reserve_space = false
     show_on_workspace_switch = false
     smart_auto_hide = true
-    start = [ "group:navigation", "group:metrics" ]
-
-        [[bar.default.capsule_group]]
-        id = "navigation"
-        members = [ "launcher", "workspaces", "wallpaper" ]
-        enabled = true
-        accordion = false
-        accordion_direction = "end"
-
-        [[bar.default.capsule_group]]
-        id = "metrics"
-        members = [ "ram", "temp", "cat" ]
-        enabled = true
-        accordion = false
-        accordion_direction = "end"
-
-        [[bar.default.capsule_group]]
-        id = "time"
-        members = [ "weather", "clock" ]
-        enabled = true
-        accordion = false
-        accordion_direction = "end"
-
-        [[bar.default.capsule_group]]
-        id = "tools"
-        members = [ "widget", "caffeine", "widget_2" ]
-        enabled = true
-        accordion = false
-        accordion_direction = "end"
-
-        [[bar.default.capsule_group]]
-        id = "audio"
-        members = [ "volume", "media", "audio_visualizer" ]
-        enabled = true
-        accordion = false
-        accordion_direction = "end"
-
-        [[bar.default.capsule_group]]
-        id = "connectivity"
-        members = [ "network", "bluetooth", "battery" ]
-        enabled = true
-        accordion = false
-        accordion_direction = "end"
-
-        [[bar.default.capsule_group]]
-        id = "notifications"
-        members = [ "tray", "notifications" ]
-        enabled = true
-        accordion = false
-        accordion_direction = "end"
-
-        [[bar.default.capsule_group]]
-        id = "controls"
-        members = [ "privacy", "control-center", "session" ]
-        enabled = true
-        accordion = false
-        accordion_direction = "end"
+    start = [ "launcher", "workspaces", "wallpaper", "keyboard_layout", "ram", "temp", "cat" ]
+    center = [ "active_window", "weather", "clock" ]
+    end = [ "clipboard", "widget", "caffeine", "widget_2", "volume", "media", "audio_visualizer", "network", "bluetooth", "battery", "brightness", "tray", "notifications", "privacy", "control-center", "session" ]
 
 # Blurred and tinted copy of the current wallpaper for Niri Overview.
 [backdrop]
