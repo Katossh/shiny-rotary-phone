@@ -101,12 +101,11 @@ in
       # Repeated top-level KDL nodes must use root _children.
       # Output nodes are generated from starforge.user.desktop.monitors.
       _children = monitorOutputNodes ++ [
-        # Keep five named workspaces available even when they are empty.
+        # Keep four named workspaces; Niri supplies the empty dynamic workspace.
         { workspace._args = [ "1" ]; }
         { workspace._args = [ "2" ]; }
         { workspace._args = [ "3" ]; }
         { workspace._args = [ "4" ]; }
-        { workspace._args = [ "5" ]; }
         {
           # Web browsers: Chromium and Firefox.
           window-rule = {
@@ -133,13 +132,6 @@ in
           window-rule = {
             match._props."app-id" = "(?i)(discord|telegram|localsend)";
             "open-on-workspace" = "4";
-          };
-        }
-        {
-          # Utilities and media: Dolphin, mpv, pavucontrol, and virt-manager.
-          window-rule = {
-            match._props."app-id" = "(?i)(dolphin|mpv|pavucontrol|virt-manager)";
-            "open-on-workspace" = "5";
           };
         }
         {
@@ -364,7 +356,7 @@ in
           "move-column-to-workspace-up" = { };
         };
 
-        # Keep shortcuts 1-5 tied to the named workspaces, not their current positions.
+        # Use names for the four persistent workspaces and an index for the dynamic fifth.
         "Mod+1" = {
           _props."hotkey-overlay-title" = "Switch to workspace 1";
           focus-workspace._args = [ "1" ];
@@ -383,7 +375,7 @@ in
         };
         "Mod+5" = {
           _props."hotkey-overlay-title" = "Switch to workspace 5";
-          focus-workspace._args = [ "5" ];
+          focus-workspace._args = [ 5 ];
         };
         "Mod+6".focus-workspace._args = [ 6 ];
         "Mod+7".focus-workspace._args = [ 7 ];
@@ -394,7 +386,7 @@ in
         "Mod+Ctrl+2".move-column-to-workspace._args = [ "2" ];
         "Mod+Ctrl+3".move-column-to-workspace._args = [ "3" ];
         "Mod+Ctrl+4".move-column-to-workspace._args = [ "4" ];
-        "Mod+Ctrl+5".move-column-to-workspace._args = [ "5" ];
+        "Mod+Ctrl+5".move-column-to-workspace._args = [ 5 ];
         "Mod+Ctrl+6".move-column-to-workspace._args = [ 6 ];
         "Mod+Ctrl+7".move-column-to-workspace._args = [ 7 ];
         "Mod+Ctrl+8".move-column-to-workspace._args = [ 8 ];

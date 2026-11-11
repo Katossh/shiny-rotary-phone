@@ -59,7 +59,10 @@
 
   # Kernel and network-stack hardening belongs to the security policy even
   # though some of the affected sysctls are networking-related.
+  # Maximum lockdown level: block both kernel modification and userspace reads
+  # of confidential kernel data, subject to kernel support.
   boot.kernelParams = [
+    "lockdown=confidentiality"
     "slab_nomerge"
     "page_alloc.shuffle=1"
     "randomize_kstack_offset=on"
