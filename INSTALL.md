@@ -5,18 +5,18 @@ NixOS system or the official NixOS installer environment.
 
 > **Hardware scope:** this remains a workstation profile for the current AMD
 > Ryzen 7000 desktop (not a universal configuration for every computer). The
-> fresh installer no longer depends on fixed disk names, UUIDs, partition
-> numbers, or Btrfs subvolume names. The root filesystem must be Btrfs, mounted
-> from a non-top-level subvolume at \`/mnt\`, and the UEFI System Partition must
-> be FAT32 and mounted at \`/mnt/boot\`. Separate \`/home\`, \`/nix\`, and
-> \`/var/log\` mounts are optional.
+> installer adapts to different storage layouts: root can be Btrfs, ext4, or
+> XFS; the UEFI System Partition must be FAT32 and mounted at \`/mnt/boot\`.
+> Separate \`/home\`, \`/nix\`, and \`/var/log\` mounts are optional. Filesystem
+> UUIDs, device names, Btrfs subvolumes, and open LUKS mappings are discovered
+> from the actual mount tree rather than fixed identifiers.
 
 The script never partitions disks, formats filesystems, creates Btrfs
 subvolumes, changes LUKS keys, or enrolls Secure Boot keys. It detects the
 currently mounted target layout with \`nixos-generate-config\` and replaces
 \`hosts/workstation/hardware-configuration.nix\` in the local clone with the
-result before installation. LUKS mappings are detected by the NixOS generator
-when the encrypted device is already open and mounted.
+result before installation. For an encrypted root, open the LUKS container
+before mounting it so the NixOS hardware generator can detect the mapping.
 
 ## Existing NixOS installation
 
@@ -57,12 +57,12 @@ sudo ./install.sh
 1. Boot the official NixOS x86_64 installer in **UEFI mode** and connect to the
    network.
 2. Partition and format the disk yourself. Create a FAT32 EFI System Partition
-   and a Btrfs root filesystem. If the root is encrypted, open the LUKS
-   container before mounting it.
-3. Mount the Btrfs root **subvolume** at \`/mnt\`, the EFI partition at
-   \`/mnt/boot\`, and any separate filesystems/subvolumes at their final mount
-   points. For example, with an encrypted Btrfs filesystem and subvolumes named
-   \`@\`, \`@home\`, \`@nix\`, and \`@log\`:
+   and a root filesystem using Btrfs, ext4, or XFS. If the root is encrypted,
+   open the LUKS container before mounting it.
+3. Mount the root filesystem at \`/mnt\`, the EFI partition at \`/mnt/boot\`,
+   and any separate filesystems/subvolumes at their final mount points. For
+   example, with an encrypted Btrfs filesystem and subvolumes named \`@\`,
+   \`@home\`, \`@nix\`, and \`@log\`:
 
 ~~~sh
 sudo -i
@@ -77,11 +77,17 @@ mount /dev/nvme0n1p1 /mnt/boot
 ~~~
 
 Replace the example device paths and subvolume names with the actual layout.
-For a simpler layout, mount only the root subvolume and ESP; the profile will
-keep \`/home\`, \`/nix\`, and \`/var/log\` inside the root filesystem. The
-installer records every mounted filesystem below \`/mnt\`.
+For a simpler Btrfs, ext4, or XFS layout, mount only the root filesystem and
+ESP; the profile keeps \`/home\`, \`/nix\`, and \`/var/log\` inside the root
+filesystem. The installer records every additional filesystem mounted below
+\`/mnt\`.
 
-4. Clone this repository into the target root and run the install mode:
+For Btrfs, Snapper is enabled only for mountpoints that the generated hardware
+configuration identifies as separate Btrfs subvolumes. It is disabled when
+the layout contains no suitable Btrfs subvolume, so an ext4 or XFS root does
+not receive invalid Btrfs snapshot services.
+
+4. Clone this repository into the target root and run the installer:
 
 ~~~sh
 git clone https://github.com/Katossh/shiny-rotary-phone.git /mnt/etc/nixos
@@ -92,12 +98,13 @@ cd /mnt/etc/nixos
 # ./install.sh --install
 ~~~
 
-The script verifies the Btrfs root subvolume, the FAT32 ESP at \`/mnt/boot\`,
-and UEFI boot. It then generates a fresh hardware configuration from the
-actual mount tree, including the current filesystem UUIDs, optional mount
-points, Btrfs subvolume names, and detected LUKS mapping. It does not need a
-Windows ESP or any Windows partition. The boot menu is configured for NixOS
-single boot.
+With no mode specified, \`install.sh\` detects the clone at \`/mnt/etc/nixos\`
+and selects fresh-install mode. It verifies the supported root filesystem,
+the FAT32 ESP at \`/mnt/boot\`, and UEFI boot. It then generates a fresh
+hardware configuration from the actual mount tree, including filesystem
+UUIDs, optional mountpoints, Btrfs subvolume names, and detected LUKS mappings.
+It does not need a Windows ESP or any Windows partition. The boot menu is
+configured for NixOS single boot.
 
 After \`nixos-install\` completes, the script prompts you to set the password
 for the account configured by \`starforge.user.username\` in
