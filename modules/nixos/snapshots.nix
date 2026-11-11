@@ -9,16 +9,12 @@ let
   rootIsBtrfsSubvolume =
     config.fileSystems ? "/"
     && config.fileSystems."/".fsType == "btrfs"
-    && builtins.any (option: lib.hasPrefix "subvol=" option) (
-      config.fileSystems."/".options or [ ]
-    );
+    && builtins.any (option: lib.hasPrefix "subvol=" option) (config.fileSystems."/".options or [ ]);
 
   homeIsBtrfsSubvolume =
     config.fileSystems ? "/home"
     && config.fileSystems."/home".fsType == "btrfs"
-    && builtins.any (option: lib.hasPrefix "subvol=" option) (
-      config.fileSystems."/home".options or [ ]
-    );
+    && builtins.any (option: lib.hasPrefix "subvol=" option) (config.fileSystems."/home".options or [ ]);
 
   snapperEnabled = rootIsBtrfsSubvolume || homeIsBtrfsSubvolume;
 
