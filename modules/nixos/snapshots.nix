@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   isBtrfs = mountPoint: (config.fileSystems.${mountPoint}.fsType or null) == "btrfs";
@@ -36,8 +41,7 @@ let
     };
 
   snapshotDirs =
-    (lib.optional rootIsBtrfs "/.snapshots")
-    ++ (lib.optional homeIsBtrfs "/home/.snapshots");
+    (lib.optional rootIsBtrfs "/.snapshots") ++ (lib.optional homeIsBtrfs "/home/.snapshots");
 in
 {
   # Snapper is enabled only for Btrfs-backed root/home mount points. Ext4 or
