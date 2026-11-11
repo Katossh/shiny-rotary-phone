@@ -1,12 +1,14 @@
-{ pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
-{
-  services.snapper = {
-    snapshotInterval = "hourly";
-    persistentTimer = true;
-    cleanupInterval = "1d";
+let
+  isBtrfs = mountPoint: (config.fileSystems.${mountPoint}.fsType or null) == "btrfs";
+  rootIsBtrfs = isBtrfs "/";
+  # A directory on the root filesystem is not automatically a Btrfs
+  # subvolume. Only snapshot /home when it has its own Btrfs mount.
+  homeIsBtrfs = (config.fileSystems ? "/home") && isBtrfs "/home";
 
-    configs = {
+  snapshotConfigs =
+    lib.optionalAttrs rootIsBtrfs {
       root = {
         SUBVOLUME = "/";
         FSTYPE = "btrfs";
@@ -18,7 +20,8 @@
         TIMELINE_LIMIT_MONTHLY = 6;
         TIMELINE_LIMIT_YEARLY = 0;
       };
-
+    }
+    // lib.optionalAttrs homeIsBtrfs {
       home = {
         SUBVOLUME = "/home";
         FSTYPE = "btrfs";
@@ -31,12 +34,24 @@
         TIMELINE_LIMIT_YEARLY = 0;
       };
     };
+
+  snapshotDirs =
+    (lib.optional rootIsBtrfs "/.snapshots")
+    ++ (lib.optional homeIsBtrfs "/home/.snapshots");
+in
+{
+  # Snapper is enabled only for Btrfs-backed root/home mount points. Ext4 or
+  # other supported root layouts do not receive invalid Btrfs snapshot jobs.
+  services.snapper = lib.mkIf (snapshotConfigs != { }) {
+    snapshotInterval = "hourly";
+    persistentTimer = true;
+    cleanupInterval = "1d";
+    configs = snapshotConfigs;
   };
 
-  # Snapper requires a dedicated .snapshots Btrfs subvolume inside each
-  # configured subvolume. Create it once after local filesystems are mounted.
-  # Existing non-subvolume directories are never replaced automatically.
-  systemd.services = {
+  # Snapper needs a dedicated .snapshots Btrfs subvolume in each configured
+  # subvolume. Existing ordinary directories are never replaced.
+  systemd.services = lib.mkIf (snapshotDirs != [ ]) {
     prepare-btrfs-snapshots = {
       description = "Prepare Btrfs subvolumes required by Snapper";
       wantedBy = [ "multi-user.target" ];
@@ -57,7 +72,7 @@
       script = ''
         set -euo pipefail
 
-        for snapshots_dir in /.snapshots /home/.snapshots; do
+        for snapshots_dir in ${lib.concatStringsSep " " (map lib.escapeShellArg snapshotDirs)}; do
           if btrfs subvolume show "$snapshots_dir" >/dev/null 2>&1; then
             continue
           fi
