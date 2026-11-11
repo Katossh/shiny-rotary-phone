@@ -187,8 +187,9 @@ mount /dev/disk/by-uuid/<EFI-FILESYSTEM-UUID> /mnt/boot
 ~~~
 
 If your existing layout has separate filesystems or Btrfs subvolumes for
-`/home`, `/nix`, or `/var/log`, mount each one at its corresponding path
-under `/mnt` before running the installer. For example, only when those
+`/home`, `/nix`, `/var`, or `/var/log`, mount each one at its corresponding
+path under `/mnt` before running the installer. This includes a separate
+`/var` filesystem containing the existing sbctl keys. For example, only when those
 subvolumes exist:
 
 ~~~sh
