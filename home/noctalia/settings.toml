@@ -8,102 +8,70 @@ order = [ "default" ]
     background_opacity = 0.39999999105930328
     capsule = true
     capsule_border_width = 0.0
-    center = [ "group:g3", "group:g5" ]
-    end = [ "group:g8", "group:g1", "group:g4" ]
+    center = [ "group:time" ]
+    end = [ "group:tools", "group:audio", "group:connectivity", "group:notifications", "group:controls" ]
     font_family = "Inter"
     radius = 16
     reserve_space = false
     show_on_workspace_switch = false
     smart_auto_hide = true
-    start = [ "group:g6", "group:g7", "group:g2" ]
+    start = [ "group:navigation", "group:metrics" ]
 
         [[bar.default.capsule_group]]
-        accordion = false
-        accordion_direction = "end"
-        border_width = 1.0
-        enabled = true
-        fill = "surface_container"
-        id = "g1"
-        members = [ "volume", "media", "audio_visualizer" ]
-        opacity = 1.0
-        padding = 6.0
-
-        [[bar.default.capsule_group]]
-        accordion = false
-        accordion_direction = "end"
-        border_width = 1.0
-        enabled = true
-        fill = "surface_container"
-        id = "g2"
-        members = [ "network", "bluetooth", "battery" ]
-        opacity = 1.0
-        padding = 6.0
-
-        [[bar.default.capsule_group]]
-        accordion = false
-        accordion_direction = "end"
-        border_width = 0.0
-        enabled = true
-        fill = "surface_container"
-        id = "g4"
-        members = [ "tray", "notifications", "session" ]
-        opacity = 1.0
-        padding = 6.0
-
-        [[bar.default.capsule_group]]
-        accordion = false
-        accordion_direction = "end"
-        border_width = 0.0
-        enabled = true
-        fill = "surface_container"
-        id = "g6"
+        id = "navigation"
         members = [ "launcher", "workspaces", "wallpaper" ]
-        opacity = 1.0
-        padding = 6.0
-
-        [[bar.default.capsule_group]]
+        enabled = true
         accordion = false
         accordion_direction = "end"
-        border_width = 0.0
-        enabled = true
-        fill = "surface_container"
-        id = "g7"
+
+        [[bar.default.capsule_group]]
+        id = "metrics"
         members = [ "ram", "temp", "cat" ]
-        opacity = 1.0
-        padding = 6.0
-
-        [[bar.default.capsule_group]]
+        enabled = true
         accordion = false
         accordion_direction = "end"
-        border_width = 0.0
-        enabled = true
-        fill = "surface_container"
-        id = "g8"
-        members = [ "widget", "widget_2", "caffeine" ]
-        opacity = 1.0
-        padding = 6.0
 
         [[bar.default.capsule_group]]
+        id = "time"
+        members = [ "weather", "clock" ]
+        enabled = true
         accordion = false
         accordion_direction = "end"
-        border_width = 0.0
-        enabled = true
-        fill = "surface_container"
-        id = "g3"
-        members = [ "weather", "clock", "date" ]
-        opacity = 1.0
-        padding = 6.0
 
         [[bar.default.capsule_group]]
+        id = "tools"
+        members = [ "widget", "caffeine", "widget_2" ]
+        enabled = true
         accordion = false
         accordion_direction = "end"
-        border_width = 0.0
+
+        [[bar.default.capsule_group]]
+        id = "audio"
+        members = [ "volume", "media", "audio_visualizer" ]
         enabled = true
-        fill = "surface_container"
-        id = "g5"
-        members = [ "privacy", "control-center" ]
-        opacity = 1.0
-        padding = 6.0
+        accordion = false
+        accordion_direction = "end"
+
+        [[bar.default.capsule_group]]
+        id = "connectivity"
+        members = [ "network", "bluetooth", "battery" ]
+        enabled = true
+        accordion = false
+        accordion_direction = "end"
+
+        [[bar.default.capsule_group]]
+        id = "notifications"
+        members = [ "tray", "notifications" ]
+        enabled = true
+        accordion = false
+        accordion_direction = "end"
+
+        [[bar.default.capsule_group]]
+        id = "controls"
+        members = [ "privacy", "control-center", "session" ]
+        enabled = true
+        accordion = false
+        accordion_direction = "end"
 
 # Blurred and tinted copy of the current wallpaper for Niri Overview.
 [backdrop]
@@ -321,24 +289,32 @@ min_length = 0
 
 [widget.audio_visualizer]
 bands = 32
-capsule_border_width = 0.0
-capsule_opacity = 0.0
 interactive = false
 mirrored = false
 show_when_idle = true
 width = 128
+
+[widget.ram]
+type = "sysmon"
+stat = "ram_pct"
+visualization = "none"
+highlight_color = "#E5C890"
+
+[widget.temp]
+type = "sysmon"
+stat = "cpu_temp"
+visualization = "none"
+highlight_color = "#EF9F76"
+
+[widget.clock]
+format = "{:%H:%M}\n{:%a, %d %b}"
+tooltip_format = "{:%A, %B %d, %Y}"
 
 [widget.cat]
 cat_color_mode = "custom"
 cat_size = 48
 show_cpu_percent = true
 type = "dotnetrob/cat:cat"
-
-[widget.clock]
-capsule_opacity = 0.0
-
-[widget.date]
-capsule_opacity = 0.0
 
 [widget.widget]
 type = "thepunkoff/pomodoro:widget"
