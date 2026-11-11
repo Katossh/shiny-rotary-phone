@@ -11,10 +11,14 @@ let
   homeIsBtrfsSubvolume =
     config.fileSystems ? "/home"
     && config.fileSystems."/home".fsType == "btrfs"
-    && builtins.any (option: lib.hasPrefix "subvol=" option) (config.fileSystems."/home".options or []);
+    && builtins.any (option: lib.hasPrefix "subvol=" option) (
+      config.fileSystems."/home".options or [ ]
+    );
 
-  snapshotDirectories =
-    [ "/.snapshots" ] ++ lib.optionals homeIsBtrfsSubvolume [ "/home/.snapshots" ];
+  snapshotDirectories = [
+    "/.snapshots"
+  ]
+  ++ lib.optionals homeIsBtrfsSubvolume [ "/home/.snapshots" ];
 
   homeSnapperConfig = lib.optionalAttrs homeIsBtrfsSubvolume {
     home = {
@@ -48,7 +52,8 @@ in
         TIMELINE_LIMIT_MONTHLY = 6;
         TIMELINE_LIMIT_YEARLY = 0;
       };
-    } // homeSnapperConfig;
+    }
+    // homeSnapperConfig;
   };
 
   # Snapper requires a dedicated .snapshots Btrfs subvolume for each enabled
