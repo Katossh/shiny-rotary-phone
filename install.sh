@@ -6,7 +6,7 @@ readonly HOST_NAME="workstation"
 readonly INSTALL_ROOT="/mnt"
 readonly INSTALL_REPO="/mnt/etc/nixos"
 
-MODE="switch"
+MODE="auto"
 ASSUME_YES="false"
 SCRIPT_DIR=""
 REPO_DIR=""
@@ -21,7 +21,6 @@ Usage: ./install.sh [--switch | --test | --install] [--yes]
 
 Modes:
   --switch   Build and activate the workstation profile, making it the default generation.
-             This is the default mode for an already installed NixOS system.
   --test     Build and activate the workstation profile temporarily without changing the
              default boot generation.
   --install  Install the workstation profile into an already mounted /mnt from a NixOS
@@ -37,8 +36,10 @@ Fresh installation:
   4. Clone this repository to /mnt/etc/nixos.
   5. Run: sudo ./install.sh --install
 
-The installer detects the mounted filesystems and regenerates the host hardware
-configuration. It does not partition, format, create subvolumes, or alter LUKS keys.
+With no mode specified, the script selects --install when the clone is at
+/mnt/etc/nixos; otherwise it selects --switch. The installer detects the
+mounted filesystems and regenerates the host hardware configuration. It does
+not partition, format, create subvolumes, or alter LUKS keys.
 USAGE
 }
 
@@ -264,15 +265,15 @@ main() {
     shift
     case "$arg" in
       --switch)
-        [[ "$MODE" == "switch" ]] || die "Choose only one mode."
+        [[ "$MODE" == "auto" ]] || die "Choose only one mode."
         MODE="switch"
         ;;
       --test)
-        [[ "$MODE" == "switch" ]] || die "Choose only one mode."
+        [[ "$MODE" == "auto" ]] || die "Choose only one mode."
         MODE="test"
         ;;
       --install)
-        [[ "$MODE" == "switch" ]] || die "Choose only one mode."
+        [[ "$MODE" == "auto" ]] || die "Choose only one mode."
         MODE="install"
         ;;
       --yes)
@@ -290,6 +291,15 @@ main() {
 
   require_root
   resolve_repository
+
+  if [[ "$MODE" == "auto" ]]; then
+    if [[ "$REPO_DIR" == "$INSTALL_REPO" ]]; then
+      MODE="install"
+    else
+      MODE="switch"
+    fi
+  fi
+
   configure_nix
 
   if [[ "$MODE" == "install" ]]; then
