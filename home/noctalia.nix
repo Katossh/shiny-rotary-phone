@@ -145,8 +145,7 @@ let
   };
 
   styledCapsuleGroups = map (
-    group:
-    group // (capsuleGroupStyles.${group.id} or { })
+    group: group // (capsuleGroupStyles.${group.id} or { })
   ) exportedSettings.bar.default.capsule_group;
 
   settings = lib.recursiveUpdate exportedSettings {
@@ -175,11 +174,9 @@ let
     };
 
     # Noctalia resolves icon_color separately from the label foreground.
-    widget = lib.mapAttrs (
-      _name: iconColor: {
-        icon_color = iconColor;
-      }
-    ) widgetIconColors;
+    widget = lib.mapAttrs (_name: iconColor: {
+      icon_color = iconColor;
+    }) widgetIconColors;
 
     shell.font_family = config.starforge.user.appearance.fontFamily;
 
