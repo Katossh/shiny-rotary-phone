@@ -6,8 +6,13 @@
 }:
 
 let
-  # Enable a separate /home snapshot config only when the detected layout
-  # mounts /home from its own Btrfs subvolume.
+  rootIsBtrfsSubvolume =
+    config.fileSystems ? "/"
+    && config.fileSystems."/".fsType == "btrfs"
+    && builtins.any (option: lib.hasPrefix "subvol=" option) (
+      config.fileSystems."/".options or [ ]
+    );
+
   homeIsBtrfsSubvolume =
     config.fileSystems ? "/home"
     && config.fileSystems."/home".fsType == "btrfs"
@@ -15,10 +20,25 @@ let
       config.fileSystems."/home".options or [ ]
     );
 
-  snapshotDirectories = [
-    "/.snapshots"
-  ]
-  ++ lib.optionals homeIsBtrfsSubvolume [ "/home/.snapshots" ];
+  snapperEnabled = rootIsBtrfsSubvolume || homeIsBtrfsSubvolume;
+
+  snapshotDirectories =
+    lib.optionals rootIsBtrfsSubvolume [ "/.snapshots" ]
+    ++ lib.optionals homeIsBtrfsSubvolume [ "/home/.snapshots" ];
+
+  rootSnapperConfig = lib.optionalAttrs rootIsBtrfsSubvolume {
+    root = {
+      SUBVOLUME = "/";
+      FSTYPE = "btrfs";
+      TIMELINE_CREATE = true;
+      TIMELINE_CLEANUP = true;
+      TIMELINE_LIMIT_HOURLY = 6;
+      TIMELINE_LIMIT_DAILY = 7;
+      TIMELINE_LIMIT_WEEKLY = 4;
+      TIMELINE_LIMIT_MONTHLY = 6;
+      TIMELINE_LIMIT_YEARLY = 0;
+    };
+  };
 
   homeSnapperConfig = lib.optionalAttrs homeIsBtrfsSubvolume {
     home = {
@@ -35,30 +55,16 @@ let
   };
 in
 {
-  services.snapper = {
+  services.snapper = lib.mkIf snapperEnabled {
     snapshotInterval = "hourly";
     persistentTimer = true;
     cleanupInterval = "1d";
-
-    configs = {
-      root = {
-        SUBVOLUME = "/";
-        FSTYPE = "btrfs";
-        TIMELINE_CREATE = true;
-        TIMELINE_CLEANUP = true;
-        TIMELINE_LIMIT_HOURLY = 6;
-        TIMELINE_LIMIT_DAILY = 7;
-        TIMELINE_LIMIT_WEEKLY = 4;
-        TIMELINE_LIMIT_MONTHLY = 6;
-        TIMELINE_LIMIT_YEARLY = 0;
-      };
-    }
-    // homeSnapperConfig;
+    configs = rootSnapperConfig // homeSnapperConfig;
   };
 
   # Snapper requires a dedicated .snapshots Btrfs subvolume for each enabled
   # configuration. Existing non-subvolume directories are never replaced.
-  systemd.services = {
+  systemd.services = lib.mkIf snapperEnabled {
     prepare-btrfs-snapshots = {
       description = "Prepare Btrfs subvolumes required by Snapper";
       wantedBy = [ "multi-user.target" ];
@@ -106,5 +112,5 @@ in
     };
   };
 
-  environment.systemPackages = [ pkgs.btrfs-progs ];
+  environment.systemPackages = lib.optionals snapperEnabled [ pkgs.btrfs-progs ];
 }
