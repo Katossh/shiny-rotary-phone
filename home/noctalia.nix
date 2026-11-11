@@ -24,109 +24,198 @@ let
     }
   ) exportedSettings.wallpaper.favorite;
 
-  # Noctalia capsule fills are ColorSpec values, not CSS backgrounds.
-  # Distinct neighbouring fills create a coordinated, muted colour sweep.
+  # Noctalia supports fixed ColorSpec values for each widget capsule.
+  # One pill per widget makes the hue and foreground explicit and avoids
+  # relying on capsule-group expansion for core bar visibility.
   capsuleStyle =
     {
       fill,
       foreground,
       border,
+      icon,
     }:
     {
-      inherit fill foreground border;
-      border_width = 1.0;
-      radius = 16.0;
-      padding = 8.0;
-      opacity = 0.97;
-      widget_spacing = 7;
+      capsule = true;
+      capsule_fill = fill;
+      capsule_foreground = foreground;
+      capsule_border = border;
+      capsule_border_width = 1.0;
+      capsule_radius = 16.0;
+      capsule_padding = 8.0;
+      capsule_opacity = 0.98;
+      icon_color = icon;
     };
 
-  # Sapphire Islands: shared geometry, distinct Catppuccin Frappé hues.
-  # Group IDs and membership remain sourced from settings.toml.
-  capsuleGroupStyles = {
-    navigation = capsuleStyle {
+  # Coordinated Catppuccin Frappé spectrum: dark, saturated capsule fills
+  # with readable foregrounds and a matching individual icon accent.
+  widgetCapsuleStyles = {
+    launcher = {
       fill = "#344A6B";
-      foreground = "#DEE9FC";
-      border = "#6E8CB8";
+      foreground = "#E6F0FF";
+      border = "#7897C2";
+      icon = "#85C1DC";
+    };
+    workspaces = {
+      fill = "#3B5680";
+      foreground = "#E5EDFF";
+      border = "#819FD0";
+      icon = "#8CAAEE";
+    };
+    wallpaper = {
+      fill = "#4A4C78";
+      foreground = "#ECEBFF";
+      border = "#918FC7";
+      icon = "#BABBF1";
+    };
+    keyboard_layout = {
+      fill = "#53486F";
+      foreground = "#F1E9FC";
+      border = "#9D87C1";
+      icon = "#CA9EE6";
+    };
+    active_window = {
+      fill = "#425065";
+      foreground = "#E8EDF5";
+      border = "#8297B4";
+      icon = "#C6D0F5";
     };
 
-    metrics = capsuleStyle {
-      fill = "#36514D";
-      foreground = "#DDF0E9";
-      border = "#68958A";
+    ram = {
+      fill = "#355B55";
+      foreground = "#DDF2E9";
+      border = "#72A99B";
+      icon = "#A6D189";
+    };
+    temp = {
+      fill = "#66483D";
+      foreground = "#F8E6DC";
+      border = "#B4826D";
+      icon = "#EF9F76";
+    };
+    cat = {
+      fill = "#654B65";
+      foreground = "#F5E7F3";
+      border = "#AB84A8";
+      icon = "#F4B8E4";
+    };
+    weather = {
+      fill = "#355C66";
+      foreground = "#DFF1F4";
+      border = "#73A9B4";
+      icon = "#99D1DB";
+    };
+    clock = {
+      fill = "#3D506D";
+      foreground = "#E7EEFF";
+      border = "#7F9CC5";
+      icon = "#C6D0F5";
     };
 
-    time = capsuleStyle {
-      fill = "#3A4F64";
+    clipboard = {
+      fill = "#3C586B";
       foreground = "#E0EDF5";
-      border = "#6F93A7";
+      border = "#729EB3";
+      icon = "#85C1DC";
+    };
+    widget = {
+      fill = "#625338";
+      foreground = "#F6EEDB";
+      border = "#B29B68";
+      icon = "#E5C890";
+    };
+    caffeine = {
+      fill = "#405A49";
+      foreground = "#E2F1E3";
+      border = "#7EA888";
+      icon = "#A6D189";
+    };
+    widget_2 = {
+      fill = "#5A4869";
+      foreground = "#F1E7FA";
+      border = "#9E82BA";
+      icon = "#CA9EE6";
     };
 
-    tools = capsuleStyle {
-      fill = "#51425F";
-      foreground = "#EDE3F5";
-      border = "#8E77A9";
+    volume = {
+      fill = "#36566F";
+      foreground = "#E1EFF8";
+      border = "#77A6C3";
+      icon = "#85C1DC";
+    };
+    media = {
+      fill = "#574568";
+      foreground = "#F0E6F6";
+      border = "#9A82B3";
+      icon = "#CA9EE6";
+    };
+    audio_visualizer = {
+      fill = "#31584F";
+      foreground = "#DDF2E9";
+      border = "#6DA798";
+      icon = "#81C8BE";
     };
 
-    audio = capsuleStyle {
-      fill = "#574152";
-      foreground = "#F3E0EE";
-      border = "#9C708F";
+    network = {
+      fill = "#3E5D6D";
+      foreground = "#E0EFF4";
+      border = "#7FA5B6";
+      icon = "#99D1DB";
+    };
+    bluetooth = {
+      fill = "#435779";
+      foreground = "#E6EDFC";
+      border = "#829CC8";
+      icon = "#8CAAEE";
+    };
+    battery = {
+      fill = "#425D49";
+      foreground = "#E4F2E1";
+      border = "#82A987";
+      icon = "#A6D189";
+    };
+    brightness = {
+      fill = "#66533A";
+      foreground = "#F7EEDC";
+      border = "#B59A68";
+      icon = "#E5C890";
     };
 
-    connectivity = capsuleStyle {
-      fill = "#405247";
-      foreground = "#E3F0DF";
-      border = "#789A7A";
+    tray = {
+      fill = "#4D4D70";
+      foreground = "#ECEBFA";
+      border = "#9290C2";
+      icon = "#BABBF1";
     };
-
-    notifications = capsuleStyle {
-      fill = "#59473D";
-      foreground = "#F5E5D9";
-      border = "#AA816C";
+    notifications = {
+      fill = "#694B3F";
+      foreground = "#F8E6DC";
+      border = "#B78670";
+      icon = "#EF9F76";
     };
-
-    controls = capsuleStyle {
-      fill = "#46445F";
-      foreground = "#E9E5F7";
-      border = "#827BAA";
+    privacy = {
+      fill = "#645A39";
+      foreground = "#F5EEDB";
+      border = "#B0A06A";
+      icon = "#E5C890";
+    };
+    "control-center" = {
+      fill = "#3C596B";
+      foreground = "#E1EEF5";
+      border = "#79A0B4";
+      icon = "#85C1DC";
+    };
+    session = {
+      fill = "#584667";
+      foreground = "#F0E7F6";
+      border = "#9C81B1";
+      icon = "#CA9EE6";
     };
   };
 
-  # Icons use individual Catppuccin accents; labels inherit their group's
-  # softer foreground so the capsules remain readable and visually unified.
-  widgetIconColors = {
-    launcher = "#85C1DC";
-    workspaces = "#8CAAEE";
-    wallpaper = "#BABBF1";
-    ram = "#A6D189";
-    temp = "#EF9F76";
-    cat = "#F4B8E4";
-    weather = "#99D1DB";
-    clock = "#C6D0F5";
-    widget = "#E5C890";
-    caffeine = "#A6D189";
-    widget_2 = "#CA9EE6";
-    volume = "#85C1DC";
-    media = "#CA9EE6";
-    audio_visualizer = "#81C8BE";
-    network = "#99D1DB";
-    bluetooth = "#8CAAEE";
-    battery = "#A6D189";
-    tray = "#BABBF1";
-    notifications = "#EF9F76";
-    privacy = "#E5C890";
-    "control-center" = "#85C1DC";
-    session = "#CA9EE6";
-  };
-
-  styledCapsuleGroups = map (
-    group: group // (capsuleGroupStyles.${group.id} or { })
-  ) exportedSettings.bar.default.capsule_group;
+  styledWidgets = lib.mapAttrs (_name: style: capsuleStyle style) widgetCapsuleStyles;
 
   settings = lib.recursiveUpdate exportedSettings {
     bar.default = {
-      # A transparent canvas lets the independently tinted capsules float.
       background_opacity = 0.0;
       compositor_blur = false;
 
@@ -135,20 +224,19 @@ let
       font_scale = 1.04;
 
       capsule = true;
-      capsule_thickness = 0.84;
+      capsule_fill = "#38445B";
+      capsule_foreground = "#E8EAF2";
+      capsule_border = "#7386A5";
+      capsule_thickness = 0.86;
       capsule_radius = 16.0;
       capsule_padding = 8.0;
-      capsule_opacity = 0.97;
-      capsule_border_width = 0.8;
-      widget_spacing = 7;
+      capsule_opacity = 0.98;
+      capsule_border_width = 1.0;
+      widget_spacing = 6;
       hover_highlight = true;
-
-      capsule_group = styledCapsuleGroups;
     };
 
-    widget = lib.mapAttrs (_name: iconColor: {
-      icon_color = iconColor;
-    }) widgetIconColors;
+    widget = styledWidgets;
 
     shell.font_family = config.starforge.user.appearance.fontFamily;
 

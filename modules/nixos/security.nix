@@ -27,6 +27,7 @@
       extraConfig = ''
         Defaults timestamp_timeout=15
         Defaults passwd_tries=3
+        Defaults insults
         Defaults use_pty
       '';
     };
