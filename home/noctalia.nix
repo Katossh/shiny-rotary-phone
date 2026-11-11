@@ -138,7 +138,7 @@ let
     clock = "#C6D0F5";
     date = "#BABBF1";
     privacy = "#E5C890";
-    control-center = "#85C1DC";
+    "control-center" = "#85C1DC";
     widget = "#E5C890";
     widget_2 = "#CA9EE6";
     caffeine = "#A6D189";
