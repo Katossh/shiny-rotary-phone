@@ -29,7 +29,7 @@ Modes:
   --help     Show this help.
 
 Fresh installation:
-  1. Mount the Btrfs root subvolume at /mnt.
+  1. Mount the root filesystem at /mnt (Btrfs, ext4, or XFS).
   2. Mount the EFI System Partition (FAT32) at /mnt/boot.
   3. Mount any separate filesystems/subvolumes at their final paths
      (for example /mnt/home, /mnt/nix and /mnt/var/log).
@@ -107,6 +107,19 @@ check_mount_type() {
     || die "Expected $target to use $expected_fs, found $actual_fs."
 }
 
+check_supported_root_fs() {
+  local target="$1"
+  local actual_fs
+
+  mountpoint -q "$target" || die "Root filesystem is not mounted at $target."
+  actual_fs="$(findmnt -n -o FSTYPE --target "$target")"
+  case "$actual_fs" in
+    btrfs|ext4|xfs) ;;
+    *) die "Unsupported root filesystem at $target: $actual_fs. Supported types: btrfs, ext4, xfs." ;;
+  esac
+  printf '%s\n' "$actual_fs"
+}
+
 check_repository_profile() {
   [[ -f "$REPO_DIR/hosts/workstation/default.nix" ]] \
     || die "Missing host profile: $REPO_DIR/hosts/workstation/default.nix"
@@ -115,24 +128,22 @@ check_repository_profile() {
 }
 
 check_target_layout() {
-  local root_subvolume
+  local root_fs
 
   require_command mountpoint
   require_command findmnt
 
-  check_mount_type "$INSTALL_ROOT" "btrfs"
+  root_fs="$(check_supported_root_fs "$INSTALL_ROOT")"
   check_mount_type "$INSTALL_ROOT/boot" "vfat"
-
-  root_subvolume="$(findmnt -n -o FSROOT --target "$INSTALL_ROOT")"
-  [[ -n "$root_subvolume" && "$root_subvolume" != "/" ]] \
-    || die "Mount a Btrfs root subvolume (for example @) at $INSTALL_ROOT, not the top-level Btrfs volume. Snapper needs a root subvolume."
 
   [[ -d /sys/firmware/efi/efivars ]] \
     || die "This host profile requires UEFI. Boot the NixOS installer in UEFI mode."
 
-  log "Detected target root: $(findmnt -n -o SOURCE --target "$INSTALL_ROOT")"
-  log "Detected root subvolume: $root_subvolume"
+  log "Detected target root: $(findmnt -n -o SOURCE --target "$INSTALL_ROOT") ($root_fs)"
   log "Detected EFI filesystem: $(findmnt -n -o SOURCE --target "$INSTALL_ROOT/boot")"
+  if [[ "$root_fs" == "btrfs" ]]; then
+    log "Detected Btrfs root: $(findmnt -n -o FSROOT --target "$INSTALL_ROOT")"
+  fi
 }
 
 generate_hardware_configuration() {
@@ -202,7 +213,7 @@ run_switch() {
   require_command mountpoint
   require_command findmnt
 
-  check_mount_type "/" "btrfs"
+  check_supported_root_fs "/"
   check_mount_type "/boot" "vfat"
 
   log "Target profile: $HOST_NAME"
