@@ -336,38 +336,38 @@ journalctl --user -u deepcool-digital-linux.service -b
 
 The workstation uses a locally built kernel with a small set of explicit
 Kconfig choices. The configuration is owned by
-\`modules/nixos/kernel.nix\`; it extends the pinned Nixpkgs kernel rather than
+`modules/nixos/kernel.nix`; it extends the pinned Nixpkgs kernel rather than
 replacing its general-purpose configuration.
 
 | Kernel setting | Workstation value | Purpose |
 |---|---|---|
-| \`HZ_1000\` | Enabled | Selects the highest standard upstream timer frequency: 1000 Hz. Upstream Linux does not provide a 10,000 Hz Kconfig choice. |
-| \`NO_HZ_IDLE\` | Enabled | Stops periodic scheduling ticks on idle CPUs. |
-| \`NO_HZ_FULL\` | Disabled | Selects the mutually exclusive tickless-idle mode instead of full dynticks. Nixpkgs enables \`NO_HZ_FULL\` for 64-bit kernels by default, so this is explicitly overridden. |
-| \`SMP\` | Enabled | Retains symmetric multiprocessing support. |
-| \`X86_NATIVE_CPU\` | Enabled for \`workstation\` | Uses \`-march=native\` when supported, targeting the CPU of the machine that compiles the kernel. |
+| `HZ_1000` | Enabled | Selects the highest standard upstream timer frequency: 1000 Hz. Upstream Linux does not provide a 10,000 Hz Kconfig choice. |
+| `NO_HZ_IDLE` | Enabled | Stops periodic scheduling ticks on idle CPUs. |
+| `NO_HZ_FULL` | Disabled | Selects the mutually exclusive tickless-idle mode instead of full dynticks. Nixpkgs enables `NO_HZ_FULL` for 64-bit kernels by default, so this is explicitly overridden. |
+| `SMP` | Enabled | Retains symmetric multiprocessing support. |
+| `X86_NATIVE_CPU` | Enabled for `workstation` | Uses `-march=native` when supported, targeting the CPU of the machine that compiles the kernel. |
 
 The remaining kernel configuration and compiler optimization level are left
-to Nixpkgs. In particular, this does not force \`-O3\`, change the preemption
+to Nixpkgs. In particular, this does not force `-O3`, change the preemption
 model, enable LTO, or remove drivers and subsystems.
 
-**Native CPU builds must run on the target workstation.** \`X86_NATIVE_CPU\`
+**Native CPU builds must run on the target workstation.** `X86_NATIVE_CPU`
 targets the build machine, not the hardware described by the NixOS
-configuration. Do not send the \`workstation\` kernel derivation to a remote
+configuration. Do not send the `workstation` kernel derivation to a remote
 builder with a different CPU.
 
-The flake also exposes \`nixosConfigurations.workstation-ci\`. This is a
+The flake also exposes `nixosConfigurations.workstation-ci`. This is a
 portable CI-only variant with native CPU tuning disabled. GitHub Actions builds
 that variant so CI cannot publish a kernel compiled for its runner to Cachix.
-Install and rebuild the actual machine with \`.#workstation\`, not
-\`.#workstation-ci\`.
+Install and rebuild the actual machine with `.#workstation`, not
+`.#workstation-ci`.
 
 Apply and test the kernel change using the normal NixOS generation workflow:
 
-\`\`\`sh
+```sh
 sudo nixos-rebuild build --flake .#workstation
 sudo nixos-rebuild test --flake .#workstation
-\`\`\`
+```
 
 A successful build does not prove runtime behaviour. Reboot into the test
 generation and verify the running kernel and timer configuration before
