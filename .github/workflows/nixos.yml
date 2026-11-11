@@ -86,7 +86,7 @@ jobs:
             --apply 'files: builtins.concatStringsSep "\n" (builtins.attrNames files)' \
             --no-update-lock-file \
             --accept-flake-config)"
-          grep -Eq '^\.\config/niri/' <<< "$managed_files"
+          grep -Fq '.config/niri/' <<< "$managed_files"
 
       - name: Run Nix static analysis
         run: |
