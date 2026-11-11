@@ -189,6 +189,17 @@ in
             "launcher"
           ];
         };
+        # Open Noctalia's session/power menu without a permanent bar button.
+        "Mod+P" = {
+          _props.repeat = false;
+          _props."hotkey-overlay-title" = "Open session / power menu";
+          spawn = [
+            "noctalia"
+            "msg"
+            "panel-toggle"
+            "session"
+          ];
+        };
         "Mod+S" = {
           _props."hotkey-overlay-title" = "Open control center";
           spawn = [
