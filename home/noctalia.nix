@@ -212,7 +212,7 @@ let
     };
   };
 
-  styledWidgets = lib.mapAttrs (_name: style: capsuleStyle style) widgetCapsuleStyles;
+  styledWidgets = lib.mapAttrs (_name: capsuleStyle) widgetCapsuleStyles;
 
   settings = lib.recursiveUpdate exportedSettings {
     bar.default = {
