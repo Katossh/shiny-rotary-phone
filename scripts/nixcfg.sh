@@ -630,8 +630,9 @@ Recovery paths
 
 4. Individual files need to be recovered:
    Snapper is configured only for Btrfs-backed root and/or separately mounted
-   /home filesystems. When those snapshots are available, inspect them with:
+   /home filesystems. If root is Btrfs, inspect it with:
      sudo snapper -c root list
+   If /home is a separate Btrfs mount, inspect it with:
      sudo snapper -c home list
    Root snapshots are under /.snapshots/<number>/snapshot/; home snapshots
    are under /home/.snapshots/<number>/snapshot/. A non-Btrfs filesystem has
