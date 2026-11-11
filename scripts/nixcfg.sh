@@ -417,6 +417,7 @@ doctor_check_user_unit() {
 
 run_doctor() {
   local system_state failed_units failed_names failed_count root_usage system_profile
+  local root_fs home_fs
 
   DOCTOR_ERROR_COUNT=0
   DOCTOR_WARNING_COUNT=0
@@ -474,9 +475,20 @@ run_doctor() {
   doctor_check_system_unit "apparmor.service" "AppArmor"
   doctor_check_system_unit "usbguard.service" "USBGuard"
   doctor_check_system_unit "libvirtd.socket" "Libvirt management socket"
-  doctor_check_system_unit "prepare-btrfs-snapshots.service" "Btrfs snapshot preparation"
-  doctor_check_system_unit "snapper-timeline.timer" "Snapper timeline timer"
-  doctor_check_system_unit "snapper-cleanup.timer" "Snapper cleanup timer"
+
+  if ! command -v findmnt >/dev/null 2>&1; then
+    doctor_report UNKNOWN "Btrfs snapshot services" "findmnt is unavailable; filesystem types could not be checked"
+  else
+    root_fs="$(findmnt -n -o FSTYPE --target / 2>/dev/null || true)"
+    home_fs="$(findmnt -n -o FSTYPE --mountpoint /home 2>/dev/null || true)"
+    if [[ "$root_fs" == "btrfs" || "$home_fs" == "btrfs" ]]; then
+      doctor_check_system_unit "prepare-btrfs-snapshots.service" "Btrfs snapshot preparation"
+      doctor_check_system_unit "snapper-timeline.timer" "Snapper timeline timer"
+      doctor_check_system_unit "snapper-cleanup.timer" "Snapper cleanup timer"
+    else
+      doctor_report SKIP "Btrfs snapshot services" "root and a separately mounted /home are not Btrfs; Snapper is intentionally disabled"
+    fi
+  fi
 
   printf '\nDesktop session\n'
   if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
@@ -607,9 +619,8 @@ Recovery paths
      nixcfg doctor
 
 2. The current generation does not reach a usable login:
-   At the Limine boot menu, select an earlier NixOS generation.
-   Do not select the separate Windows Boot Manager entry unless you intend
-   to boot Windows. The configured Limine menu retains up to five generations.
+   At the Limine boot menu, select an earlier NixOS generation. The configured
+   menu retains up to five generations; it contains NixOS entries only.
 
 3. A build or evaluation failed before activation:
    A failed build does not require a rollback because it has not activated a
@@ -618,19 +629,21 @@ Recovery paths
    garbage collection as a first troubleshooting step.
 
 4. Individual files need to be recovered:
-   Inspect the root and home snapshots with:
+   Snapper is configured only for Btrfs-backed root and/or separately mounted
+   /home filesystems. When those snapshots are available, inspect them with:
      sudo snapper -c root list
      sudo snapper -c home list
-   Root snapshots are under /.snapshots/<number>/snapshot/ and home snapshots
-   are under /home/.snapshots/<number>/snapshot/. Restore individual files only
-   after checking the source and destination. These snapshots share the same
-   physical disk and are not an independent backup. The /nix and /var/log
-   subvolumes are not included in the root snapshot.
+   Root snapshots are under /.snapshots/<number>/snapshot/; home snapshots
+   are under /home/.snapshots/<number>/snapshot/. A non-Btrfs filesystem has
+   no Snapper snapshots. Restore individual files only after checking the
+   source and destination. Snapshots share the source disk and are not a
+   backup. Separate /nix and /var/log filesystems are not included.
 
 5. The machine cannot boot any installed generation:
-   Boot a NixOS installer ISO in UEFI mode and use the existing LUKS passphrase.
-   The repository's INSTALL.md describes the existing disk layout and mount
-   points for installation; its --install mode is a reinstall path, not a
+   Boot a NixOS installer ISO in UEFI mode. Unlock the target volume with its
+   existing LUKS passphrase only when the root filesystem is encrypted. The
+   repository's INSTALL.md describes mounting and automatic layout detection;
+   its --install mode is a reinstall path, not a
    tested chroot-repair procedure. Do not format partitions, regenerate the
    hardware configuration, enroll new Secure Boot keys, or run install.sh
    --install unless a reinstall is explicitly intended.
@@ -639,7 +652,9 @@ Limitations
 
 - A NixOS generation rollback restores the system closure, not arbitrary user
   data or external changes.
-- Btrfs snapshots are not backups and do not cover /nix or /var/log here.
+- Btrfs snapshots are enabled only for detected Btrfs root and/or separate
+  /home filesystems. They are not backups and do not include separate /nix or
+  /var/log filesystems.
 - Secure Boot and the Limine EFI path are host-specific. Preserve known-good
   boot entries and key material; use nixcfg audit for the deeper read-only
   Secure Boot, AppArmor, USBGuard, and kernel checks.
