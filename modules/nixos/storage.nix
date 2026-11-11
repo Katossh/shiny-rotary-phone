@@ -1,8 +1,8 @@
 { pkgs, ... }:
 
 {
-  # The four subvolumes share one encrypted Btrfs filesystem. Keep compression
-  # and atime policy consistent across all mounts.
+  # The root filesystem is Btrfs. The installer generates the mount table from
+  # the actual layout; separate /home, /nix, or /var/log mounts are optional.
   services.btrfs.autoScrub = {
     enable = true;
     fileSystems = [ "/" ];
@@ -10,33 +10,19 @@
   };
 
   # SMART monitoring and NVMe administration concern storage devices rather
-  # than general hardware capability.
+  # than a particular partition layout.
   services.smartd = {
     enable = true;
     autodetect = true;
   };
 
-  fileSystems = {
-    "/".options = [
-      "compress=zstd:1"
-      "noatime"
-    ];
-
-    "/home".options = [
-      "compress=zstd:1"
-      "noatime"
-    ];
-
-    "/nix".options = [
-      "compress=zstd:1"
-      "noatime"
-    ];
-
-    "/var/log".options = [
-      "compress=zstd:1"
-      "noatime"
-    ];
-  };
+  # Keep compression and atime policy on the root Btrfs mount. Do not declare
+  # mount options for optional paths: doing so would create incomplete
+  # fileSystems entries when a layout keeps those directories on the root.
+  fileSystems."/".options = [
+    "compress=zstd:1"
+    "noatime"
+  ];
 
   environment.systemPackages = with pkgs; [
     nvme-cli
