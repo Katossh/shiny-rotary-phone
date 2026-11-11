@@ -195,7 +195,7 @@ jobs:
           nix build \
             --no-update-lock-file \
             --accept-flake-config \
-            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.system.build.toplevel" \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation-ci.config.system.build.toplevel" \
             --no-link \
             --fallback \
             --print-build-logs

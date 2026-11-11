@@ -49,6 +49,19 @@
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
+
+      workstation = nixpkgs.lib.nixosSystem {
+        inherit system;
+
+        specialArgs = {
+          inherit inputs;
+        };
+
+        modules = [
+          home-manager.nixosModules.home-manager
+          ./hosts/workstation
+        ];
+      };
     in
     {
       formatter.${system} = pkgs.nixfmt;
@@ -137,17 +150,18 @@
         };
       };
 
-      nixosConfigurations.workstation = nixpkgs.lib.nixosSystem {
-        inherit system;
+      nixosConfigurations = {
+        inherit workstation;
 
-        specialArgs = {
-          inherit inputs;
+        # Never publish a kernel compiled with the GitHub runner's CPU features
+        # as the native workstation kernel.
+        workstation-ci = workstation.extendModules {
+          modules = [
+            {
+              starforge.kernel.nativeCpuOptimization.enable = false;
+            }
+          ];
         };
-
-        modules = [
-          home-manager.nixosModules.home-manager
-          ./hosts/workstation
-        ];
       };
     };
 }
