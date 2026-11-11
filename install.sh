@@ -97,6 +97,47 @@ get_workstation_username() {
   printf '%s\n' "$username"
 }
 
+# Home Manager creates links as the target user. Check only the parent
+# directories of files declared by the evaluated Home Manager profile, so a
+# foreign-owned directory elsewhere in the home does not cause a false alarm.
+check_home_manager_target_permissions() {
+  local username="$1"
+  local home_dir="/home/$username"
+  local managed_paths relative_path parent owner_uid owner_gid mode group
+
+  require_command runuser
+  require_command stat
+
+  [[ -d "$home_dir" ]] || die "The configured Home Manager home directory does not exist: $home_dir"
+
+  managed_paths="$(
+    nix eval --raw \
+      "path:$REPO_DIR#nixosConfigurations.$HOST_NAME.config.home-manager.users.\"$username\".home.file" \
+      --apply 'files: builtins.concatStringsSep "\n" (builtins.attrNames files)'
+  )" || die "Could not enumerate the Home Manager-managed files for $username."
+
+  [[ -n "$managed_paths" ]] || return 0
+
+  while IFS= read -r relative_path; do
+    [[ -n "$relative_path" ]] || continue
+    case "$relative_path" in
+      /*|..|../*|*/../*|*/..)
+        die "Home Manager returned an unexpected non-relative target path: $relative_path"
+        ;;
+    esac
+
+    parent="$(dirname -- "$home_dir/$relative_path")"
+    while [[ "$parent" == "$home_dir/"* ]]; do
+      if [[ -d "$parent" ]] && ! runuser -u "$username" -- test -w "$parent" -a -x "$parent"; then
+        read -r owner_uid owner_gid mode < <(stat -c '%u %g %a' -- "$parent")
+        group="$(id -gn "$username")"
+        die "Home Manager cannot write to $parent (owner UID:GID $owner_uid:$owner_gid, mode $mode). Restore ownership of this directory only with: sudo chown '$username:$group' '$parent'. Do not use recursive chown. If ownership changes again, inspect rootless Podman bind mounts for the ':U' option."
+      fi
+      parent="$(dirname -- "$parent")"
+    done
+  done <<< "$managed_paths"
+}
+
 check_mount_type() {
   local target="$1"
   local expected_fs="$2"
@@ -279,6 +320,8 @@ confirm() {
 }
 
 run_switch() {
+  local username
+
   require_nixos
   require_command nixos-rebuild
   check_repository_profile
@@ -288,6 +331,9 @@ run_switch() {
   check_supported_root_fs "/"
   check_mount_type "/boot" "vfat"
   ensure_hardware_configuration "/"
+
+  username="$(get_workstation_username)"
+  check_home_manager_target_permissions "$username"
 
   log "Target profile: $HOST_NAME"
   log "Repository: $REPO_DIR"

@@ -387,6 +387,23 @@ grep "^$(id -un):" /etc/subuid /etc/subgid
 podman info --debug
 ```
 
+### Protect Home Manager files from container ownership changes
+
+Rootless containers use subordinate UID/GID mappings. A container user such as
+UID 999 can therefore appear on the host as a numeric owner such as UID 100999.
+Podman's `:U` bind-mount option recursively changes ownership of the host-side
+source directory to match the container's mapped UID/GID. Do not use `:U` on
+`$HOME`, `$HOME/.config`, or any directory containing files managed by Home
+Manager. Use a dedicated application-data directory or a named Podman volume
+instead. See the [Podman volume documentation](https://docs.podman.io/en/latest/markdown/podman-pod.unit.5.html).
+
+If Home Manager reports `Permission denied` while creating a link under
+`~/.config`, inspect the exact parent directory with `namei -l PATH`. Restore
+ownership only on the directory that Home Manager must write into; do not
+recursively change ownership of the whole home or `.config` tree. The
+`install.sh` switch path now checks the parent directories of declared
+Home Manager targets and stops before activation when one is not writable.
+
 ### Bubblewrap
 
 The workstation installs a small `bwrap` command dispatcher on top of the
