@@ -13,8 +13,8 @@
     inputs.nixos-hardware.nixosModules.common-gpu-amd
   ];
 
-  # Build the newest maintained kernel with Clang/LLD so CONFIG_LTO_CLANG_THIN
-  # is available. Keep the kernel version and its matching module set aligned.
+  # Build the newest maintained kernel with Clang/LLD. Keep the kernel
+  # version and its matching module set aligned.
   boot.kernelPackages = pkgs.linuxPackagesFor (
     pkgs.linuxPackages_latest.kernel.override {
       stdenv = pkgs.llvmPackages.stdenv;
