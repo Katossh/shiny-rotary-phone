@@ -8,9 +8,9 @@ order = [ "main" ]
     background_opacity = 0.0
     compositor_blur = false
     capsule = true
-    capsule_fill = "#38445B"
-    capsule_foreground = "#E8EAF2"
-    capsule_border = "#7386A5"
+    capsule_fill = "surface_container"
+    capsule_foreground = "on_surface"
+    capsule_border = "outline_variant"
     capsule_border_width = 1.0
     capsule_thickness = 0.86
     capsule_radius = 16.0
@@ -296,13 +296,13 @@ width = 128
 type = "sysmon"
 stat = "ram_pct"
 visualization = "none"
-highlight_color = "#E5C890"
+highlight_color = "secondary"
 
 [widget.temp]
 type = "sysmon"
 stat = "cpu_temp"
 visualization = "none"
-highlight_color = "#EF9F76"
+highlight_color = "tertiary"
 
 [widget.clock]
 format = "{:%H:%M}\n{:%a, %d %b}"
