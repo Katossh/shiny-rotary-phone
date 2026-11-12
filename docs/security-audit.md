@@ -77,8 +77,16 @@ do not alter the working NixOS or Windows boot files to test enforcement.
 The workstation does not force a Lockdown level through `boot.kernelParams`.
 The previous `lockdown=confidentiality` parameter was removed because an
 active Lockdown level restricts loading kernel modules to signatures trusted
-by the running kernel. Nixpkgs still enables kernel module signing and its
-signature checks; this change does not disable that support.
+by the running kernel. This restriction applies even when
+`module.sig_enforce=1` is absent.
+
+This matters because the repository deliberately stopped short of strict
+module-signature enforcement when it added the trusted-certificate bundle
+rebuild in `modules/nixos/boot.nix`: the certificates from
+`config.system.modulesTree` are embedded in the kernel, but the workstation's
+complete runtime module set still needs to be verified. Nixpkgs module signing
+and the certificate-bundle integration remain enabled; this change removes
+only the forced Lockdown gate.
 
 This is separate from EFI Secure Boot. Limine remains configured for Secure
 Boot signing, and the locally enrolled `sbctl` keys and firmware settings are
