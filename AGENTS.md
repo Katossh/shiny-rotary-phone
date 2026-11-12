@@ -17,7 +17,10 @@ These priorities do not authorize unrelated architectural rewrites or changes to
 Treat the checked-out repository as the source of truth. At the time this guide was written, the project documentation describes the following layout and boundaries:
 
 - `flake.nix`, `flake.lock` — flake inputs, pinned dependencies, formatter, development shell, and the `workstation` NixOS output.
-- `hosts/workstation/` — the current machine-specific host profile. Its generated `hardware-configuration.nix` is a local, Git-ignored file prepared by `install.sh`.
+- hosts/workstation/ — the current machine-specific host profile. Its
+  hardware-configuration.nix is a local, Git-ignored file that must be prepared
+  manually before running install.sh; the installer validates it but never
+  copies, generates, or overwrites it.
 - `modules/nixos/` — reusable system-level NixOS modules.
 - `home/` — Home Manager modules for the workstation user; the login name is configured once through `starforge.user.username` in `hosts/workstation/default.nix`.
 - `terminal-dotfiles` — a separate pinned input and the source of truth for terminal configuration and package manifests. Do not duplicate or take ownership of those files in Starforge.
@@ -249,7 +252,7 @@ The project contains machine-specific storage, bootloader, Secure Boot, encrypti
 - Follow the existing formatting and module conventions. Do not reformat unrelated files.
 - Keep `flake.lock` unchanged unless dependency updates are part of the task. Review lock-file changes deliberately.
 - Do not change `system.stateVersion` as a routine maintenance action.
-- Treat `hosts/workstation/hardware-configuration.nix` as local machine data: never commit it or copy its device identifiers/UUIDs into public docs. `install.sh` copies `/etc/nixos/hardware-configuration.nix` when present; otherwise, it asks before generating the local file. Preserve it during unrelated changes.
+- Treat hosts/workstation/hardware-configuration.nix as local machine data: never commit it or copy its device identifiers/UUIDs into public docs. It must be created manually before running install.sh; the installer validates the existing file but never copies, generates, or overwrites it. Preserve it during unrelated changes.
 - Verify new option names against the project's locked Nixpkgs/Home Manager sources or authoritative upstream documentation.
 - Prefer evaluation and build checks over assuming that syntactically valid Nix is operationally correct.
 
