@@ -345,14 +345,17 @@ replacing its general-purpose configuration.
 | `NO_HZ_IDLE` | Enabled | Stops periodic scheduling ticks on idle CPUs. |
 | `NO_HZ_FULL` | Disabled | Selects the mutually exclusive tickless-idle mode instead of full dynticks. Nixpkgs enables `NO_HZ_FULL` for 64-bit kernels by default, so this is explicitly overridden. |
 | `SMP` | Enabled | Retains symmetric multiprocessing support. |
-| `LTO_CLANG_THIN` | Enabled | Uses Clang ThinLTO for cross-translation-unit optimisation; requires the Clang/LLVM toolchain. |
+| `LTO_CLANG_THIN` | Requested when supported | Requests Clang ThinLTO when the active toolchain satisfies upstream Kconfig prerequisites; remains optional if Kconfig hides the option. |
 | `X86_NATIVE_CPU` | Enabled for `workstation` | Uses `-march=native` when supported, targeting the CPU of the machine that compiles the kernel. |
 
 The remaining kernel configuration and compiler optimization level are left
 to Nixpkgs. In particular, this does not force `-O3`, change the preemption
-model, or remove drivers and subsystems. The kernel uses Clang/LLD and
-Clang ThinLTO (`CONFIG_LTO_CLANG_THIN=y`). ThinLTO is an experimental
-build-time optimisation; it does not guarantee faster runtime performance.
+model, or remove drivers and subsystems. The kernel uses Clang/LLD. ThinLTO
+is requested on a best-effort basis: upstream Kconfig enables it only when
+the active toolchain satisfies all prerequisites. When the option is hidden,
+the kernel retains its default LTO choice rather than failing configuration.
+Do not assume ThinLTO is active merely because it is requested here; verify
+the final kernel `.config` before claiming it is enabled.
 
 The kernel override also selects LLVM for host-side build tools. Nixpkgs
 passes explicit `HOSTCC`, `HOSTCXX`, `HOSTAR`, and `HOSTLD` assignments in

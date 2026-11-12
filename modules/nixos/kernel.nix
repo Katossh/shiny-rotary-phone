@@ -18,10 +18,10 @@ let
       NO_HZ_IDLE = yes;
       NO_HZ_FULL = no;
 
-      # Use Clang ThinLTO for cross-translation-unit kernel optimisation.
-      # The kernel package is built with the matching LLVM toolchain in
-      # hosts/workstation/hardware.nix.
-      LTO_CLANG_THIN = yes;
+      # Request Clang ThinLTO when the active kernel/toolchain combination
+      # satisfies upstream Kconfig's prerequisites. Keep it optional because
+      # Kconfig may hide it even when Clang/LLD are selected.
+      LTO_CLANG_THIN = option yes;
 
       # Keep symmetric multiprocessing enabled.
       SMP = yes;
