@@ -490,6 +490,11 @@ must be isolated from a potentially hostile kernel-level workload.
   processes.
 - Kernel pointer and dmesg exposure are restricted; ptrace is limited to the
   normal parent/child model; unprivileged BPF is disabled.
+- Kernel Lockdown is not forced into integrity/confidentiality mode. Either
+  forced mode gates module loading on signatures trusted by the running kernel,
+  even without `module.sig_enforce=1`. Nixpkgs module-signature support and
+  the trusted-certificate bundle embedded in the kernel remain enabled; strict
+  runtime enforcement is not forced before the required module set is verified.
 - Filesystem protections for symlinks, hardlinks, FIFOs, and regular files
   are explicitly enabled.
 - IPv4/IPv6 redirect acceptance and IPv4 source routing are disabled.
@@ -509,8 +514,9 @@ must be isolated from a potentially hostile kernel-level workload.
   layer here, not a USB allowlist or a guarantee against spoofed BadUSB devices.
   Only root can use its IPC interface; the D-Bus interface is disabled.
 - Secure Boot is enabled and Limine is signed with the locally enrolled
-  `sbctl` database key. MSI firmware quirk FQ0001 remains reported by
-  `sbctl`; see the Secure Boot caveat above.
+  `sbctl` database key. Removing the forced kernel Lockdown level does not
+  disable firmware Secure Boot or Limine signing. MSI firmware quirk FQ0001
+  remains reported by `sbctl`; see the Secure Boot caveat above.
 - The Linux root and Btrfs data subvolumes remain inside the existing LUKS
   container. TPM-backed unlocking is not configured yet.
 

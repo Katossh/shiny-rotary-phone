@@ -58,12 +58,14 @@
   # Default RLIMIT_MEMLOCK for services launched by the per-user manager.
   systemd.user.settings.Manager.DefaultLimitMEMLOCK = "8G:8G";
 
-  # Kernel and network-stack hardening belongs to the security policy even
-  # though some of the affected sysctls are networking-related.
-  # Maximum lockdown level: block both kernel modification and userspace reads
-  # of confidential kernel data, subject to kernel support.
+  # Keep the kernel's default Lockdown mode instead of forcing
+  # integrity/confidentiality lockdown from the command line. Either forced
+  # mode also gates module loading on signatures trusted by the running
+  # kernel, even without module.sig_enforce=1. Keep the separate Nixpkgs
+  # certificate-bundle integration in boot.nix, but do not force this gate
+  # until its runtime trust path and required external modules are verified.
+  # Secure Boot remains configured separately in modules/nixos/boot.nix.
   boot.kernelParams = [
-    "lockdown=confidentiality"
     "slab_nomerge"
     "page_alloc.shuffle=1"
     "randomize_kstack_offset=on"
