@@ -361,10 +361,13 @@ The kernel override also selects LLVM for host-side build tools. Nixpkgs
 passes explicit `HOSTCC`, `HOSTCXX`, `HOSTAR`, and `HOSTLD` assignments in
 its kernel make flags, so `LLVM=1` alone does not replace those values. The
 workstation override supplies matching Clang and LLVM ar tools explicitly.
-It also sets `HOSTLDFLAGS=--ld-path=...` to give Clang the exact LLD executable:
-the build environment does not otherwise put `ld.lld` on the host compiler's
-linker search path. This avoids both the missing-GNU-`ld` failure from the
-initial configuration and Clang's `invalid linker name '-fuse-ld=lld'` error.
+It also sets `HOSTLDFLAGS=--ld-path=...` to give Clang the exact LLD executable
+and embeds an explicit RPATH to the Nix store's `elfutils` library directory.
+Linux's host-side `objtool` links against `libelf.so.1` and is executed during
+the kernel build; without that RPATH, its dynamic loader cannot find the
+library inside the sandbox. These flags avoid the missing-GNU-`ld`,
+Clang's `invalid linker name '-fuse-ld=lld'`, and the missing `libelf.so.1`
+runtime-library failures.
 
 The Nix daemon is configured with `nix.settings.cores = 12`, the per-derivation
 parallelism limit. The Nixpkgs kernel derivation enables parallel builds, so
