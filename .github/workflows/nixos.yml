@@ -117,6 +117,19 @@ jobs:
             --accept-flake-config \
             --show-trace
 
+      - name: Ensure kernel Lockdown is not forced
+        run: |
+          kernel_params="$(nix eval --raw \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.boot.kernelParams" \
+            --apply 'params: builtins.concatStringsSep "\\n" params' \
+            --no-update-lock-file \
+            --accept-flake-config)"
+          if grep -Eq '^lockdown=' <<< "$kernel_params"; then
+            echo "A lockdown= kernel parameter is still configured:" >&2
+            grep -E '^lockdown=' <<< "$kernel_params" >&2
+            exit 1
+          fi
+
   build:
     name: Build workstation system
     runs-on: ubuntu-24.04
