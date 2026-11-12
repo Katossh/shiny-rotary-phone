@@ -26,10 +26,9 @@
         "HOSTCC=${pkgs.llvmPackages.stdenv.cc}/bin/clang"
         "HOSTCXX=${pkgs.llvmPackages.stdenv.cc}/bin/clang++"
         "HOSTAR=${pkgs.llvmPackages.llvm}/bin/llvm-ar"
-        # LLVM=1 adds -fuse-ld=lld; give Clang its store path explicitly.
-        # objtool is a host executable linked against elfutils' shared libelf.
-        # Give it an explicit Nix-store RPATH so it can run during the build.
-        "HOSTLDFLAGS=--ld-path=${pkgs.llvmPackages.lld}/bin/ld.lld -Wl,-rpath,${lib.getLib pkgs.elfutils}/lib"
+        # LLVM=1 adds -fuse-ld=lld; give Clang the exact LLD executable.
+        # Kernel host tools need libelf and libcrypto at runtime inside the sandbox.
+        "HOSTLDFLAGS=--ld-path=${pkgs.llvmPackages.lld}/bin/ld.lld -Wl,-rpath,${lib.makeLibraryPath [ pkgs.elfutils pkgs.openssl ]}"
         "HOSTLD=${pkgs.llvmPackages.lld}/bin/ld.lld"
       ];
     }
