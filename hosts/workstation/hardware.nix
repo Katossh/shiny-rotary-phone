@@ -13,9 +13,14 @@
     inputs.nixos-hardware.nixosModules.common-gpu-amd
   ];
 
-  # Track the newest maintained stable kernel exposed by the locked Nixpkgs.
-  # Keep this host-specific rather than changing the reusable boot module.
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  # Build the newest maintained kernel with Clang/LLD so CONFIG_LTO_CLANG_THIN
+  # is available. Keep the kernel version and its matching module set aligned.
+  boot.kernelPackages = pkgs.linuxPackagesFor (
+    pkgs.linuxPackages_latest.kernel.override {
+      stdenv = pkgs.llvmPackages.stdenv;
+      extraMakeFlags = [ "LLVM=1" ];
+    }
+  );
 
   hardware.cpu.amd.updateMicrocode = true;
   hardware.amdgpu.initrd.enable = true;
