@@ -118,16 +118,19 @@ let
     "control-center" = "#85C1DC";
   };
 
+  # Keep this layout on a dedicated bar name. Noctalia applies GUI-managed state
+  # overrides after declarative config, so stale bar.default group overrides must
+  # not be allowed to shadow the seven groups defined in settings.toml.
   styledCapsuleGroups = map (
     group: group // (capsuleGroupStyles.${group.id} or { })
-  ) exportedSettings.bar.default.capsule_group;
+  ) exportedSettings.bar.main.capsule_group;
 
   styledWidgets = lib.mapAttrs (_name: iconColor: {
     icon_color = iconColor;
   }) widgetIconColors;
 
   settings = lib.recursiveUpdate exportedSettings {
-    bar.default = {
+    bar.main = {
       background_opacity = 0.0;
       compositor_blur = false;
 
