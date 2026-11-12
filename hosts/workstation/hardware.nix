@@ -26,7 +26,9 @@
         "HOSTCXX=${pkgs.llvmPackages.stdenv.cc}/bin/clang++"
         "HOSTAR=${pkgs.llvmPackages.llvm}/bin/llvm-ar"
         # LLVM=1 adds -fuse-ld=lld; give Clang its store path explicitly.
-        "HOSTLDFLAGS=--ld-path=${pkgs.llvmPackages.lld}/bin/ld.lld"
+        # objtool is a host executable linked against elfutils' shared libelf.
+        # Give it an explicit Nix-store RPATH so it can run during the build.
+        "HOSTLDFLAGS=--ld-path=${pkgs.llvmPackages.lld}/bin/ld.lld -Wl,-rpath,${lib.getLib pkgs.elfutils}/lib"
         "HOSTLD=${pkgs.llvmPackages.lld}/bin/ld.lld"
       ];
     }
