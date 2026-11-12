@@ -25,6 +25,8 @@
         "HOSTCC=${pkgs.llvmPackages.stdenv.cc}/bin/clang"
         "HOSTCXX=${pkgs.llvmPackages.stdenv.cc}/bin/clang++"
         "HOSTAR=${pkgs.llvmPackages.stdenv.cc.bintools.bintools}/bin/llvm-ar"
+        # Clang with -fuse-ld=lld needs the linker path explicitly in the Nix build environment.
+        "HOSTLDFLAGS=--ld-path=${pkgs.llvmPackages.lld}/bin/ld.lld"
         "HOSTLD=${pkgs.llvmPackages.stdenv.cc.bintools.bintools}/bin/ld.lld"
       ];
     }
