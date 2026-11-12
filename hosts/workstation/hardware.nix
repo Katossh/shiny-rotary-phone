@@ -27,11 +27,12 @@
         "HOSTCXX=${pkgs.llvmPackages.stdenv.cc}/bin/clang++"
         "HOSTAR=${pkgs.llvmPackages.llvm}/bin/llvm-ar"
         # LLVM=1 adds -fuse-ld=lld; give Clang the exact LLD executable.
-        # Kernel host tools need libelf and libcrypto at runtime inside the sandbox.
+        # Kernel host tools need libelf, libcrypto, and zlib at runtime inside the sandbox.
         "HOSTLDFLAGS=--ld-path=${pkgs.llvmPackages.lld}/bin/ld.lld -Wl,-rpath,${
           lib.makeLibraryPath [
             pkgs.elfutils
             pkgs.openssl
+            pkgs.zlib
           ]
         }"
         "HOSTLD=${pkgs.llvmPackages.lld}/bin/ld.lld"
