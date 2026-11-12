@@ -2,9 +2,9 @@
 sound_volume = 0.79999998211860657
 
 [bar]
-order = [ "default" ]
+order = [ "main" ]
 
-    [bar.default]
+    [bar.main]
     background_opacity = 0.0
     compositor_blur = false
     capsule = true
@@ -29,43 +29,43 @@ order = [ "default" ]
     center = [ "group:focus" ]
     end = [ "group:tools", "group:media", "group:connectivity", "group:status" ]
 
-        [[bar.default.capsule_group]]
+        [[bar.main.capsule_group]]
         id = "workspaces"
         members = [ "workspaces", "wallpaper" ]
         enabled = true
         accordion = false
 
-        [[bar.default.capsule_group]]
+        [[bar.main.capsule_group]]
         id = "system"
         members = [ "ram", "temp", "cat" ]
         enabled = true
         accordion = false
 
-        [[bar.default.capsule_group]]
+        [[bar.main.capsule_group]]
         id = "focus"
         members = [ "active_window", "weather", "clock" ]
         enabled = true
         accordion = false
 
-        [[bar.default.capsule_group]]
+        [[bar.main.capsule_group]]
         id = "tools"
         members = [ "clipboard", "widget", "caffeine", "widget_2" ]
         enabled = true
         accordion = false
 
-        [[bar.default.capsule_group]]
+        [[bar.main.capsule_group]]
         id = "media"
         members = [ "volume", "media", "audio_visualizer" ]
         enabled = true
         accordion = false
 
-        [[bar.default.capsule_group]]
+        [[bar.main.capsule_group]]
         id = "connectivity"
         members = [ "network", "bluetooth", "battery", "brightness" ]
         enabled = true
         accordion = false
 
-        [[bar.default.capsule_group]]
+        [[bar.main.capsule_group]]
         id = "status"
         members = [ "tray", "notifications", "control-center" ]
         enabled = true
