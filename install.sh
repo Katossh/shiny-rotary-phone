@@ -230,10 +230,10 @@ then run install.sh again. The installer will not copy another machine's file,
 generate a replacement, or overwrite an existing configuration.
 
 For an already installed NixOS system, run this from the repository root:
-  nixos-generate-config --show-hardware-config | sudo tee "$hardware_file" >/dev/null
+  sudo nixos-generate-config --show-hardware-config | sudo tee "$hardware_file" >/dev/null
 
 For a fresh installation, first mount the target filesystems under /mnt, then run:
-  nixos-generate-config --root /mnt --show-hardware-config | sudo tee "$hardware_file" >/dev/null
+  sudo nixos-generate-config --root /mnt --show-hardware-config | sudo tee "$hardware_file" >/dev/null
 
 Review the resulting file before continuing. It is Git-ignored because it may
 contain machine-specific filesystem UUIDs and device paths.
