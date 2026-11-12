@@ -99,7 +99,8 @@ jobs:
   build:
     name: Build workstation system
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    # A custom Linux kernel is compiled from source; 90 minutes was insufficient.
+    timeout-minutes: 360
 
     steps:
       - name: Check out repository
