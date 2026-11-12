@@ -8,6 +8,10 @@ _:
         "flakes"
       ];
 
+      # Let parallel-capable derivations, including the kernel build, use
+      # all 12 logical CPU threads on this workstation.
+      cores = 12;
+
       # Keep builds sandboxed and restrict who can talk to the daemon.
       sandbox = true;
       allowed-users = [
