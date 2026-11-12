@@ -22,10 +22,10 @@
       # alone does not select LLVM for the host-side kernel build tools.
       extraMakeFlags = [
         "LLVM=1"
-        "HOSTCC=${pkgs.llvmPackages.clang}/bin/clang"
-        "HOSTCXX=${pkgs.llvmPackages.clang}/bin/clang++"
-        "HOSTAR=${pkgs.llvmPackages.llvm}/bin/llvm-ar"
-        "HOSTLD=${pkgs.llvmPackages.lld}/bin/ld.lld"
+        "HOSTCC=${pkgs.llvmPackages.stdenv.cc}/bin/clang"
+        "HOSTCXX=${pkgs.llvmPackages.stdenv.cc}/bin/clang++"
+        "HOSTAR=${pkgs.llvmPackages.stdenv.cc.bintools.bintools}/bin/llvm-ar"
+        "HOSTLD=${pkgs.llvmPackages.stdenv.cc.bintools.bintools}/bin/ld.lld"
       ];
     }
   );
