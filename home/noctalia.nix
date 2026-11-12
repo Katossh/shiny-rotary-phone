@@ -24,8 +24,8 @@ let
     }
   ) exportedSettings.wallpaper.favorite;
 
-  # One shared capsule per logical widget group. The subdued fills follow a
-  # cool-to-warm Catppuccin Frappé spectrum without turning the bar into a rainbow.
+  # One shared capsule per logical widget group. Palette roles provide
+  # low-contrast fills that follow the active Catppuccin Frappé community palette.
   capsuleGroupStyle =
     {
       fill,
@@ -43,79 +43,80 @@ let
 
   capsuleGroupStyles = {
     workspaces = capsuleGroupStyle {
-      fill = "#344A6B";
-      foreground = "#E6F0FF";
-      border = "#7897C2";
+      fill = "primary_container";
+      foreground = "on_primary_container";
+      border = "primary";
     };
 
     system = capsuleGroupStyle {
-      fill = "#355B55";
-      foreground = "#DDF2E9";
-      border = "#72A99B";
+      fill = "secondary_container";
+      foreground = "on_secondary_container";
+      border = "secondary";
     };
 
     focus = capsuleGroupStyle {
-      fill = "#3D506D";
-      foreground = "#E7EEFF";
-      border = "#7F9CC5";
+      fill = "tertiary_container";
+      foreground = "on_tertiary_container";
+      border = "tertiary";
     };
 
     tools = capsuleGroupStyle {
-      fill = "#514B3A";
-      foreground = "#F6EEDB";
-      border = "#A99567";
+      fill = "surface_container_low";
+      foreground = "on_surface";
+      border = "outline_variant";
     };
 
     media = capsuleGroupStyle {
-      fill = "#574568";
-      foreground = "#F0E6F6";
-      border = "#9A82B3";
+      fill = "surface_container";
+      foreground = "on_surface";
+      border = "outline_variant";
     };
 
     connectivity = capsuleGroupStyle {
-      fill = "#3E5D6D";
-      foreground = "#E0EFF4";
-      border = "#7FA5B6";
+      fill = "surface_container_high";
+      foreground = "on_surface";
+      border = "outline_variant";
     };
 
     status = capsuleGroupStyle {
-      fill = "#4D4D70";
-      foreground = "#ECEBFA";
-      border = "#9290C2";
+      fill = "surface_container_highest";
+      foreground = "on_surface";
+      border = "outline_variant";
     };
   };
 
   # The group controls each background and label colour; individual icons keep
   # distinct semantic accents so related widgets remain easy to scan.
+  # Semantic palette roles follow the active Catppuccin Frappé Sapphire or Peach palette.
   widgetIconColors = {
-    workspaces = "#8CAAEE";
-    wallpaper = "#BABBF1";
+    workspaces = "primary";
+    wallpaper = "tertiary";
 
-    ram = "#A6D189";
-    temp = "#EF9F76";
-    cat = "#F4B8E4";
+    ram = "secondary";
+    temp = "tertiary";
+    cat = "tertiary";
 
-    active_window = "#C6D0F5";
-    weather = "#99D1DB";
-    clock = "#C6D0F5";
+    active_window = "on_surface_variant";
+    weather = "secondary";
+    clock = "primary";
 
-    clipboard = "#85C1DC";
-    widget = "#E5C890";
-    caffeine = "#A6D189";
-    widget_2 = "#CA9EE6";
+    clipboard = "secondary";
+    widget = "primary";
+    caffeine = "tertiary";
+    widget_2 = "secondary";
 
-    volume = "#85C1DC";
-    media = "#CA9EE6";
-    audio_visualizer = "#81C8BE";
+    volume = "secondary";
+    media = "tertiary";
+    audio_visualizer = "primary";
 
-    network = "#99D1DB";
-    bluetooth = "#8CAAEE";
-    battery = "#A6D189";
-    brightness = "#E5C890";
+    network = "secondary";
+    bluetooth = "primary";
+    battery = "tertiary";
+    brightness = "secondary";
 
-    tray = "#BABBF1";
-    notifications = "#EF9F76";
-    "control-center" = "#85C1DC";
+    tray = "on_surface_variant";
+    notifications = "error";
+    "control-center" = "primary";
   };
 
   # Keep this layout on a dedicated bar name. Noctalia applies GUI-managed state
@@ -139,9 +140,9 @@ let
       font_scale = 1.04;
 
       capsule = true;
-      capsule_fill = "#38445B";
-      capsule_foreground = "#E8EAF2";
-      capsule_border = "#7386A5";
+      capsule_fill = "surface_container";
+      capsule_foreground = "on_surface";
+      capsule_border = "outline_variant";
       capsule_thickness = 0.86;
       capsule_radius = 16.0;
       capsule_padding = 8.0;
