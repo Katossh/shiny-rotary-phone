@@ -362,12 +362,13 @@ passes explicit `HOSTCC`, `HOSTCXX`, `HOSTAR`, and `HOSTLD` assignments in
 its kernel make flags, so `LLVM=1` alone does not replace those values. The
 workstation override supplies matching Clang and LLVM ar tools explicitly.
 It also sets `HOSTLDFLAGS=--ld-path=...` to give Clang the exact LLD executable
-and embeds an explicit RPATH to the Nix store's `elfutils` library directory.
-Linux's host-side `objtool` links against `libelf.so.1` and is executed during
-the kernel build; without that RPATH, its dynamic loader cannot find the
-library inside the sandbox. These flags avoid the missing-GNU-`ld`,
-Clang's `invalid linker name '-fuse-ld=lld'`, and the missing `libelf.so.1`
-runtime-library failures.
+and embeds an RPATH covering the Nix store library directories for `elfutils`
+and OpenSSL. Linux host-side tools such as `objtool` and `certs/extract-cert`
+link against `libelf.so.1` and `libcrypto.so.3`, respectively, and execute
+during the kernel build. Without those runtime paths, their dynamic loaders
+cannot find the shared libraries inside the sandbox. These flags address the
+missing-GNU-`ld`, Clang's `invalid linker name '-fuse-ld=lld'`, and the missing
+host-tool runtime-library failures.
 
 The Nix daemon is configured with `nix.settings.cores = 12`, the per-derivation
 parallelism limit. The Nixpkgs kernel derivation enables parallel builds, so
