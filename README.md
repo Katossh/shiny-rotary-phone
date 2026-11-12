@@ -490,10 +490,11 @@ must be isolated from a potentially hostile kernel-level workload.
   processes.
 - Kernel pointer and dmesg exposure are restricted; ptrace is limited to the
   normal parent/child model; unprivileged BPF is disabled.
-- Kernel Lockdown is not forced into integrity/confidentiality mode. The
-  previous `lockdown=confidentiality` command-line setting was removed because
-  it restricts loading modules unless their signatures are trusted by the
-  running kernel. Nixpkgs module-signature support remains enabled.
+- Kernel Lockdown is not forced into integrity/confidentiality mode. Either
+  forced mode gates module loading on signatures trusted by the running kernel,
+  even without `module.sig_enforce=1`. Nixpkgs module-signature support and
+  the trusted-certificate bundle embedded in the kernel remain enabled; strict
+  runtime enforcement is not forced before the required module set is verified.
 - Filesystem protections for symlinks, hardlinks, FIFOs, and regular files
   are explicitly enabled.
 - IPv4/IPv6 redirect acceptance and IPv4 source routing are disabled.
