@@ -72,6 +72,37 @@ certificates and Windows Boot Manager chainloading path. Any experiment with
 an unsigned EFI image must use a removable test medium and a recovery path;
 do not alter the working NixOS or Windows boot files to test enforcement.
 
+### Kernel Lockdown and module signatures
+
+The workstation does not force a Lockdown level through `boot.kernelParams`.
+The previous `lockdown=confidentiality` parameter was removed because an
+active Lockdown level restricts loading kernel modules to signatures trusted
+by the running kernel. Nixpkgs still enables kernel module signing and its
+signature checks; this change does not disable that support.
+
+This is separate from EFI Secure Boot. Limine remains configured for Secure
+Boot signing, and the locally enrolled `sbctl` keys and firmware settings are
+unchanged. The kernel's Lockdown LSM remains available, but the profile no
+longer forces the confidentiality level. The Linux kernel module-signing
+documentation describes the signature enforcement behaviour:
+<https://www.kernel.org/doc/html/latest/admin-guide/module-signing.html>.
+
+When investigating a module-load failure, inspect the named module and the
+kernel's actual error rather than relying on a generic systemd status:
+
+```sh
+systemctl status systemd-modules-load.service --no-pager
+journalctl -b -u systemd-modules-load.service --no-pager
+journalctl -k -b --grep='module|signature|lockdown|key|verification' --no-pager
+cat /sys/kernel/security/lockdown
+cat /sys/module/module/parameters/sig_enforce 2>/dev/null || true
+```
+
+A module can also fail because it is absent from the running kernel's module
+tree, was built for a different kernel release, has unresolved symbols, or
+requires hardware that is not present. The exact `modprobe`/kernel message is
+needed to distinguish those cases from signature rejection.
+
 ## 2. AppArmor
 
 The current baseline enforces the curl profile. Firefox, Chromium, LocalSend,
