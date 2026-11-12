@@ -345,11 +345,14 @@ replacing its general-purpose configuration.
 | `NO_HZ_IDLE` | Enabled | Stops periodic scheduling ticks on idle CPUs. |
 | `NO_HZ_FULL` | Disabled | Selects the mutually exclusive tickless-idle mode instead of full dynticks. Nixpkgs enables `NO_HZ_FULL` for 64-bit kernels by default, so this is explicitly overridden. |
 | `SMP` | Enabled | Retains symmetric multiprocessing support. |
+| `LTO_CLANG_THIN` | Enabled | Uses Clang ThinLTO for cross-translation-unit optimisation; requires the Clang/LLVM toolchain. |
 | `X86_NATIVE_CPU` | Enabled for `workstation` | Uses `-march=native` when supported, targeting the CPU of the machine that compiles the kernel. |
 
 The remaining kernel configuration and compiler optimization level are left
 to Nixpkgs. In particular, this does not force `-O3`, change the preemption
-model, enable LTO, or remove drivers and subsystems.
+model, or remove drivers and subsystems. The kernel uses Clang/LLD and
+Clang ThinLTO (`CONFIG_LTO_CLANG_THIN=y`). ThinLTO is an experimental
+build-time optimisation; it does not guarantee faster runtime performance.
 
 **Native CPU builds must run on the target workstation.** `X86_NATIVE_CPU`
 targets the build machine, not the hardware described by the NixOS
