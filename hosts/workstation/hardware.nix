@@ -18,7 +18,17 @@
   boot.kernelPackages = pkgs.linuxPackagesFor (
     pkgs.linuxPackages_latest.kernel.override {
       stdenv = pkgs.llvmPackages.stdenv;
-      extraMakeFlags = [ "LLVM=1" ];
+      # Nixpkgs passes HOSTCC/HOSTCXX/HOSTAR/HOSTLD explicitly, so LLVM=1
+      # alone does not select LLVM for the host-side kernel build tools.
+      extraMakeFlags = [
+        "LLVM=1"
+        "HOSTCC=${pkgs.llvmPackages.stdenv.cc}/bin/clang"
+        "HOSTCXX=${pkgs.llvmPackages.stdenv.cc}/bin/clang++"
+        "HOSTAR=${pkgs.llvmPackages.llvm}/bin/llvm-ar"
+        # LLVM=1 adds -fuse-ld=lld; give Clang its store path explicitly.
+        "HOSTLDFLAGS=--ld-path=${pkgs.llvmPackages.lld}/bin/ld.lld"
+        "HOSTLD=${pkgs.llvmPackages.lld}/bin/ld.lld"
+      ];
     }
   );
 

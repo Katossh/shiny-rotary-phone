@@ -354,6 +354,21 @@ model, or remove drivers and subsystems. The kernel uses Clang/LLD and
 Clang ThinLTO (`CONFIG_LTO_CLANG_THIN=y`). ThinLTO is an experimental
 build-time optimisation; it does not guarantee faster runtime performance.
 
+The kernel override also selects LLVM for host-side build tools. Nixpkgs
+passes explicit `HOSTCC`, `HOSTCXX`, `HOSTAR`, and `HOSTLD` assignments in
+its kernel make flags, so `LLVM=1` alone does not replace those values. The
+workstation override supplies matching Clang and LLVM ar tools explicitly.
+It also sets `HOSTLDFLAGS=--ld-path=...` to give Clang the exact LLD executable:
+the build environment does not otherwise put `ld.lld` on the host compiler's
+linker search path. This avoids both the missing-GNU-`ld` failure from the
+initial configuration and Clang's `invalid linker name '-fuse-ld=lld'` error.
+
+The Nix daemon is configured with `nix.settings.cores = 12`, the per-derivation
+parallelism limit. The Nixpkgs kernel derivation enables parallel builds, so
+kernel compilation can use up to 12 jobs on this workstation. This is
+separate from `max-jobs`, which controls how many independent derivations
+Nix may build at the same time.
+
 **Native CPU builds must run on the target workstation.** `X86_NATIVE_CPU`
 targets the build machine, not the hardware described by the NixOS
 configuration. Do not send the `workstation` kernel derivation to a remote
