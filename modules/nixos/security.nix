@@ -59,10 +59,12 @@
   systemd.user.settings.Manager.DefaultLimitMEMLOCK = "8G:8G";
 
   # Keep the kernel's default Lockdown mode instead of forcing
-  # integrity/confidentiality lockdown from the command line. An enforced
-  # lockdown level restricts loading modules unless their signatures are
-  # trusted by the running kernel. Secure Boot remains configured separately
-  # in modules/nixos/boot.nix.
+  # integrity/confidentiality lockdown from the command line. Either forced
+  # mode also gates module loading on signatures trusted by the running
+  # kernel, even without module.sig_enforce=1. Keep the separate Nixpkgs
+  # certificate-bundle integration in boot.nix, but do not force this gate
+  # until its runtime trust path and required external modules are verified.
+  # Secure Boot remains configured separately in modules/nixos/boot.nix.
   boot.kernelParams = [
     "slab_nomerge"
     "page_alloc.shuffle=1"
