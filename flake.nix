@@ -34,6 +34,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    opencode-desktop-nix.url = "github:x13-me/opencode-desktop-nix";
+
     # Official Hermes Agent flake: provides the CLI and its desktop application.
     hermes-agent = {
       url = "github:NousResearch/hermes-agent";
