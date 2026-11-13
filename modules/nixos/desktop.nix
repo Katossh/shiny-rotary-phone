@@ -16,6 +16,7 @@
   environment.systemPackages = [
     pkgs.chromium
     pkgs.kdePackages.dolphin
+    pkgs.seahorse
     pkgs.xwayland-satellite
   ];
 
