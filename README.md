@@ -504,9 +504,9 @@ must be isolated from a potentially hostile kernel-level workload.
   while only root is a trusted Nix user.
 - AppArmor enforces the existing `curl` profile. Firefox, Chromium,
   LocalSend, Telegram, Discord, mpv, yt-dlp, FFmpeg, jq, btop, fastfetch,
-  pavucontrol, virt-manager, Neovim, VS Code, and Zed have separate
-  complain-mode profiles. Selected profiles explicitly deny direct access to
-  developer credentials; editor and VM-management profiles remain
+  pavucontrol, virt-manager, Neovim, VS Code, Zed, and Antigravity IDE have
+  separate complain-mode profiles. Selected profiles explicitly deny direct
+  access to developer credentials; editor and VM-management profiles remain
   observational pending workstation runtime review.
 - USBGuard runs with a default-allow policy. It preserves devices already
   connected at daemon startup, evaluates newly inserted devices against its
@@ -582,10 +582,10 @@ Separate profiles are also loaded for:
   libvirt management socket. It is a complex GTK/Python frontend that launches
   helpers and connects to hypervisor services; review those process workflows
   before considering enforcement.
-- **Neovim, VS Code, and Zed:** `complain` mode with no hard-coded credential
-  denies. These editors launch shells, language servers, build scripts, Git/SSH
-  and extensions, so their actual process trees must be reviewed before
-  introducing enforcing restrictions.
+- **Neovim, VS Code, Zed, and Antigravity IDE:** `complain` mode with no
+  hard-coded credential denies. These editors launch shells, language servers,
+  build scripts, Git/SSH and extensions, so their actual process trees must be
+  reviewed before introducing enforcing restrictions.
 
 Local AI workloads are expected to run in Podman containers. Their
 AppArmor policy should be reviewed at the container boundary rather than
@@ -653,6 +653,10 @@ in `flake.lock`.
 
 ## Development tools
 
+- The system-wide graphical editors are Zed, Visual Studio Code, and Google
+  Antigravity IDE. Antigravity uses Nixpkgs' `antigravity-ide-fhs` package so
+  extensions that bundle native binaries can use the FHS-compatible runtime;
+  launch it with `antigravity-ide`.
 - OpenCode CLI (`opencode`) is installed per-user through Home Manager.
 - Its version follows the root flake's locked Nixpkgs revision; update it through
   the existing flake-lock update workflow.
