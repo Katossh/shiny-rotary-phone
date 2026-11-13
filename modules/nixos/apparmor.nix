@@ -461,10 +461,6 @@ in
         profile = editorProfile "${pkgs.zed-editor}/libexec/zed-editor";
       };
 
-      antigravity-ide = {
-        state = "complain";
-        profile = editorProfile (lib.getExe pkgs.antigravity-ide-fhs);
-      };
     };
   };
 
