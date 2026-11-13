@@ -1,8 +1,6 @@
 { inputs, pkgs, ... }:
 
 let
-  system = pkgs.stdenv.hostPlatform.system;
-
   deepseekHarnessDesktop = pkgs.appimageTools.wrapType2 {
     pname = "deepseek-harness-desktop";
     version = "0.31.5";
@@ -12,9 +10,8 @@ let
     };
   };
 
-  # The upstream CLI is distributed through npm. Keep it as a Nix-managed
-  # launcher; npx fetches the published CLI on first invocation and caches it
-  # in the user's npm cache.
+  # The upstream CLI is published on npm. npx installs it on first use and
+  # keeps its download in the user's npm cache, outside the immutable store.
   deepseekHarnessCli = pkgs.writeShellApplication {
     name = "dsh";
     runtimeInputs = [ pkgs.nodejs ];
@@ -24,16 +21,22 @@ let
   };
 in
 {
+  imports = [
+    inputs.hermes-agent.homeManagerModules.default
+  ];
+
   home.packages = [
     # Official OpenCode Desktop; the existing 'opencode' package remains the CLI.
-    inputs.opencode-desktop-nix.packages.${system}.opencode-desktop
-
-    # Hermes Agent CLI and its separate desktop application.
-    inputs.hermes-agent.packages.${system}.default
-    inputs.hermes-agent.packages.${system}.desktop
+    inputs.opencode-desktop-nix.packages.${pkgs.stdenv.hostPlatform.system}.opencode-desktop
 
     # DeepSeek Harness desktop and its standalone upstream CLI launcher.
     deepseekHarnessDesktop
     deepseekHarnessCli
   ];
+
+  # Hermes provides both its CLI and native desktop launcher through Home Manager.
+  programs.hermes-agent = {
+    enable = true;
+    desktop.enable = true;
+  };
 }
