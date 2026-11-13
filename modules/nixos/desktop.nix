@@ -11,11 +11,11 @@
     };
   };
 
-  # Xwayland support is part of the compositor/desktop stack, not the
-  # portable terminal environment.
+  # Xwayland support and desktop utilities belong to the desktop stack.
   environment.systemPackages = [
     pkgs.chromium
     pkgs.kdePackages.dolphin
+    pkgs.seahorse
     pkgs.xwayland-satellite
   ];
 
