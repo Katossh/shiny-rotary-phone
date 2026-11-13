@@ -34,7 +34,7 @@ in
       Environment = [
         "CONTAINER_ENGINE=/run/current-system/sw/bin/podman"
         "PODMAN_COMPOSE_PROVIDER=${pkgs.podman-compose}/bin/podman-compose"
-        "PATH=${pkgs.coreutils}/bin:${pkgs.gnused}/bin:/run/current-system/sw/bin"
+        "PATH=${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.gnused}/bin:/run/current-system/sw/bin"
       ];
       ExecStart = "${routerLauncher} up";
       ExecStop = "${routerLauncher} down";
