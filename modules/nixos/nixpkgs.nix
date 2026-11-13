@@ -8,7 +8,6 @@
     builtins.elem (lib.getName pkg) [
       "vscode"
       "code"
-      "antigravity-cli"
       "discord"
       "discord-unwrapped"
       "osu-lazer-bin"
