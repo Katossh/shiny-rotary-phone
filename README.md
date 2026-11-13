@@ -582,10 +582,10 @@ Separate profiles are also loaded for:
   libvirt management socket. It is a complex GTK/Python frontend that launches
   helpers and connects to hypervisor services; review those process workflows
   before considering enforcement.
-- **Neovim, VS Code, and Zed:** `complain` mode with no hard-coded credential
-  denies. These editors launch shells, language servers, build scripts, Git/SSH
-  and extensions, so their actual process trees must be reviewed before
-  introducing enforcing restrictions.
+- **Neovim, VS Code, Zed, and Antigravity IDE:** `complain` mode with no
+  hard-coded credential denies. These editors launch shells, language servers,
+  build scripts, Git/SSH and extensions, so their actual process trees must be
+  reviewed before introducing enforcing restrictions.
 
 Local AI workloads are expected to run in Podman containers. Their
 AppArmor policy should be reviewed at the container boundary rather than
