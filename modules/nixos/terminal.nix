@@ -5,6 +5,9 @@
   # parsing its package manifest a second time in this host profile.
   imports = [ (inputs.terminal-dotfiles + "/nix/packages.nix") ];
 
+  # Alacritty is the default terminal; Kitty remains available as an alternative.
+  environment.sessionVariables.TERMINAL = "alacritty";
+
   # Terminal emulators and the interactive editor are host packages rather
   # than part of the portable terminal-dotfiles package manifest.
   environment.systemPackages = with pkgs; [
