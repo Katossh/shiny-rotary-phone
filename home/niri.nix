@@ -116,7 +116,7 @@ in
         {
           # Development: Zed and Kitty.
           window-rule = {
-            match._props."app-id" = "^(dev\\.zed\\.Zed|kitty)$";
+            match._props."app-id" = "^(dev\\.zed\\.Zed|(?i:alacritty))$";
             "open-on-workspace" = "2";
           };
         }
@@ -178,7 +178,7 @@ in
         };
         "Mod+Return" = {
           _props."hotkey-overlay-title" = "Open terminal";
-          spawn = [ "kitty" ];
+          spawn = [ "alacritty" ];
         };
         "Mod+Space" = {
           _props."hotkey-overlay-title" = "Open application launcher";
