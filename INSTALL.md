@@ -12,16 +12,43 @@ NixOS system or the official NixOS installer environment.
 > from the actual mount tree rather than fixed identifiers.
 
 The script never partitions disks, formats filesystems, creates Btrfs
-subvolumes, changes LUKS keys, or enrolls Secure Boot keys. Before evaluating
-the flake, it prepares the machine-local
-\`hosts/workstation/hardware-configuration.nix\` file. When
-\`/etc/nixos/hardware-configuration.nix\` exists, it is copied into the host
-profile immediately. Otherwise, the installer reuses a valid local copy or
-asks for confirmation before running \`nixos-generate-config\` against the
-current root or the filesystems mounted below \`/mnt\`. This local file is
+subvolumes, changes LUKS keys, or enrolls Secure Boot keys.
+
+Before evaluating the flake, the installer requires the machine-local
+hosts/workstation/hardware-configuration.nix file to already exist. It
+validates the file but never copies it from /etc/nixos, generates it
+automatically, or overwrites it. If it is missing, installation stops and
+prints the appropriate command for creating it manually. This local file is
 Git-ignored and is not part of the repository. For an encrypted fresh-install
-root, open the LUKS container before mounting it so the generator can detect
-the mapping.
+root, open the LUKS container before mounting it so nixos-generate-config can
+detect the mapping.
+
+
+## Machine-local hardware configuration
+
+Create this file yourself before running the installer:
+`hosts/workstation/hardware-configuration.nix`. The installer validates the
+existing file and leaves it untouched. It does not copy from `/etc/nixos`,
+generate a replacement, or overwrite anything.
+
+For an existing NixOS installation, run from the repository root:
+
+~~~sh
+sudo nixos-generate-config --show-hardware-config | sudo tee hosts/workstation/hardware-configuration.nix >/dev/null
+~~~
+
+For a fresh installation, first mount the target filesystems under `/mnt`,
+clone this repository into `/mnt/etc/nixos`, then run:
+
+~~~sh
+sudo nixos-generate-config --root /mnt --show-hardware-config | sudo tee /mnt/etc/nixos/hosts/workstation/hardware-configuration.nix >/dev/null
+~~~
+
+Review the generated file and its filesystem identifiers before continuing.
+The file is Git-ignored because it contains machine-specific device paths and
+filesystem UUIDs. If it already exists at the required path, do not regenerate
+it just to run the installer.
+
 
 ## Existing NixOS installation
 
@@ -105,16 +132,16 @@ cd /mnt/etc/nixos
 # ./install.sh --install
 ~~~
 
-With no mode specified, \`install.sh\` detects the clone at \`/mnt/etc/nixos\`
+With no mode specified, install.sh detects the clone at /mnt/etc/nixos
 and selects fresh-install mode. It verifies the supported root filesystem,
-the FAT32 ESP at \`/mnt/boot\`, and UEFI boot. If
-\`/etc/nixos/hardware-configuration.nix\` exists, it copies that file into the
-host profile. Otherwise, if no valid local copy exists, the installer asks
-for confirmation and generates the hardware configuration from the actual
-mount tree, including filesystem UUIDs, optional mountpoints, Btrfs subvolume
-names, and detected LUKS mappings. The local file is ignored by Git. It does
-not need a Windows ESP or any Windows partition. The boot menu is configured
-for NixOS single boot.
+the FAT32 ESP at /mnt/boot, and UEFI boot. The required
+hosts/workstation/hardware-configuration.nix must already exist in the
+clone. If it is missing, the installer stops and prints the command to create
+it from the filesystems mounted under /mnt; it does not copy a file from
+/etc/nixos or generate one itself. Review the generated file before
+rerunning the installer. The local file is ignored by Git. It does not need a
+Windows ESP or any Windows partition. The boot menu is configured for NixOS
+single boot.
 
 After \`nixos-install\` completes, the script prompts you to set the password
 for the account configured by \`starforge.user.username\` in

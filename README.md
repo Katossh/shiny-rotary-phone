@@ -17,7 +17,7 @@ Terminal packages and dotfiles remain integrated from
 
 ## Installation
 
-Use [`install.sh`](./install.sh) for one-command deployment. See [`INSTALL.md`](./INSTALL.md) for existing-system updates and a fresh install from the NixOS ISO. The installer validates the mounted root and EFI filesystems, prepares a machine-local hardware configuration, and never partitions or formats disks.
+Use [`install.sh`](./install.sh) for one-command deployment. See [`INSTALL.md`](./INSTALL.md) for existing-system updates and a fresh install from the NixOS ISO. The installer validates the mounted root and EFI filesystems and requires an existing machine-local hardware configuration; it never copies, generates, or overwrites that file, and never partitions or formats disks.
 
 ## User configuration
 
@@ -135,13 +135,14 @@ the in-kernel drivers are enabled; verify the detected chipset with
 `lspci -nnk` and `lsusb` after installation.
  
 The host-specific CPU/GPU modules and device udev rules are isolated in
-`hosts/workstation/hardware.nix`. Common hardware capabilities and diagnostic
-tools remain in `modules/nixos/hardware.nix`; filesystem mount and Btrfs scrub
-policy live in `modules/nixos/storage.nix`. The machine-local
-`hosts/workstation/hardware-configuration.nix` is copied from
-`/etc/nixos/hardware-configuration.nix` when available; otherwise, the
-installer asks before generating it from the mounted filesystems. The file is
-Git-ignored because it contains machine-specific device and filesystem data.
+hosts/workstation/hardware.nix. Common hardware capabilities and diagnostic
+tools remain in modules/nixos/hardware.nix; filesystem mount and Btrfs scrub
+policy live in modules/nixos/storage.nix. The machine-local
+hosts/workstation/hardware-configuration.nix must exist before installation.
+The installer validates and reuses that exact file without copying, generating,
+or overwriting it. If it is missing, the installer stops and prints instructions
+for creating it manually. The file is Git-ignored because it contains
+machine-specific device and filesystem data.
 
 ## Display configuration
 
