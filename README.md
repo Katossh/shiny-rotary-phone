@@ -653,6 +653,10 @@ in `flake.lock`.
 
 ## Development tools
 
+- The system-wide graphical editors are Zed, Visual Studio Code, and Google
+  Antigravity IDE. Antigravity uses Nixpkgs' `antigravity-ide-fhs` package so
+  extensions that bundle native binaries can use the FHS-compatible runtime;
+  launch it with `antigravity-ide`.
 - OpenCode CLI (`opencode`) is installed per-user through Home Manager.
 - Its version follows the root flake's locked Nixpkgs revision; update it through
   the existing flake-lock update workflow.
