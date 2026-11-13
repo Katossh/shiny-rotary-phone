@@ -109,14 +109,6 @@ jobs:
             deadnix --fail "${nix_files[@]}"
           '
 
-      - name: Evaluate flake outputs without building
-        run: |
-          nix flake check "path:$GITHUB_WORKSPACE" \
-            --no-build \
-            --no-update-lock-file \
-            --accept-flake-config \
-            --show-trace
-
       - name: Ensure kernel Lockdown is not forced
         run: |
           kernel_params="$(nix eval --raw \

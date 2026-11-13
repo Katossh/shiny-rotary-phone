@@ -1,4 +1,8 @@
-{ pkgs, starforgeUsername, ... }:
+{
+  pkgs,
+  starforgeUsername,
+  ...
+}:
 
 {
   imports = [
@@ -9,6 +13,7 @@
     ./noctalia.nix
     ./terminal-dotfiles.nix
     ./containers.nix
+    ./ai-tools.nix
   ];
 
   home = {

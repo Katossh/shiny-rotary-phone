@@ -656,10 +656,21 @@ in `flake.lock`.
 
 - The system-wide graphical editors are Zed and Visual Studio Code. Google
   Antigravity CLI is installed system-wide as `antigravity-cli` and launched
-  with `agy`.
-- OpenCode CLI (`opencode`) is installed per-user through Home Manager.
-- Its version follows the root flake's locked Nixpkgs revision; update it through
-  the existing flake-lock update workflow.
+  with `agy`. It shares the normal user `PATH` and can invoke GitHub CLI.
+- GitHub CLI (`gh`) is enabled through Home Manager and is available in
+  normal terminal sessions and coding agents. Authenticate interactively with
+  `gh auth login`; credentials are not stored in this repository.
+- OpenCode CLI (`opencode`) remains installed per-user through Home Manager;
+  OpenCode Desktop is packaged separately from the upstream Linux release.
+- DeepSeek Harness Desktop is installed from its published x86_64 AppImage.
+  The `dsh` command is a launcher for the upstream npm CLI package and
+  downloads it through `npx` on first use.
+- Hermes Agent is installed through its official Home Manager module, which
+  provides both the `hermes` CLI and Hermes Desktop launcher using the same
+  runtime. No gateway service is enabled automatically.
+- OpenCode Desktop, DeepSeek Harness Desktop, and Hermes Desktop are user
+  applications. Their provider credentials and application state remain in
+  the user's home directory, not in the Nix store.
 
 ## CI and build caching
 
