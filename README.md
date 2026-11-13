@@ -667,10 +667,19 @@ in `flake.lock`.
   downloads it through `npx` on first use.
 - Hermes Agent is installed through its official Home Manager module, which
   provides both the `hermes` CLI and Hermes Desktop launcher using the same
-  runtime. No gateway service is enabled automatically.
+  runtime. The Hermes module itself does not enable a gateway service.
 - OpenCode Desktop, DeepSeek Harness Desktop, and Hermes Desktop are user
   applications. Their provider credentials and application state remain in
   the user's home directory, not in the Nix store.
+
+## Local AI gateway
+
+9Router runs as a systemd-managed Docker container, with its dashboard and API
+bound to `127.0.0.1:20128`. Podman remains available for rootless Distrobox
+containers. Initial credentials are generated locally and persistent
+application data stays under `/var/lib/9router`. See
+[`docs/9router.md`](./docs/9router.md) for login, API-key setup, service
+management, and updates.
 
 ## CI and build caching
 
