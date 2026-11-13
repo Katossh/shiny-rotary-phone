@@ -504,9 +504,9 @@ must be isolated from a potentially hostile kernel-level workload.
   while only root is a trusted Nix user.
 - AppArmor enforces the existing `curl` profile. Firefox, Chromium,
   LocalSend, Telegram, Discord, mpv, yt-dlp, FFmpeg, jq, btop, fastfetch,
-  pavucontrol, virt-manager, Neovim, VS Code, and Zed have separate
-  complain-mode profiles. Selected profiles explicitly deny direct access to
-  developer credentials; editor and VM-management profiles remain
+  pavucontrol, virt-manager, Neovim, VS Code, Zed, and Antigravity IDE have
+  separate complain-mode profiles. Selected profiles explicitly deny direct
+  access to developer credentials; editor and VM-management profiles remain
   observational pending workstation runtime review.
 - USBGuard runs with a default-allow policy. It preserves devices already
   connected at daemon startup, evaluates newly inserted devices against its
