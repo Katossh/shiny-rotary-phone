@@ -8,7 +8,7 @@ let
     version = "0.31.5";
     src = pkgs.fetchurl {
       url = "https://github.com/dsh-tauri/deepseek-harness-desktop/releases/download/v0.31.5/Deepseek.Harness.Desktop_0.31.5_amd64.AppImage";
-      hash = "sha256-6cb9d703236f452c0a811c809b1e0570554ef6e4d0576b1659e99225703b9db6";
+      sha256 = "6cb9d703236f452c0a811c809b1e0570554ef6e4d0576b1659e99225703b9db6";
     };
   };
 
