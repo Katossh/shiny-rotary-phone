@@ -1,4 +1,9 @@
-{ inputs, pkgs, starforgeUsername, ... }:
+{
+  inputs,
+  pkgs,
+  starforgeUsername,
+  ...
+}:
 
 {
   imports = [
