@@ -39,4 +39,7 @@ in
     enable = true;
     desktop.enable = true;
   };
+
+  # Make GitHub CLI available to every terminal and coding agent, including agy.
+  programs.gh.enable = true;
 }
