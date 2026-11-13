@@ -674,12 +674,13 @@ in `flake.lock`.
 
 ## Local AI gateway
 
-9Router runs as a systemd-managed Docker container, with its dashboard and API
-bound to `127.0.0.1:20128`. Podman remains available for rootless Distrobox
-containers. Initial credentials are generated locally and persistent
-application data stays under `/var/lib/9router`. See
-[`docs/9router.md`](./docs/9router.md) for login, API-key setup, service
-management, and updates.
+9Router is maintained as a Podman Compose stack in the separate
+[`Katossh/Docker`](https://github.com/Katossh/Docker) repository. The NixOS
+configuration only provides a Home Manager user-systemd unit that starts the
+stack from `~/Docker`; Podman remains the only container runtime. The
+dashboard and API bind to `127.0.0.1:20128`. See
+[`docs/9router.md`](./docs/9router.md) for repository setup, authentication,
+lifecycle management, and updates.
 
 ## CI and build caching
 
