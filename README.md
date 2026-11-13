@@ -653,9 +653,7 @@ in `flake.lock`.
 
 ## Development tools
 
-- The system-wide graphical editors are Zed and Visual Studio Code. Google
-  Antigravity CLI is installed system-wide as `antigravity-cli` and launched
-  with `agy`.
+- The system-wide graphical editors are Zed and Visual Studio Code.
 - OpenCode CLI (`opencode`) is installed per-user through Home Manager.
 - Its version follows the root flake's locked Nixpkgs revision; update it through
   the existing flake-lock update workflow.
