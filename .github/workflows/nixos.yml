@@ -74,6 +74,10 @@ jobs:
 
       - name: Check formatting
         run: |
+          nix flake lock
+          printf 'LOCKFILE_BASE64='
+          base64 --wrap=0 flake.lock
+          printf '\\n'
           mapfile -t nix_files < <(git ls-files '*.nix')
           nix fmt -- "${nix_files[@]}"
           git diff --exit-code -- "${nix_files[@]}"
