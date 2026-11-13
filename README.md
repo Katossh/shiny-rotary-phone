@@ -656,7 +656,10 @@ in `flake.lock`.
 
 - The system-wide graphical editors are Zed and Visual Studio Code. Google
   Antigravity CLI is installed system-wide as `antigravity-cli` and launched
-  with `agy`.
+  with `agy`. It shares the normal user `PATH` and can invoke GitHub CLI.
+- GitHub CLI (`gh`) is enabled through Home Manager and is available in
+  normal terminal sessions and coding agents. Authenticate interactively with
+  `gh auth login`; credentials are not stored in this repository.
 - OpenCode CLI (`opencode`) remains installed per-user through Home Manager;
   OpenCode Desktop is packaged separately from the upstream Linux release.
 - DeepSeek Harness Desktop is installed from its published x86_64 AppImage.
