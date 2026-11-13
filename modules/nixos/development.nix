@@ -7,6 +7,7 @@
     vscode.fhs
     # Google Antigravity's terminal agent; provides the `agy` executable.
     antigravity-cli
+    gemini-cli
     llama-cpp
     jq
   ];
