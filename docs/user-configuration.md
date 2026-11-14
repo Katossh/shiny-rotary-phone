@@ -404,7 +404,7 @@ The selected variant combines:
 - CachyOS's 1000 Hz timer, full-preemption, full-dynticks, and compiler
   optimisation configuration.
 - BPF, BPF syscall, BTF metadata, and `SCHED_CLASS_EXT`, required by the
-  workstation's sched_ext / SCX Loader setup.
+  workstation's configured sched_ext service.
 
 The pinned CachyOS Nix builder disables `DEBUG_INFO_BTF` for LTO when its
 `pahole` is older than 1.33. The current pinned builder uses pahole 1.32.

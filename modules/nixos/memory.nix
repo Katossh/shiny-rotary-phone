@@ -16,23 +16,25 @@ _:
     memoryPercent = 50;
   };
 
-  # Apply the THP defragmentation policy after sysfs is available. The
-  # existing transparent_hugepage=always mode and ZRAM settings stay intact.
-  systemd.tmpfiles.rules = [
-    "w /sys/kernel/mm/transparent_hugepage/defrag - - - - defer+madvise"
-  ];
+  systemd = {
+    # Apply the THP defragmentation policy after sysfs is available. The
+    # existing transparent_hugepage=always mode and ZRAM settings stay intact.
+    tmpfiles.rules = [
+      "w /sys/kernel/mm/transparent_hugepage/defrag - - - - defer+madvise"
+    ];
 
-  # Keep the desktop user's cgroup outside oomd's kill policy. Under sustained
-  # memory pressure, make VM cgroups in machine.slice eligible instead.
-  systemd.oomd = {
-    enable = true;
-    enableUserSlices = false;
-  };
+    # Keep the desktop user's cgroup outside oomd's kill policy. Under sustained
+    # memory pressure, make VM cgroups in machine.slice eligible instead.
+    oomd = {
+      enable = true;
+      enableUserSlices = false;
+    };
 
-  systemd.slices."machine".sliceConfig = {
-    MemoryAccounting = true;
-    ManagedOOMMemoryPressure = "kill";
-    ManagedOOMMemoryPressureLimit = "75%";
-    ManagedOOMMemoryPressureDurationSec = "30s";
+    slices."machine".sliceConfig = {
+      MemoryAccounting = true;
+      ManagedOOMMemoryPressure = "kill";
+      ManagedOOMMemoryPressureLimit = "75%";
+      ManagedOOMMemoryPressureDurationSec = "30s";
+    };
   };
 }
