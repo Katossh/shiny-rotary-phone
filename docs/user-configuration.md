@@ -332,6 +332,45 @@ systemctl --user status deepcool-digital-linux.service
 journalctl --user -u deepcool-digital-linux.service -b
 ```
 
+## RAM-backed temporary workspace
+
+The workstation keeps the ordinary `/tmp` directory on its normal backing
+filesystem. The NixOS option `boot.tmp.useTmpfs` is explicitly set to
+`false`, so large temporary workloads do not get forced into a RAM-only
+filesystem.
+
+A separate tmpfs mount is available at `/tmp/ram` with a maximum size of
+`4G`. This limit is applied on demand; mounting it does not reserve 4 GB of
+physical RAM immediately. The mount uses `mode=1777`, `nosuid`, and
+`nodev`. It can use the configured zram swap under memory pressure, but it
+does **not** spill into ordinary `/tmp` when the 4 GB limit is reached:
+writes to a full tmpfs fail with `ENOSPC`.
+
+Use it explicitly for temporary data whose size is known to fit:
+
+```sh
+TMPDIR=/tmp/ram your-command
+```
+
+Do not set `TMPDIR` globally without considering the workload. Build tools
+and other applications that exceed the mount limit must continue using
+ordinary `/tmp`.
+
+After building and testing a new NixOS generation, verify both mounts with:
+
+```sh
+findmnt -T /tmp -o TARGET,SOURCE,FSTYPE,OPTIONS
+findmnt -T /tmp/ram -o TARGET,SOURCE,FSTYPE,OPTIONS
+df -h /tmp/ram
+```
+
+Build and test the configuration using:
+
+```sh
+sudo nixos-rebuild build --flake .#workstation
+sudo nixos-rebuild test --flake .#workstation
+```
+
 ## Workstation kernel build
 
 The workstation uses a locally built kernel with a small set of explicit
