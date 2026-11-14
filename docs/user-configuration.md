@@ -480,10 +480,12 @@ not change the `.config` used to compile the kernel or its runtime
 configuration.
 
 The certificate-bundle integration in `modules/nixos/boot.nix`, Limine,
-Secure Boot configuration, and the security-related kernel parameters in
-`modules/nixos/security.nix` remain separate and unchanged. Keep the previous
-boot generation until the new kernel has booted and the desktop, networking,
-graphics, module loading, and SCX scheduler have been checked.
+and Secure Boot configuration remain separate and unchanged. The kernel
+command line now explicitly uses `mitigations=auto`, restoring the CPU
+vulnerability mitigations that were previously disabled; the other security
+kernel parameters remain unchanged. Keep the previous boot generation until
+the new kernel has booted and the desktop, networking, graphics, module
+loading, and SCX scheduler have been checked.
 
 After reboot, verify the actual kernel configuration and scheduler state:
 
