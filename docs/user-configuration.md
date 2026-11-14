@@ -563,10 +563,23 @@ userspace overlay is introduced. Existing package overlays remain unchanged.
 
 ## Apply changes safely
 
-From the repository root:
+From the repository root, first evaluate and build the system without
+activating it:
+
+```sh
+sudo nixos-rebuild dry-build --flake .#workstation
+```
+
+For a full local build whose result is available in the Nix store:
 
 ```sh
 sudo nixos-rebuild build --flake .#workstation
+```
+
+To boot the configuration for testing without making it the default
+generation:
+
+```sh
 sudo nixos-rebuild test --flake .#workstation
 ```
 
