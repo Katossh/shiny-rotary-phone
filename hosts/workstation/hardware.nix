@@ -1,7 +1,6 @@
 {
   config,
   inputs,
-  lib,
   pkgs,
   ...
 }:
@@ -14,31 +13,10 @@
     inputs.nixos-hardware.nixosModules.common-gpu-amd
   ];
 
-  # Build the newest maintained kernel with Clang/LLD. Keep the kernel
-  # version and its matching module set aligned.
-  boot.kernelPackages = pkgs.linuxPackagesFor (
-    pkgs.linuxPackages_latest.kernel.override {
-      stdenv = pkgs.llvmPackages.stdenv;
-      # Nixpkgs passes HOSTCC/HOSTCXX/HOSTAR/HOSTLD explicitly, so LLVM=1
-      # alone does not select LLVM for the host-side kernel build tools.
-      extraMakeFlags = [
-        "LLVM=1"
-        "HOSTCC=${pkgs.llvmPackages.stdenv.cc}/bin/clang"
-        "HOSTCXX=${pkgs.llvmPackages.stdenv.cc}/bin/clang++"
-        "HOSTAR=${pkgs.llvmPackages.llvm}/bin/llvm-ar"
-        # LLVM=1 adds -fuse-ld=lld; give Clang the exact LLD executable.
-        # Kernel host tools need libelf, libcrypto, and zlib at runtime inside the sandbox.
-        "HOSTLDFLAGS=--ld-path=${pkgs.llvmPackages.lld}/bin/ld.lld -Wl,-rpath,${
-          lib.makeLibraryPath [
-            pkgs.elfutils
-            pkgs.openssl
-            pkgs.zlib
-          ]
-        }"
-        "HOSTLD=${pkgs.llvmPackages.lld}/bin/ld.lld"
-      ];
-    }
-  );
+  # Use CachyOS's BORE scheduler and explicit Zen 4 target. Keep the non-LTO
+  # variant because the current pinned LTO build disables BTF, which sched_ext needs.
+  nixpkgs.overlays = [ inputs.nix-cachyos-kernel.overlays.pinned ];
+  boot.kernelPackages = pkgs.cachyosKernels."linuxPackages-cachyos-bore-zen4";
 
   hardware.cpu.amd.updateMicrocode = true;
   hardware.amdgpu.initrd.enable = true;

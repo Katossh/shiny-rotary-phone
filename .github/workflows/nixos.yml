@@ -69,8 +69,8 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
             accept-flake-config = true
-            extra-substituters = https://noctalia.cachix.org
-            extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=
+            extra-substituters = https://noctalia.cachix.org https://cache.lantian.pub/lantian
+            extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4= lantian:WVGO7vsRMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ=
 
       - name: Check formatting
         run: |
@@ -125,7 +125,7 @@ jobs:
   build:
     name: Build workstation system
     runs-on: ubuntu-24.04
-    # A custom Linux kernel is compiled from source; 90 minutes was insufficient.
+    # Keep a long fallback timeout in case the pinned CachyOS kernel cache misses.
     timeout-minutes: 360
 
     steps:
@@ -176,8 +176,8 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
             accept-flake-config = true
-            extra-substituters = https://noctalia.cachix.org
-            extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=
+            extra-substituters = https://noctalia.cachix.org https://cache.lantian.pub/lantian
+            extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4= lantian:WVGO7vsRMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ=
 
       # Cache names are public configuration. Only check for the write token
       # on trusted pushes to main; never expose it to pull-request workflows.
@@ -222,7 +222,7 @@ jobs:
           nix build \
             --no-update-lock-file \
             --accept-flake-config \
-            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation-ci.config.system.build.toplevel" \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.system.build.toplevel" \
             --no-link \
             --fallback \
             --print-build-logs
