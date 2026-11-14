@@ -5,6 +5,24 @@
   ...
 }:
 
+let
+  # Use CachyOS BORE + Clang ThinLTO for Zen 4. The pinned kernel builder
+  # normally disables BTF for LTO while its pahole is older than 1.33.
+  # sched_ext needs BTF, so retain BTF and disable optional Rust kernel
+  # components: Linux Kconfig does not support Rust + BTF + LTO together.
+  cachyosKernel =
+    (pkgs.cachyosKernels."linuxPackages-cachyos-bore-lto-zen4".kernel.override {
+      structuredExtraConfig = with pkgs.lib.kernel; {
+        DEBUG_INFO_BTF = yes;
+        RUST = no;
+      };
+    }).overrideAttrs (_: {
+      # Build this kernel from the pinned sources on this machine rather than
+      # silently substituting the third-party binary-cache build.
+      allowSubstitutes = false;
+      preferLocalBuild = true;
+    });
+in
 {
   imports = [
     # AMD Ryzen 7000 Raphael iGPU, common AMDGPU support, and AMD P-State.
@@ -13,10 +31,10 @@
     inputs.nixos-hardware.nixosModules.common-gpu-amd
   ];
 
-  # Use CachyOS's BORE scheduler and explicit Zen 4 target. Keep the non-LTO
-  # variant because the current pinned LTO build disables BTF, which sched_ext needs.
+  # Preserve CachyOS's package set and rebuild its module set around the
+  # locally compiled BORE + ThinLTO + Zen 4 kernel.
   nixpkgs.overlays = [ inputs.nix-cachyos-kernel.overlays.pinned ];
-  boot.kernelPackages = pkgs.cachyosKernels."linuxPackages-cachyos-bore-zen4";
+  boot.kernelPackages = pkgs.linuxPackagesFor cachyosKernel;
 
   hardware.cpu.amd.updateMicrocode = true;
   hardware.amdgpu.initrd.enable = true;
