@@ -14,7 +14,6 @@
     ../../modules/nixos/nixpkgs.nix
     ../../modules/nixos/nix.nix
     ../../modules/nixos/boot.nix
-    ../../modules/nixos/kernel.nix
     ../../modules/nixos/scheduling.nix
     ../../modules/nixos/locale.nix
 
