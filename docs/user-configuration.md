@@ -380,12 +380,11 @@ sudo nixos-rebuild test --flake .#workstation
 
 ## CachyOS kernel
 
-The workstation uses the `nix-cachyos-kernel` flake input, pinned to its
-`release` branch in `flake.lock`. The host selects
-`linuxPackages-cachyos-bore-lto-zen4` through
-`inputs.nix-cachyos-kernel.overlays.pinned`, then extends the pinned
-CachyOS kernel package set so its module packages are rebuilt against the
-custom kernel without mixing in the root Nixpkgs package set.
+The workstation uses the `nix-cachyos-kernel` flake input, pinned to
+a specific revision in `flake.lock`. The host selects the upstream
+`linuxPackages-cachyos-bore-lto-zen4` package directly through the pinned
+overlay, without modifying its kernel derivation. This allows Nix to use the
+prebuilt kernel from the CachyOS flake's signed binary cache.
 
 The input deliberately does **not** follow the root Nixpkgs input. The pinned
 overlay uses the exact Nixpkgs revision against which the CachyOS kernel and
@@ -403,47 +402,46 @@ The selected variant combines:
   build-machine-specific `-march=native`.
 - CachyOS's 1000 Hz timer, full-preemption, full-dynticks, and compiler
   optimisation configuration.
-- BPF, BPF syscall, BTF metadata, and `SCHED_CLASS_EXT`, required by the
-  workstation's configured sched_ext service.
 
-The pinned CachyOS Nix builder disables `DEBUG_INFO_BTF` for LTO when its
-`pahole` is older than 1.33. The current pinned builder uses pahole 1.32.
-BTF is required by sched_ext, so this host explicitly restores
-`DEBUG_INFO_BTF=y` and disables optional Rust kernel components
-(`CONFIG_RUST=n`). Linux Kconfig does not support the Rust + BTF + LTO
-combination in this kernel source. This preserves BTF for sched_ext at the
-cost of Rust-based kernel components; it does not disable userspace Rust
-applications or the Rust toolchain.
+The exact pinned builder uses `pahole` 1.32 and deliberately forces
+`CONFIG_DEBUG_INFO_BTF=n` for LTO kernels until a sufficiently recent
+`pahole` is available. The ready-made binary therefore does **not** include
+kernel BTF. This is a known limitation of the prebuilt variant, not a local
+configuration override.
 
-### Build the kernel locally
+BTF is required for sched_ext BPF schedulers. The existing `scx_lavd`
+service declaration remains in the configuration, but LAVD cannot attach to
+this prebuilt kernel without `/sys/kernel/btf/vmlinux`; expect
+`scx.service` to fail and the kernel to remain on its built-in EEVDF
+scheduler. Restoring BTF with a custom kernel override would create a
+different derivation and force a local kernel build, defeating the purpose
+of using the ready-made package. To use sched_ext again, a BTF-enabled
+prebuilt CachyOS LTO kernel is needed, or the host must return to a BTF-capable
+kernel variant.
 
-The kernel derivation sets `allowSubstitutes = false` and
-`preferLocalBuild = true`. Nix therefore compiles the kernel from the
-pinned CachyOS source and patches on this workstation instead of downloading
-a prebuilt kernel from the third-party binary cache. Source archives,
-toolchains, and ordinary build dependencies may still be downloaded or
-substituted; only the kernel derivation itself is forced to build locally.
+### Use the prebuilt kernel
 
-A full NixOS build will trigger this local kernel compilation:
+The selected `linuxPackages-cachyos-bore-lto-zen4` variant is listed by the
+pinned `nix-cachyos-kernel` project as available from its binary cache.
+The repository already configures the cache URL and signing key in
+`modules/nixos/nix.nix`. Nix can therefore substitute the kernel derivation
+instead of compiling the kernel sources locally. No `allowSubstitutes =
+false`, `preferLocalBuild`, or custom Kconfig override is applied.
 
-```sh
-nix build .#nixosConfigurations.workstation.config.system.build.toplevel --no-link
-```
-
-Expect a substantially longer build and significant CPU/RAM use. Do not
-interrupt the build by deleting its store paths. The resulting generation is
-not activated by this command.
+A full NixOS build still assembles the system closure and may build other
+outputs, including the final certificate-embedding image, but it does not
+compile the CachyOS kernel from source. The resulting generation is not
+activated by the build command.
 
 ### Binary cache and updates
 
 The CachyOS kernel flake publishes signed binaries through
 `https://cache.lantian.pub/lantian`. The repository configures that cache and
-its public signing key in both the flake and the Nix daemon. This adds trust
-in a third-party cache operator: Nix verifies downloaded substitutes against
-the configured public key, but that does not make the cache operator part of
-the NixOS project. The workstation's kernel derivation explicitly refuses
-substitutes and is built locally; other outputs and dependencies may still
-use configured caches.
+its public signing key in both the flake and the Nix daemon. Nix verifies
+downloaded substitutes against the configured public key, but this does not
+make the third-party cache operator part of the NixOS project. The selected
+kernel package accepts the published substitute; use the project's build
+check to confirm the cache hit for the currently pinned revision.
 
 Update only this input when reviewing a new CachyOS kernel:
 
@@ -493,15 +491,17 @@ After reboot, verify the actual kernel configuration and scheduler state:
 ```sh
 uname -r
 cat /proc/version
-zgrep -E '^(CONFIG_(LTO_CLANG_THIN|MZEN4|SCHED_BORE|SCHED_CLASS_EXT|DEBUG_INFO_BTF)=|# CONFIG_RUST is not set)' /proc/config.gz
+zgrep -E '^(CONFIG_(LTO_CLANG_THIN|MZEN4|SCHED_BORE|SCHED_CLASS_EXT)=|# CONFIG_DEBUG_INFO_BTF is not set)' /proc/config.gz
+test ! -e /sys/kernel/btf/vmlinux
 cat /sys/kernel/sched_ext/state
 systemctl status scx.service
 pgrep -af scx_lavd
 ```
 
-`CONFIG_RUST` should be disabled by this host's LTO+BTF compatibility
-override; `CONFIG_DEBUG_INFO_BTF` and `CONFIG_SCHED_CLASS_EXT` must be
-enabled for sched_ext to attach to this kernel.
+`CONFIG_DEBUG_INFO_BTF` is expected to be disabled in this prebuilt LTO
+variant. Consequently `/sys/kernel/btf/vmlinux` is absent and sched_ext
+cannot attach a BPF scheduler, even though `CONFIG_SCHED_CLASS_EXT` itself
+is enabled.
 
 ## Scheduling services
 
@@ -516,10 +516,11 @@ services.scx = {
 };
 ```
 
-The selected CachyOS BORE/ThinLTO/Zen 4 kernel must expose sched_ext, BPF,
-BPF syscall, and BTF; the kernel build retains `SCHED_CLASS_EXT` and BTF for
-this purpose. The NixOS module requires Linux 6.12 or newer. Ananicy-cpp is
-disabled so its per-process scheduling policy does not overlap with SCX.
+The NixOS module requires Linux 6.12 or newer, and Ananicy-cpp is disabled.
+However, the prebuilt CachyOS LTO kernel currently lacks BTF because the
+pinned builder disables it when using `pahole` 1.32. As a result, LAVD
+cannot load its BPF scheduler on this kernel; the service is configured but
+is not operational until a BTF-enabled prebuilt kernel becomes available.
 
 After activating the new generation and rebooting, inspect the running state:
 
@@ -532,8 +533,9 @@ pgrep -af scx_lavd
 
 The debugfs preemption file is available only when debugfs is mounted. The
 selected kernel is configured for full preemption by default, so no explicit
-`preempt=full` command-line parameter is required. sched_ext should report
-`enabled` while LAVD is active.
+`preempt=full` command-line parameter is required. With the current prebuilt
+kernel, sched_ext is expected to remain inactive and LAVD is expected to fail
+because kernel BTF is unavailable.
 
 ## Kernel runtime tuning
 
