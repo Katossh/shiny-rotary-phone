@@ -23,19 +23,22 @@ in
   # Extend the pinned CachyOS package set so every kernel module is rebuilt
   # against the exact locally compiled kernel and its matching toolchain.
   nixpkgs.overlays = [ inputs.nix-cachyos-kernel.overlays.pinned ];
-  boot.kernelPackages = cachyosKernelPackages.extend (_final: prev: {
-    kernel =
-      (prev.kernel.override {
-        structuredExtraConfig = with pkgs.lib.kernel; {
-          DEBUG_INFO_BTF = yes;
-          RUST = no;
-        };
-      }).overrideAttrs (_: {
-        # Compile the kernel locally instead of accepting a binary substitute.
-        allowSubstitutes = false;
-        preferLocalBuild = true;
-      });
-  });
+  boot.kernelPackages = cachyosKernelPackages.extend (
+    _final: prev: {
+      kernel =
+        (prev.kernel.override {
+          structuredExtraConfig = with pkgs.lib.kernel; {
+            DEBUG_INFO_BTF = yes;
+            RUST = no;
+          };
+        }).overrideAttrs
+          (_: {
+            # Compile the kernel locally instead of accepting a binary substitute.
+            allowSubstitutes = false;
+            preferLocalBuild = true;
+          });
+    }
+  );
 
   hardware.cpu.amd.updateMicrocode = true;
   hardware.amdgpu.initrd.enable = true;
