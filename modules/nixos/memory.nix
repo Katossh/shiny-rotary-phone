@@ -1,19 +1,11 @@
 _:
 
 {
-  # Keep ordinary /tmp on the root filesystem. The separate RAM-backed
-  # workspace is opt-in, so large builds can continue using normal /tmp.
-  boot.tmp.useTmpfs = false;
-
-  fileSystems."/tmp/ram" = {
-    device = "tmpfs";
-    fsType = "tmpfs";
-    options = [
-      "mode=1777"
-      "nosuid"
-      "nodev"
-      "size=4G"
-    ];
+  # Mount all of /tmp as tmpfs with an 8 GiB upper limit. This is a
+  # capacity ceiling, not RAM reserved at boot; see user-configuration.md.
+  boot.tmp = {
+    useTmpfs = true;
+    tmpfsSize = "8G";
   };
 
   # Compressed RAM swap absorbs short memory spikes without writing VM or
