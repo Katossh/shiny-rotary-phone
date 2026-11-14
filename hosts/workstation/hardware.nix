@@ -5,13 +5,6 @@
   ...
 }:
 
-let
-  # Use CachyOS BORE + Clang ThinLTO for Zen 4. The pinned kernel builder
-  # normally disables BTF for LTO while its pahole is older than 1.33.
-  # sched_ext needs BTF, so retain BTF and disable optional Rust kernel
-  # components: Linux Kconfig does not support Rust + BTF + LTO together.
-  cachyosKernelPackages = pkgs.cachyosKernels."linuxPackages-cachyos-bore-lto-zen4";
-in
 {
   imports = [
     # AMD Ryzen 7000 Raphael iGPU, common AMDGPU support, and AMD P-State.
@@ -20,27 +13,10 @@ in
     inputs.nixos-hardware.nixosModules.common-gpu-amd
   ];
 
-  # Extend the pinned CachyOS package set so every kernel module is rebuilt
-  # against the exact locally compiled kernel and its matching toolchain.
+  # Use the upstream CachyOS BORE + ThinLTO + Zen 4 package unchanged.
+  # The pinned kernel flake publishes this variant in its signed binary cache.
   nixpkgs.overlays = [ inputs.nix-cachyos-kernel.overlays.pinned ];
-  boot.kernelPackages = cachyosKernelPackages.extend (
-    _final: prev: {
-      kernel =
-        (prev.kernel.override {
-          structuredExtraConfig = with pkgs.lib.kernel; {
-            DEBUG_INFO_BTF = pkgs.lib.mkForce yes;
-            # The pinned Nixpkgs kernel defaults RUST=y; force this off because
-            # this LTO+BTF combination cannot enable Rust kernel components.
-            RUST = pkgs.lib.mkForce no;
-          };
-        }).overrideAttrs
-          (_: {
-            # Compile the kernel locally instead of accepting a binary substitute.
-            allowSubstitutes = false;
-            preferLocalBuild = true;
-          });
-    }
-  );
+  boot.kernelPackages = pkgs.cachyosKernels."linuxPackages-cachyos-bore-lto-zen4";
 
   # Enable the kernel NT synchronization primitive used by Wine/Proton.
   boot.kernelModules = [ "ntsync" ];
