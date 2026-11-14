@@ -16,8 +16,7 @@
   # Use CachyOS's BORE scheduler and explicit Zen 4 target. Keep the non-LTO
   # variant because the current pinned LTO build disables BTF, which sched_ext needs.
   nixpkgs.overlays = [ inputs.nix-cachyos-kernel.overlays.pinned ];
-  boot.kernelPackages =
-    pkgs.cachyosKernels."linuxPackages-cachyos-bore-zen4";
+  boot.kernelPackages = pkgs.cachyosKernels."linuxPackages-cachyos-bore-zen4";
 
   hardware.cpu.amd.updateMicrocode = true;
   hardware.amdgpu.initrd.enable = true;
