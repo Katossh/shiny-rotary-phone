@@ -440,7 +440,7 @@ per-process policy according to its rule set.
 After activating the new generation and rebooting, inspect the running state:
 
 ```sh
-cat /proc/cmdline | tr ' ' '\\n' | grep '^preempt='
+grep -o 'preempt=[^ ]*' /proc/cmdline
 cat /sys/kernel/debug/sched/preempt
 cat /sys/kernel/sched_ext/state
 systemctl status scx_loader.service
