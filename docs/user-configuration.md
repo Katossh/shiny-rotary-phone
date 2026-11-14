@@ -332,36 +332,43 @@ systemctl --user status deepcool-digital-linux.service
 journalctl --user -u deepcool-digital-linux.service -b
 ```
 
-## RAM-backed temporary workspace
+## RAM-backed temporary storage
 
-The workstation keeps the ordinary `/tmp` directory on its normal backing
-filesystem. The NixOS option `boot.tmp.useTmpfs` is explicitly set to
-`false`, so large temporary workloads do not get forced into a RAM-only
-filesystem.
+The workstation mounts the entire `/tmp` directory as tmpfs using the native
+NixOS options in `modules/nixos/memory.nix`:
 
-A separate tmpfs mount is available at `/tmp/ram` with a maximum size of
-`4G`. This limit is applied on demand; mounting it does not reserve 4 GB of
-physical RAM immediately. The mount uses `mode=1777`, `nosuid`, and
-`nodev`. It can use the configured zram swap under memory pressure, but it
-does **not** spill into ordinary `/tmp` when the 4 GB limit is reached:
-writes to a full tmpfs fail with `ENOSPC`.
-
-Use it explicitly for temporary data whose size is known to fit:
-
-```sh
-TMPDIR=/tmp/ram your-command
+```nix
+boot.tmp = {
+  useTmpfs = true;
+  tmpfsSize = "8G";
+};
 ```
 
-Do not set `TMPDIR` globally without considering the workload. Build tools
-and other applications that exceed the mount limit must continue using
-ordinary `/tmp`.
+`8G` is the maximum size of the tmpfs, **not** 8 GiB of RAM reserved at
+boot. Physical memory is consumed as files are written. Tmpfs pages can be
+swapped out under memory pressure; this workstation has zram swap enabled.
+The contents are temporary and are lost when the filesystem is unmounted,
+including during a reboot.
 
-After building and testing a new NixOS generation, verify both mounts with:
+Every application that uses the normal `/tmp` path automatically uses this
+tmpfs; no per-command `TMPDIR` override is needed. This avoids storing those
+temporary files on the root filesystem, but it does not guarantee a large
+performance improvement: disk-backed filesystems also benefit from the Linux
+page cache.
+
+**There is no automatic fallback to disk.** If concurrent applications fill
+the 8 GiB limit, further writes fail with `ENOSPC`. In particular, large
+builds can fail when their temporary data exceeds the available tmpfs space.
+For a workload that needs more temporary space, use a separate disk-backed
+directory and set `TMPDIR` for that command rather than increasing the tmpfs
+limit without checking memory pressure.
+
+After building and testing a new NixOS generation, verify the mount and its
+current usage with:
 
 ```sh
 findmnt -T /tmp -o TARGET,SOURCE,FSTYPE,OPTIONS
-findmnt -T /tmp/ram -o TARGET,SOURCE,FSTYPE,OPTIONS
-df -h /tmp/ram
+df -h /tmp
 ```
 
 Build and test the configuration using:
