@@ -378,84 +378,91 @@ sudo nixos-rebuild build --flake .#workstation
 sudo nixos-rebuild test --flake .#workstation
 ```
 
-## Workstation kernel build
+## CachyOS kernel
 
-The workstation uses a locally built kernel with a small set of explicit
-Kconfig choices. The configuration is owned by
-`modules/nixos/kernel.nix`; it extends the pinned Nixpkgs kernel rather than
-replacing its general-purpose configuration.
+The workstation uses the `nix-cachyos-kernel` flake input, pinned to its
+`release` branch in `flake.lock`. The host selects
+`linuxPackages-cachyos-bore-zen4` through
+`inputs.nix-cachyos-kernel.overlays.pinned`.
 
-| Kernel setting | Workstation value | Purpose |
-|---|---|---|
-| `HZ_1000` | Enabled | Selects the highest standard upstream timer frequency: 1000 Hz. Upstream Linux does not provide a 10,000 Hz Kconfig choice. |
-| `PREEMPT_DYNAMIC` | Enabled | Allows the preemption model to be selected at boot without rebuilding the kernel. |
-| `preempt=full` | Kernel command line | Selects full preemption at runtime on this x86_64 kernel. |
-| `SCHED_CLASS_EXT` | Enabled | Enables the kernel interface used by sched_ext userspace schedulers. |
-| `BPF`, `BPF_SYSCALL`, `DEBUG_INFO_BTF` | Enabled | Provides the BPF syscall and BTF metadata needed by the SCX scheduler stack. |
-| `NO_HZ_IDLE` | Enabled | Stops periodic scheduling ticks on idle CPUs. |
-| `NO_HZ_FULL` | Disabled | Selects the mutually exclusive tickless-idle mode instead of full dynticks. Nixpkgs enables `NO_HZ_FULL` for 64-bit kernels by default, so this is explicitly overridden. |
-| `SMP` | Enabled | Retains symmetric multiprocessing support. |
-| `LTO_CLANG_THIN` | Requested when supported | Requests Clang ThinLTO when the active toolchain satisfies upstream Kconfig prerequisites; remains optional if Kconfig hides the option. |
-| `X86_NATIVE_CPU` | Enabled for `workstation` | Uses `-march=native` when supported, targeting the CPU of the machine that compiles the kernel. |
-| BORE | Not enabled | BORE is not part of the pinned upstream kernel package. Adding it requires a separately maintained out-of-tree scheduler patch matched to the exact kernel source; no unverified patch is applied. |
+The input deliberately does **not** follow the root Nixpkgs input. The pinned
+overlay uses the exact Nixpkgs revision against which the CachyOS kernel and
+its matching kernel-module package set were built. Replacing it with the
+ordinary overlay or adding `nixpkgs.follows` can cause binary-cache misses
+and package/patch mismatches.
 
-The remaining kernel configuration and compiler optimization level are left
-to Nixpkgs. In particular, this does not force `-O3` or remove drivers and
-subsystems. The kernel uses Clang/LLD and selects full preemption through
-`CONFIG_PREEMPT_DYNAMIC` plus the `preempt=full` boot parameter; it does not
-replace the current upstream kernel with an older Zen or XanMod branch.
-The pinned `linuxPackages_zen` definition provides 1000 Hz and PREEMPT tuning
-but does not include BORE. The pinned `linuxPackages_xanmod_latest` definition
-uses 250 Hz and lazy preemption, so neither package is a drop-in match for
-this workstation's current 7.3 kernel and existing Clang/native-CPU build.
+### Why BORE + Zen 4, without LTO
 
-ThinLTO is requested on a best-effort basis: upstream Kconfig enables it only
-when the active toolchain satisfies all prerequisites. When the option is
-hidden, the kernel retains its default LTO choice rather than failing
-configuration. Do not assume ThinLTO is active merely because it is requested
-here; verify the final kernel `.config` before claiming it is enabled.
+The selected variant combines:
 
-The kernel override also selects LLVM for host-side build tools. Nixpkgs
-passes explicit `HOSTCC`, `HOSTCXX`, `HOSTAR`, and `HOSTLD` assignments in
-its kernel make flags, so `LLVM=1` alone does not replace those values. The
-workstation override supplies matching Clang and LLVM ar tools explicitly.
-It also sets `HOSTLDFLAGS=--ld-path=...` to give Clang the exact LLD executable
-and embeds an RPATH covering the Nix store library directories for `elfutils`,
-OpenSSL, and zlib. Linux host-side tools such as `objtool`,
-`certs/extract-cert`, and `tools/bpf/resolve_btfids/resolve_btfids` link
-against `libelf.so.1`, `libcrypto.so.3`, and `libz.so.1`, respectively, and
-execute during the kernel build. Without those runtime paths, their dynamic
-loaders cannot find the shared libraries inside the sandbox. These flags
-address the missing-GNU-`ld`, Clang's `invalid linker name '-fuse-ld=lld'`,
-and the missing host-tool runtime-library failures.
+- CachyOS's BORE scheduler patch.
+- The explicit Zen 4 compiler target (`MZEN4`), rather than
+  build-machine-specific `-march=native`.
+- CachyOS's 1000 Hz timer, full-preemption, full-dynticks, and compiler
+  optimisation configuration.
+- BPF, BPF syscall, BTF metadata, and `SCHED_CLASS_EXT`, required by the
+  workstation's existing sched_ext / SCX Loader setup.
 
-The Nix daemon is configured with `nix.settings.cores = 12`, the per-derivation
-parallelism limit. The Nixpkgs kernel derivation enables parallel builds, so
-kernel compilation can use up to 12 jobs on this workstation. This is
-separate from `max-jobs`, which controls how many independent derivations
-Nix may build at the same time.
+The non-LTO package is intentional. In the current pinned CachyOS kernel
+builder, the LTO path disables `DEBUG_INFO_BTF` when its pinned `pahole`
+is older than 1.33; that Nixpkgs revision supplies pahole 1.32. BTF is needed
+by sched_ext, so switching to the LTO variant now would risk breaking SCX.
+Revisit ThinLTO only after the upstream build path can retain BTF, then verify
+the resulting kernel configuration and SCX runtime before adopting it.
 
-**Native CPU builds must run on the target workstation.** `X86_NATIVE_CPU`
-targets the build machine, not the hardware described by the NixOS
-configuration. Do not send the `workstation` kernel derivation to a remote
-builder with a different CPU.
+### Removed local kernel overrides
 
-The flake also exposes `nixosConfigurations.workstation-ci`. This is a
-portable CI-only variant with native CPU tuning disabled. GitHub Actions builds
-that variant so CI cannot publish a kernel compiled for its runner to Cachix.
-Install and rebuild the actual machine with `.#workstation`, not
-`.#workstation-ci`.
+The previous `modules/nixos/kernel.nix` module and the Clang/LLD override in
+`hosts/workstation/hardware.nix` have been removed. Their manual Kconfig
+settings, best-effort ThinLTO request, and host-side linker flags duplicated
+or conflicted with settings already owned by the CachyOS package. The
+`preempt=full` command-line argument is no longer needed because the selected
+kernel is built with full preemption as its configured default. The
+machine-specific `X86_NATIVE_CPU` override is replaced by CachyOS's explicit
+Zen 4 target, which is reproducible on CI and does not encode the build
+machine's exact CPU.
 
-Apply and test the kernel change using the normal NixOS generation workflow:
+The certificate-bundle integration in `modules/nixos/boot.nix`, Limine,
+Secure Boot configuration, and the security-related kernel parameters in
+`modules/nixos/security.nix` remain separate and unchanged.
+
+The final certificate-embedding image rebuild disables
+`CONFIG_X86_DECODER_SELFTEST` as a **Make command-line override for that
+repackaging derivation only**. Linux 7.3's `bzImage` target otherwise reruns
+the x86 decoder host test, but Nixpkgs' pruned `kernel.dev` tree does not
+retain `arch/x86/tools/insn_decoder_test.c`. The original CachyOS kernel
+derivation has already built the kernel image; this avoids rerunning that
+optional build-time test while embedding the module certificates. It does
+not change the `.config` used to compile the cached kernel or its runtime
+configuration.
+
+### Binary cache and updates
+
+The CachyOS kernel flake publishes signed binaries through
+`https://cache.lantian.pub/lantian`. The repository configures that cache and
+its public signing key in both the flake and the Nix daemon. This adds trust
+in a third-party cache operator: Nix verifies downloaded substitutes against
+the configured public key, but that does not make the cache operator part of
+the NixOS project. Without a matching substitute, Nix can build the kernel
+from the pinned sources, which is substantially more expensive.
+
+Update only this input when reviewing a new CachyOS kernel:
 
 ```sh
+nix flake update nix-cachyos-kernel
+git diff -- flake.lock
+nix flake check path:. --no-build --no-update-lock-file --show-trace
 sudo nixos-rebuild build --flake .#workstation
 sudo nixos-rebuild test --flake .#workstation
 ```
 
-A successful build does not prove runtime behaviour. Reboot into the test
-generation and verify the running kernel and timer configuration before
-making it the default.
+Keep the previous boot generation until the new kernel has booted and the
+desktop, networking, graphics, module loading, and SCX scheduler have been
+checked. After reboot, verify `uname -r`, inspect the scheduler state at
+`/sys/kernel/sched_ext/state`, and confirm `scx_loader.service` is healthy.
+If the kernel exposes `/proc/config.gz`, `zgrep` can confirm
+`CONFIG_SCHED_BORE`, `CONFIG_SCHED_CLASS_EXT`, and
+`CONFIG_DEBUG_INFO_BTF`.
 
 ## Scheduling services
 
@@ -466,8 +473,8 @@ pinned Nixpkgs input:
 default. The configured `pkgs.scx.rustscheds` package also provides
 `scx_bpfland`, so both schedulers are installed. The SCX loader can switch
 schedulers at runtime through its `scxctl` D-Bus client. The kernel must have
-sched_ext support and be version 6.12 or newer; this workstation's custom
-7.3 kernel explicitly enables `SCHED_CLASS_EXT`, BPF, BPF syscall, and BTF.
+sched_ext support and be version 6.12 or newer; the selected non-LTO CachyOS
+BORE/Zen 4 configuration retains `SCHED_CLASS_EXT`, BPF, BPF syscall, and BTF.
 
 - **Ananicy-cpp:** NixOS `services.ananicy` runs the C++ daemon using
 `pkgs.ananicy-cpp`. The separate `pkgs.ananicy-rules-cachyos` package
@@ -488,7 +495,6 @@ per-process policy according to its rule set.
 After activating the new generation and rebooting, inspect the running state:
 
 ```sh
-grep -o 'preempt=[^ ]*' /proc/cmdline
 cat /sys/kernel/debug/sched/preempt
 cat /sys/kernel/sched_ext/state
 systemctl status scx_loader.service
@@ -498,7 +504,8 @@ scxctl --help
 ```
 
 The debugfs preemption file is available only when debugfs is mounted. The
-kernel command line should contain `preempt=full`; sched_ext should report
+selected kernel is configured for full preemption by default, so no explicit
+`preempt=full` command-line parameter is required. sched_ext should report
 `enabled` while LAVD is active; and the Ananicy-cpp service should be active.
 
 ## Apply changes safely

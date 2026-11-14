@@ -5,10 +5,12 @@
     extra-substituters = [
       "https://noctalia.cachix.org"
       "https://ezkea.cachix.org"
+      "https://cache.lantian.pub/lantian"
     ];
     extra-trusted-public-keys = [
       "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
       "ezkea.cachix.org-1:ioBmUbJTZIKsHmWWXPe1FSFbeVe+afhfgqgTSNd34eI="
+      "lantian:WVGO7vsRMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ="
     ];
   };
 
@@ -24,6 +26,9 @@
       url = "github:NixOS/nixos-hardware";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Use the upstream release branch and its pinned Nixpkgs for binary-cache compatibility.
+    nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
 
     # Keep Noctalia's own pinned nixpkgs: this is required for Cachix hits.
     noctalia.url = "github:noctalia-dev/noctalia/cachix";
@@ -161,16 +166,6 @@
 
       nixosConfigurations = {
         inherit workstation;
-
-        # Never publish a kernel compiled with the GitHub runner's CPU features
-        # as the native workstation kernel.
-        workstation-ci = workstation.extendModules {
-          modules = [
-            {
-              starforge.kernel.nativeCpuOptimization.enable = false;
-            }
-          ];
-        };
       };
     };
 }

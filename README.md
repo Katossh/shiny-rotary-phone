@@ -61,7 +61,7 @@ GPU on an AM5 platform.
 
 - AMD CPU microcode and redistributable firmware are enabled.
 - AMD P-State active mode is enabled for modern Ryzen power/performance scaling.
-- The workstation selects `pkgs.linuxPackages_latest` in `hosts/workstation/hardware.nix`. This tracks the newest maintained stable kernel exposed by the locked Nixpkgs revision; it is not a release-candidate or custom kernel. The kernel-specific module set is selected with it.
+- The workstation uses the pinned CachyOS `linuxPackages-cachyos-bore-zen4` kernel: BORE scheduling and a Zen 4 compiler target, while retaining BPF/BTF/sched_ext support for SCX Loader.
 - The AMDGPU kernel driver is loaded in the initrd for early KMS.
 - Mesa graphics acceleration and 32-bit graphics support are enabled.
 - Vulkan and VA-API diagnostic tools are installed.
