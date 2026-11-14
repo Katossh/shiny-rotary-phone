@@ -93,7 +93,7 @@ Boot signing, and the locally enrolled `sbctl` keys and firmware settings are
 unchanged. The kernel's Lockdown LSM remains available, but the profile no
 longer forces the confidentiality level. The Linux kernel module-signing
 documentation describes the signature enforcement behaviour:
-<https://www.kernel.org/doc/html/latest/admin-guide/module-signing.html>.
+https://www.kernel.org/doc/html/latest/admin-guide/module-signing.html.
 
 When investigating a module-load failure, inspect the named module and the
 kernel's actual error rather than relying on a generic systemd status:
@@ -153,13 +153,20 @@ not an unreviewed generated policy.
 
 ## 4. Kernel hardening and AMD IOMMU
 
-The current configuration already sets:
+The current configuration sets the following kernel parameters:
 
+- `mitigations=off`
 - `slab_nomerge`
 - `page_alloc.shuffle=1`
 - `randomize_kstack_offset=on`
 
-It also configures kernel pointer/dmesg restrictions, Yama ptrace scope,
+`mitigations=off` is an intentional performance trade-off: it disables the
+kernel's CPU vulnerability mitigations and reduces protection against
+CPU-related side-channel attacks. Consequently, vulnerability status reported
+by the audit must be interpreted in light of this explicit boot parameter;
+do not mistake the resulting exposure for an unexpected configuration drift.
+
+The configuration also sets kernel pointer/dmesg restrictions, Yama ptrace scope,
 unprivileged BPF restrictions, and filesystem protections in
 `modules/nixos/security.nix`. AMD P-State is imported through the
 `nixos-hardware` Raphael/P-State modules.
@@ -178,7 +185,7 @@ The `lockdown=integrity` kernel parameter can disable kernel interfaces that
 would let userspace modify the running kernel. It is not enabled automatically
 by this audit change: inspect the active module set and test it in a separate
 NixOS generation with a known-good rollback path before making it permanent.
-The kernel documents `integrity` and the stricter `confidentiality` mode in its
+The Linux kernel documents `integrity` and the stricter `confidentiality` mode in its
 [command-line parameter reference](https://docs.kernel.org/admin-guide/kernel-parameters.html).
 
 Do not add `amd_iommu=on`, `amd_iommu=force_enable`, `iommu=pt`, or VFIO
