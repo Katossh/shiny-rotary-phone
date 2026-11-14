@@ -26,12 +26,14 @@ in
       # arch/x86/tools/insn_decoder_test.c is not retained in that tree. The
       # original kernel build already produced vmlinux; skip only this optional
       # build-time test while repackaging the image with module certificates.
-      finalKernel = (config.boot.kernelPackages.rebuildImage {
-        inherit target;
-        inherit (config.system) modulesTree;
-      }).overrideAttrs (old: {
-        buildFlags = (old.buildFlags or [ ]) ++ [ "CONFIG_X86_DECODER_SELFTEST=n" ];
-      });
+      finalKernel =
+        (config.boot.kernelPackages.rebuildImage {
+          inherit target;
+          inherit (config.system) modulesTree;
+        }).overrideAttrs
+          (old: {
+            buildFlags = (old.buildFlags or [ ]) ++ [ "CONFIG_X86_DECODER_SELFTEST=n" ];
+          });
       kernelPath = "${finalKernel}/${target}";
     in
     lib.mkAfter ''
