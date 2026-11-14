@@ -66,10 +66,10 @@
   # until its runtime trust path and required external modules are verified.
   # Secure Boot remains configured separately in modules/nixos/boot.nix.
   #
-  # mitigations=off is an explicit performance trade-off: it disables the
-  # kernel's CPU vulnerability mitigations and reduces side-channel protection.
+  # Keep CPU vulnerability mitigations enabled; performance tuning should not
+  # depend on weakening the kernel's side-channel protections.
   boot.kernelParams = [
-    "mitigations=off"
+    "mitigations=auto"
     "slab_nomerge"
     "page_alloc.shuffle=1"
     "randomize_kstack_offset=on"
