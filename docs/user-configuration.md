@@ -489,7 +489,7 @@ After reboot, verify the actual kernel configuration and scheduler state:
 ```sh
 uname -r
 cat /proc/version
-zgrep -E 'CONFIG_(LTO_CLANG_THIN|MZEN4|SCHED_BORE|SCHED_CLASS_EXT|DEBUG_INFO_BTF|RUST)=' /proc/config.gz
+zgrep -E '^(CONFIG_(LTO_CLANG_THIN|MZEN4|SCHED_BORE|SCHED_CLASS_EXT|DEBUG_INFO_BTF)=|# CONFIG_RUST is not set)' /proc/config.gz
 cat /sys/kernel/sched_ext/state
 systemctl status scx_loader.service
 pgrep -af scx_lavd
