@@ -425,7 +425,9 @@ sched_ext support and be version 6.12 or newer; this workstation's custom
 
 - **Ananicy-cpp:** NixOS `services.ananicy` runs the C++ daemon using
 `pkgs.ananicy-cpp`. The separate `pkgs.ananicy` package supplies its default
-rules, because the C++ daemon package intentionally does not bundle them.
+rules from `pkgs.ananicy-rules-cachyos`, because the C++ daemon package
+intentionally does not bundle them. The old `pkgs.ananicy` package has been
+removed from this pinned Nixpkgs revision.
 Those rules determine which processes receive adjusted CPU scheduling,
 nice, I/O priority, and related policy. No broad custom rules are added:
 incorrectly lowering a foreground compiler or container workload can make

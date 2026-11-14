@@ -10,11 +10,11 @@
     config.default_sched = "scx_lavd";
   };
 
-  # The C++ daemon intentionally ships without rules; use Ananicy's maintained
-  # default rules package as the separate rules provider.
+  # The C++ daemon intentionally ships without rules. Use the maintained
+  # CachyOS rule set; the legacy pkgs.ananicy alias was removed from Nixpkgs.
   services.ananicy = {
     enable = true;
     package = pkgs.ananicy-cpp;
-    rulesProvider = pkgs.ananicy;
+    rulesProvider = pkgs.ananicy-rules-cachyos;
   };
 }
