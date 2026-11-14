@@ -342,20 +342,32 @@ replacing its general-purpose configuration.
 | Kernel setting | Workstation value | Purpose |
 |---|---|---|
 | `HZ_1000` | Enabled | Selects the highest standard upstream timer frequency: 1000 Hz. Upstream Linux does not provide a 10,000 Hz Kconfig choice. |
+| `PREEMPT_DYNAMIC` | Enabled | Allows the preemption model to be selected at boot without rebuilding the kernel. |
+| `preempt=full` | Kernel command line | Selects full preemption at runtime on this x86_64 kernel. |
+| `SCHED_CLASS_EXT` | Enabled | Enables the kernel interface used by sched_ext userspace schedulers. |
+| `BPF`, `BPF_SYSCALL`, `DEBUG_INFO_BTF` | Enabled | Provides the BPF syscall and BTF metadata needed by the SCX scheduler stack. |
 | `NO_HZ_IDLE` | Enabled | Stops periodic scheduling ticks on idle CPUs. |
 | `NO_HZ_FULL` | Disabled | Selects the mutually exclusive tickless-idle mode instead of full dynticks. Nixpkgs enables `NO_HZ_FULL` for 64-bit kernels by default, so this is explicitly overridden. |
 | `SMP` | Enabled | Retains symmetric multiprocessing support. |
 | `LTO_CLANG_THIN` | Requested when supported | Requests Clang ThinLTO when the active toolchain satisfies upstream Kconfig prerequisites; remains optional if Kconfig hides the option. |
 | `X86_NATIVE_CPU` | Enabled for `workstation` | Uses `-march=native` when supported, targeting the CPU of the machine that compiles the kernel. |
+| BORE | Not enabled | BORE is not part of the pinned upstream kernel package. Adding it requires a separately maintained out-of-tree scheduler patch matched to the exact kernel source; no unverified patch is applied. |
 
 The remaining kernel configuration and compiler optimization level are left
-to Nixpkgs. In particular, this does not force `-O3`, change the preemption
-model, or remove drivers and subsystems. The kernel uses Clang/LLD. ThinLTO
-is requested on a best-effort basis: upstream Kconfig enables it only when
-the active toolchain satisfies all prerequisites. When the option is hidden,
-the kernel retains its default LTO choice rather than failing configuration.
-Do not assume ThinLTO is active merely because it is requested here; verify
-the final kernel `.config` before claiming it is enabled.
+to Nixpkgs. In particular, this does not force `-O3` or remove drivers and
+subsystems. The kernel uses Clang/LLD and selects full preemption through
+`CONFIG_PREEMPT_DYNAMIC` plus the `preempt=full` boot parameter; it does not
+replace the current upstream kernel with an older Zen or XanMod branch.
+The pinned `linuxPackages_zen` definition provides 1000 Hz and PREEMPT tuning
+but does not include BORE. The pinned `linuxPackages_xanmod_latest` definition
+uses 250 Hz and lazy preemption, so neither package is a drop-in match for
+this workstation's current 7.3 kernel and existing Clang/native-CPU build.
+
+ThinLTO is requested on a best-effort basis: upstream Kconfig enables it only
+when the active toolchain satisfies all prerequisites. When the option is
+hidden, the kernel retains its default LTO choice rather than failing
+configuration. Do not assume ThinLTO is active merely because it is requested
+here; verify the final kernel `.config` before claiming it is enabled.
 
 The kernel override also selects LLVM for host-side build tools. Nixpkgs
 passes explicit `HOSTCC`, `HOSTCXX`, `HOSTAR`, and `HOSTLD` assignments in
@@ -398,6 +410,48 @@ sudo nixos-rebuild test --flake .#workstation
 A successful build does not prove runtime behaviour. Reboot into the test
 generation and verify the running kernel and timer configuration before
 making it the default.
+
+## Scheduling services
+
+The workstation enables two complementary scheduling components from the
+pinned Nixpkgs input:
+
+- **sched_ext / SCX Loader:** `services.scx-loader` starts `scx_lavd` by
+default. The configured `pkgs.scx.rustscheds` package also provides
+`scx_bpfland`, so both schedulers are installed. The SCX loader can switch
+schedulers at runtime through its `scxctl` D-Bus client. The kernel must have
+sched_ext support and be version 6.12 or newer; this workstation's custom
+7.3 kernel explicitly enables `SCHED_CLASS_EXT`, BPF, BPF syscall, and BTF.
+
+- **Ananicy-cpp:** NixOS `services.ananicy` runs the C++ daemon using
+`pkgs.ananicy-cpp`. The separate `pkgs.ananicy` package supplies its default
+rules, because the C++ daemon package intentionally does not bundle them.
+Those rules determine which processes receive adjusted CPU scheduling,
+nice, I/O priority, and related policy. No broad custom rules are added:
+incorrectly lowering a foreground compiler or container workload can make
+interactive performance worse rather than better.
+
+These tools change scheduling policy; they do not create extra CPU capacity
+or guarantee higher throughput. Compare responsiveness and workload
+performance on the actual workstation before treating a scheduler choice as
+universally faster. SCX uses the BPF scheduler at runtime; Ananicy applies
+per-process policy according to its rule set.
+
+After activating the new generation and rebooting, inspect the running state:
+
+```sh
+cat /proc/cmdline | tr ' ' '\\n' | grep '^preempt='
+cat /sys/kernel/debug/sched/preempt
+cat /sys/kernel/sched_ext/state
+systemctl status scx_loader.service
+pgrep -af scx_lavd
+systemctl status ananicy-cpp.service
+scxctl --help
+```
+
+The debugfs preemption file is available only when debugfs is mounted. The
+kernel command line should contain `preempt=full`; sched_ext should report
+`enabled` while LAVD is active; and the Ananicy-cpp service should be active.
 
 ## Apply changes safely
 
