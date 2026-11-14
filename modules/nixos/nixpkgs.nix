@@ -9,6 +9,7 @@
       "vscode"
       "code"
       "antigravity-cli"
+      "antigravity-ide"
       "discord"
       "discord-unwrapped"
       "osu-lazer-bin"
