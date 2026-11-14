@@ -1,4 +1,4 @@
-{ ... }:
+{ lib, ... }:
 
 {
   services.scx = {
@@ -8,5 +8,5 @@
   };
 
   # Avoid overlapping per-process scheduling policy while sched_ext is active.
-  services.ananicy.enable = false;
+  services.ananicy.enable = lib.mkForce false;
 }
