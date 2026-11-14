@@ -383,8 +383,9 @@ sudo nixos-rebuild test --flake .#workstation
 The workstation uses the `nix-cachyos-kernel` flake input, pinned to its
 `release` branch in `flake.lock`. The host selects
 `linuxPackages-cachyos-bore-lto-zen4` through
-`inputs.nix-cachyos-kernel.overlays.pinned`, then rebuilds the package set
-around that kernel with the locked Nixpkgs `linuxPackagesFor` function.
+`inputs.nix-cachyos-kernel.overlays.pinned`, then extends the pinned
+CachyOS kernel package set so its module packages are rebuilt against the
+custom kernel without mixing in the root Nixpkgs package set.
 
 The input deliberately does **not** follow the root Nixpkgs input. The pinned
 overlay uses the exact Nixpkgs revision against which the CachyOS kernel and
