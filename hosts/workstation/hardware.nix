@@ -5,6 +5,13 @@
   ...
 }:
 
+let
+  # Use CachyOS BORE + Clang ThinLTO for Zen 4. The pinned kernel builder
+  # normally disables BTF for LTO while its pahole is older than 1.33.
+  # sched_ext needs BTF, so retain BTF and disable optional Rust kernel
+  # components: Linux Kconfig does not support Rust + BTF + LTO together.
+  cachyosKernelPackages = pkgs.cachyosKernels."linuxPackages-cachyos-bore-lto-zen4";
+in
 {
   imports = [
     # AMD Ryzen 7000 Raphael iGPU, common AMDGPU support, and AMD P-State.
@@ -13,10 +20,37 @@
     inputs.nixos-hardware.nixosModules.common-gpu-amd
   ];
 
-  # Use CachyOS's BORE scheduler and explicit Zen 4 target. Keep the non-LTO
-  # variant because the current pinned LTO build disables BTF, which sched_ext needs.
+  # Extend the pinned CachyOS package set so every kernel module is rebuilt
+  # against the exact locally compiled kernel and its matching toolchain.
   nixpkgs.overlays = [ inputs.nix-cachyos-kernel.overlays.pinned ];
-  boot.kernelPackages = pkgs.cachyosKernels."linuxPackages-cachyos-bore-zen4";
+  boot.kernelPackages = cachyosKernelPackages.extend (
+    _final: prev: {
+      kernel =
+        (prev.kernel.override {
+          structuredExtraConfig = with pkgs.lib.kernel; {
+            DEBUG_INFO_BTF = pkgs.lib.mkForce yes;
+            # The pinned Nixpkgs kernel defaults RUST=y; force this off because
+            # this LTO+BTF combination cannot enable Rust kernel components.
+            RUST = pkgs.lib.mkForce no;
+          };
+        }).overrideAttrs
+          (_: {
+            # Compile the kernel locally instead of accepting a binary substitute.
+            allowSubstitutes = false;
+            preferLocalBuild = true;
+          });
+    }
+  );
+
+  # Enable the kernel NT synchronization primitive used by Wine/Proton.
+  boot.kernelModules = [ "ntsync" ];
+
+  # Let the NVMe controller manage its own I/O scheduling. Restrict ntsync
+  # access to the active local seat through logind-managed uaccess ACLs.
+  services.udev.extraRules = ''
+    ACTION=="add|change", KERNEL=="nvme[0-9]*", ATTR{queue/scheduler}="none"
+    KERNEL=="ntsync", MODE="0660", TAG+="uaccess"
+  '';
 
   hardware.cpu.amd.updateMicrocode = true;
   hardware.amdgpu.initrd.enable = true;

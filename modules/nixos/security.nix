@@ -66,8 +66,9 @@
   # until its runtime trust path and required external modules are verified.
   # Secure Boot remains configured separately in modules/nixos/boot.nix.
   #
-  # mitigations=off is an explicit performance trade-off: it disables the
-  # kernel's CPU vulnerability mitigations and reduces side-channel protection.
+  # Retain the existing mitigations=off choice exactly as requested. This
+  # disables eligible CPU vulnerability mitigations and reduces side-channel
+  # protection; the setting is not changed by the scheduler/memory tuning.
   boot.kernelParams = [
     "mitigations=off"
     "slab_nomerge"
@@ -96,5 +97,12 @@
 
     "net.ipv6.conf.all.accept_redirects" = 0;
     "net.ipv6.conf.default.accept_redirects" = 0;
+
+    # Memory and scheduler tuning requested for this workstation.
+    "vm.swappiness" = 150;
+    "vm.page-cluster" = 0;
+    "vm.dirty_background_bytes" = 67108864;
+    "vm.dirty_bytes" = 268435456;
+    "kernel.split_lock_mitigate" = 0;
   };
 }
