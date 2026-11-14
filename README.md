@@ -61,7 +61,7 @@ GPU on an AM5 platform.
 
 - AMD CPU microcode and redistributable firmware are enabled.
 - AMD P-State active mode is enabled for modern Ryzen power/performance scaling.
-- The workstation uses the pinned CachyOS `linuxPackages-cachyos-bore-zen4` kernel: BORE scheduling and a Zen 4 compiler target, while retaining BPF/BTF/sched_ext support for SCX Loader.
+- The workstation uses the prebuilt CachyOS `linuxPackages-cachyos-bore-lto-zen4` kernel: BORE scheduling, Clang ThinLTO, and a Zen 4 compiler target. This cached variant lacks kernel BTF with the current pinned builder, so the configured `scx_lavd` service cannot attach; the kernel falls back to EEVDF until a BTF-enabled prebuilt variant is available.
 - The AMDGPU kernel driver is loaded in the initrd for early KMS.
 - Mesa graphics acceleration and 32-bit graphics support are enabled.
 - Vulkan and VA-API diagnostic tools are installed.
