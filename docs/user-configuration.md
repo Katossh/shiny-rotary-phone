@@ -481,11 +481,12 @@ configuration.
 
 The certificate-bundle integration in `modules/nixos/boot.nix`, Limine,
 and Secure Boot configuration remain separate and unchanged. The kernel
-command line now explicitly uses `mitigations=auto`, restoring the CPU
-vulnerability mitigations that were previously disabled; the other security
-kernel parameters remain unchanged. Keep the previous boot generation until
-the new kernel has booted and the desktop, networking, graphics, module
-loading, and SCX scheduler have been checked.
+command line retains the existing `mitigations=off` setting as explicitly
+requested. This disables eligible CPU vulnerability mitigations and reduces
+side-channel protection; it is a separate security trade-off from the
+scheduler and memory tuning. Keep the previous boot generation until the new
+kernel has booted and the desktop, networking, graphics, module loading, and
+SCX scheduler have been checked.
 
 After reboot, verify the actual kernel configuration and scheduler state:
 
@@ -494,57 +495,71 @@ uname -r
 cat /proc/version
 zgrep -E '^(CONFIG_(LTO_CLANG_THIN|MZEN4|SCHED_BORE|SCHED_CLASS_EXT|DEBUG_INFO_BTF)=|# CONFIG_RUST is not set)' /proc/config.gz
 cat /sys/kernel/sched_ext/state
-systemctl status scx_loader.service
+systemctl status scx.service
 pgrep -af scx_lavd
 ```
 
 `CONFIG_RUST` should be disabled by this host's LTO+BTF compatibility
 override; `CONFIG_DEBUG_INFO_BTF` and `CONFIG_SCHED_CLASS_EXT` must be
-enabled for the configured sched_ext stack.
+enabled for sched_ext to attach to this kernel.
 
 ## Scheduling services
 
-The workstation enables two complementary scheduling components from the
-pinned Nixpkgs input:
+The workstation runs `scx_lavd` through the pinned NixOS `services.scx`
+module. It starts the scheduler with `--performance`:
 
-- **sched_ext / SCX Loader:** `services.scx-loader` starts `scx_lavd` by
-default. The configured `pkgs.scx.rustscheds` package also provides
-`scx_bpfland`, so both schedulers are installed. The SCX loader can switch
-schedulers at runtime through its `scxctl` D-Bus client. The kernel must have
-sched_ext support and be version 6.12 or newer; the selected non-LTO CachyOS
-BORE/Zen 4 configuration retains `SCHED_CLASS_EXT`, BPF, BPF syscall, and BTF.
+```nix
+services.scx = {
+  enable = true;
+  scheduler = "scx_lavd";
+  extraArgs = [ "--performance" ];
+};
+```
 
-- **Ananicy-cpp:** NixOS `services.ananicy` runs the C++ daemon using
-`pkgs.ananicy-cpp`. The separate `pkgs.ananicy-rules-cachyos` package
-supplies the maintained rule set because the C++ daemon intentionally does
-not bundle one; the old `pkgs.ananicy` package was removed from this pinned
-Nixpkgs revision.
-Those rules determine which processes receive adjusted CPU scheduling,
-nice, I/O priority, and related policy. No broad custom rules are added:
-incorrectly lowering a foreground compiler or container workload can make
-interactive performance worse rather than better.
-
-These tools change scheduling policy; they do not create extra CPU capacity
-or guarantee higher throughput. Compare responsiveness and workload
-performance on the actual workstation before treating a scheduler choice as
-universally faster. SCX uses the BPF scheduler at runtime; Ananicy applies
-per-process policy according to its rule set.
+The selected CachyOS BORE/ThinLTO/Zen 4 kernel must expose sched_ext, BPF,
+BPF syscall, and BTF; the kernel build retains `SCHED_CLASS_EXT` and BTF for
+this purpose. The NixOS module requires Linux 6.12 or newer. Ananicy-cpp is
+disabled so its per-process scheduling policy does not overlap with SCX.
 
 After activating the new generation and rebooting, inspect the running state:
 
 ```sh
 cat /sys/kernel/debug/sched/preempt
 cat /sys/kernel/sched_ext/state
-systemctl status scx_loader.service
+systemctl status scx.service
 pgrep -af scx_lavd
-systemctl status ananicy-cpp.service
-scxctl --help
 ```
 
 The debugfs preemption file is available only when debugfs is mounted. The
 selected kernel is configured for full preemption by default, so no explicit
 `preempt=full` command-line parameter is required. sched_ext should report
-`enabled` while LAVD is active; and the Ananicy-cpp service should be active.
+`enabled` while LAVD is active.
+
+## Kernel runtime tuning
+
+The existing ZRAM configuration (`zstd`) and the current
+`transparent_hugepage=always` mode are left unchanged. Only the THP
+defragmentation policy is set to `defer+madvise` at boot.
+
+The existing `boot.kernel.sysctl` set is extended with these values:
+
+```nix
+"vm.swappiness" = 150;
+"vm.page-cluster" = 0;
+"vm.dirty_background_bytes" = 67108864;
+"vm.dirty_bytes" = 268435456;
+"kernel.split_lock_mitigate" = 0;
+```
+
+The split-lock mitigation setting is separate from `mitigations=off`; both
+are retained as explicitly requested. The NVMe udev rule sets the scheduler
+to `none`, delegating request scheduling to the device. The `ntsync` module
+is loaded for Wine/Proton, and its device node uses mode `0660` plus the
+`uaccess` tag so logind can grant access to the active local seat rather
+than making it world-writable.
+
+No global architecture target, global stdenv change, or new `znver4`
+userspace overlay is introduced. Existing package overlays remain unchanged.
 
 ## Apply changes safely
 

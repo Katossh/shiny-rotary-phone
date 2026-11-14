@@ -28,8 +28,10 @@ in
       kernel =
         (prev.kernel.override {
           structuredExtraConfig = with pkgs.lib.kernel; {
-            DEBUG_INFO_BTF = yes;
-            RUST = no;
+            DEBUG_INFO_BTF = pkgs.lib.mkForce yes;
+            # The pinned Nixpkgs kernel defaults RUST=y; force this off because
+            # this LTO+BTF combination cannot enable Rust kernel components.
+            RUST = pkgs.lib.mkForce no;
           };
         }).overrideAttrs
           (_: {
@@ -39,6 +41,16 @@ in
           });
     }
   );
+
+  # Enable the kernel NT synchronization primitive used by Wine/Proton.
+  boot.kernelModules = [ "ntsync" ];
+
+  # Let the NVMe controller manage its own I/O scheduling. Restrict ntsync
+  # access to the active local seat through logind-managed uaccess ACLs.
+  services.udev.extraRules = ''
+    ACTION=="add|change", KERNEL=="nvme[0-9]*", ATTR{queue/scheduler}="none"
+    KERNEL=="ntsync", MODE="0660", TAG+="uaccess"
+  '';
 
   hardware.cpu.amd.updateMicrocode = true;
   hardware.amdgpu.initrd.enable = true;
