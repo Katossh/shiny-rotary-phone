@@ -468,6 +468,16 @@ settings already owned by the CachyOS package. The machine-specific
 `X86_NATIVE_CPU` override is replaced by CachyOS's explicit Zen 4 target,
 which is reproducible on CI and does not encode the build machine's exact CPU.
 
+The final certificate-embedding image rebuild disables
+`CONFIG_X86_DECODER_SELFTEST` as a **Make command-line override for that
+repackaging derivation only**. Linux 7.3's `bzImage` target otherwise reruns
+the x86 decoder host test, but Nixpkgs' pruned `kernel.dev` tree does not
+retain `arch/x86/tools/insn_decoder_test.c`. The original CachyOS kernel
+derivation has already built the kernel image; this avoids rerunning that
+optional build-time test while embedding the module certificates. It does
+not change the `.config` used to compile the kernel or its runtime
+configuration.
+
 The certificate-bundle integration in `modules/nixos/boot.nix`, Limine,
 Secure Boot configuration, and the security-related kernel parameters in
 `modules/nixos/security.nix` remain separate and unchanged. Keep the previous
