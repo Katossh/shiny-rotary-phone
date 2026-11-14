@@ -433,6 +433,26 @@ Expect a substantially longer build and significant CPU/RAM use. Do not
 interrupt the build by deleting its store paths. The resulting generation is
 not activated by this command.
 
+### Binary cache and updates
+
+The CachyOS kernel flake publishes signed binaries through
+`https://cache.lantian.pub/lantian`. The repository configures that cache and
+its public signing key in both the flake and the Nix daemon. This adds trust
+in a third-party cache operator: Nix verifies downloaded substitutes against
+the configured public key, but that does not make the cache operator part of
+the NixOS project. The workstation's kernel derivation explicitly refuses
+substitutes and is built locally; other outputs and dependencies may still
+use configured caches.
+
+Update only this input when reviewing a new CachyOS kernel:
+
+```sh
+nix flake update nix-cachyos-kernel
+git diff -- flake.lock
+nix flake check path:. --no-build --no-update-lock-file --show-trace
+nix build path:.#nixosConfigurations.workstation.config.system.build.toplevel --no-link
+```
+
 ### AutoFDO and Propeller are not enabled
 
 ThinLTO is enabled, but this package selection does not enable AutoFDO or
