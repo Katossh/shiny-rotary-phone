@@ -332,6 +332,52 @@ systemctl --user status deepcool-digital-linux.service
 journalctl --user -u deepcool-digital-linux.service -b
 ```
 
+## RAM-backed temporary storage
+
+The workstation mounts the entire `/tmp` directory as tmpfs using the native
+NixOS options in `modules/nixos/memory.nix`:
+
+```nix
+boot.tmp = {
+  useTmpfs = true;
+  tmpfsSize = "8G";
+};
+```
+
+`8G` is the maximum size of the tmpfs, **not** 8 GiB of RAM reserved at
+boot. Physical memory is consumed as files are written. Tmpfs pages can be
+swapped out under memory pressure; this workstation has zram swap enabled.
+The contents are temporary and are lost when the filesystem is unmounted,
+including during a reboot.
+
+Every application that uses the normal `/tmp` path automatically uses this
+tmpfs; no per-command `TMPDIR` override is needed. This avoids storing those
+temporary files on the root filesystem, but it does not guarantee a large
+performance improvement: disk-backed filesystems also benefit from the Linux
+page cache.
+
+**There is no automatic fallback to disk.** If concurrent applications fill
+the 8 GiB limit, further writes fail with `ENOSPC`. In particular, large
+builds can fail when their temporary data exceeds the available tmpfs space.
+For a workload that needs more temporary space, use a separate disk-backed
+directory and set `TMPDIR` for that command rather than increasing the tmpfs
+limit without checking memory pressure.
+
+After building and testing a new NixOS generation, verify the mount and its
+current usage with:
+
+```sh
+findmnt -T /tmp -o TARGET,SOURCE,FSTYPE,OPTIONS
+df -h /tmp
+```
+
+Build and test the configuration using:
+
+```sh
+sudo nixos-rebuild build --flake .#workstation
+sudo nixos-rebuild test --flake .#workstation
+```
+
 ## Workstation kernel build
 
 The workstation uses a locally built kernel with a small set of explicit

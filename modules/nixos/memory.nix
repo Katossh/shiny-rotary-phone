@@ -1,6 +1,13 @@
 _:
 
 {
+  # Mount all of /tmp as tmpfs with an 8 GiB upper limit. This is a
+  # capacity ceiling, not RAM reserved at boot; see user-configuration.md.
+  boot.tmp = {
+    useTmpfs = true;
+    tmpfsSize = "8G";
+  };
+
   # Compressed RAM swap absorbs short memory spikes without writing VM or
   # application pages to an unencrypted disk swap device.
   zramSwap = {
