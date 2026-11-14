@@ -65,7 +65,11 @@
   # certificate-bundle integration in boot.nix, but do not force this gate
   # until its runtime trust path and required external modules are verified.
   # Secure Boot remains configured separately in modules/nixos/boot.nix.
+  #
+  # mitigations=off is an explicit performance trade-off: it disables the
+  # kernel's CPU vulnerability mitigations and reduces side-channel protection.
   boot.kernelParams = [
+    "mitigations=off"
     "slab_nomerge"
     "page_alloc.shuffle=1"
     "randomize_kstack_offset=on"
