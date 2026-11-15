@@ -7,9 +7,10 @@ NixOS system or the official NixOS installer environment.
 > Ryzen 7000 desktop (not a universal configuration for every computer). The
 > installer adapts to different storage layouts: root can be Btrfs, ext4, or
 > XFS; the UEFI System Partition must be FAT32 and mounted at \`/mnt/boot\`.
-> Separate \`/home\`, \`/nix\`, and \`/var/log\` mounts are optional. Filesystem
-> UUIDs, device names, Btrfs subvolumes, and open LUKS mappings are discovered
-> from the actual mount tree rather than fixed identifiers.
+> Separate \`/home\`, \`/nix\`, and \`/var/log\` mounts are optional. \`nixos-generate-config\`,
+> not \`install.sh\`, discovers filesystem UUIDs, device names, Btrfs subvolumes,
+> and open LUKS mappings from the actual mount tree. Review that generated file
+> before installation.
 
 The script never partitions disks, formats filesystems, creates Btrfs
 subvolumes, changes LUKS keys, or enrolls Secure Boot keys.
@@ -113,8 +114,10 @@ mount /dev/nvme0n1p1 /mnt/boot
 Replace the example device paths and subvolume names with the actual layout.
 For a simpler Btrfs, ext4, or XFS layout, mount only the root filesystem and
 ESP; the profile keeps \`/home\`, \`/nix\`, and \`/var/log\` inside the root
-filesystem. The installer records every additional filesystem mounted below
-\`/mnt\`.
+filesystem. \`nixos-generate-config\` records every additional filesystem mounted
+below \`/mnt\` in the generated hardware configuration; \`install.sh\` only
+validates that the existing file is present, contains root and \`/boot\`
+entries, and parses as Nix.
 
 For Btrfs, Snapper is enabled only for mountpoints that the generated hardware
 configuration identifies as separate Btrfs subvolumes. It is disabled when
@@ -161,8 +164,9 @@ they are restored or Secure Boot signing is temporarily disabled in
 
 ## Scope and limitations
 
-The installer adapts the mounted storage layout; it does not automatically
-partition disks or decide which disk to erase. The workstation profile itself
+The installer uses the existing machine-local hardware configuration; it does
+not discover or rewrite the storage layout, automatically partition disks, or
+decide which disk to erase. The workstation profile itself
 still contains hardware-specific AMD GPU, CPU, display, and peripheral
 settings. A different computer needs a separately reviewed hardware profile.
 

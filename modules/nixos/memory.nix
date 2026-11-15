@@ -17,8 +17,8 @@ _:
   };
 
   systemd = {
-    # Apply the THP defragmentation policy after sysfs is available. The
-    # existing transparent_hugepage=always mode and ZRAM settings stay intact.
+    # Apply the THP defragmentation policy after sysfs is available. This
+    # repository does not set the THP enabled mode; ZRAM settings are unchanged.
     tmpfiles.rules = [
       "w /sys/kernel/mm/transparent_hugepage/defrag - - - - defer+madvise"
     ];

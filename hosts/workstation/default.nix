@@ -3,6 +3,22 @@
 {
   networking.hostName = "workstation";
 
+  # Host-specific build parallelism: this workstation has 12 logical CPU
+  # threads. Reusable Nix modules leave this at the Nix default.
+  nix.settings.cores = 12;
+
+  # Expose a manually started llama.cpp server only to IPv4 clients on the
+  # home Wi-Fi LAN. No llama.cpp service is enabled by default. Match both the
+  # ingress interface and source subnet so non-LAN sources on this NIC are not
+  # accepted by an interface-only rule.
+  networking.firewall.extraCommands = ''
+    iptables -A nixos-fw \
+      -i wlp7s0 \
+      -s 192.168.0.0/24 \
+      -p tcp --dport 1234 \
+      -j nixos-fw-accept
+  '';
+
   # The single interactive account shared by NixOS and Home Manager.
   starforge.user.username = "katossh";
 

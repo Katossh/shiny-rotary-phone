@@ -8,6 +8,7 @@ Usage:
   nixcfg boot            Show boot timing, slow units, and the critical chain.
   nixcfg recovery        List system generations and show recovery guidance.
   nixcfg audit           Collect read-only P0 security diagnostics.
+                         Root-only checks use sudo and refresh its timestamp.
   nixcfg check           Run local formatting, lint, evaluation, and build checks.
 
 Doctor exit codes:
@@ -167,6 +168,9 @@ security_audit() {
   printf 'Date: %s\n' "$(date --iso-8601=seconds)"
   printf 'Kernel: %s\n' "$(uname -r)"
   printf '\nThis command does not change firmware, keys, policies, or system configuration.\n'
+  if [[ "$SUDO_AVAILABLE" == "true" ]]; then
+    printf 'Root-only checks use sudo, which refreshes the sudo timestamp.\n'
+  fi
 
   printf '\n== 1. Secure Boot and EFI ==\n'
   run_diagnostic user sbctl status
@@ -474,9 +478,14 @@ run_doctor() {
   doctor_check_system_unit "apparmor.service" "AppArmor"
   doctor_check_system_unit "usbguard.service" "USBGuard"
   doctor_check_system_unit "libvirtd.socket" "Libvirt management socket"
-  doctor_check_system_unit "prepare-btrfs-snapshots.service" "Btrfs snapshot preparation"
-  doctor_check_system_unit "snapper-timeline.timer" "Snapper timeline timer"
-  doctor_check_system_unit "snapper-cleanup.timer" "Snapper cleanup timer"
+  local -a snapper_configs=(/etc/snapper/configs/*)
+  if [[ -e "${snapper_configs[0]}" ]]; then
+    doctor_check_system_unit "prepare-btrfs-snapshots.service" "Btrfs snapshot preparation"
+    doctor_check_system_unit "snapper-timeline.timer" "Snapper timeline timer"
+    doctor_check_system_unit "snapper-cleanup.timer" "Snapper cleanup timer"
+  else
+    doctor_report SKIP "Btrfs snapshot services" "Snapper is not configured on this host"
+  fi
 
   printf '\nDesktop session\n'
   if [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
@@ -496,7 +505,7 @@ run_doctor() {
   fi
 
   printf '\nStorage\n'
-  root_usage="$(df -P --output=pcent / 2>/dev/null | awk 'NR == 2 { gsub(/%/, "", $1); print $1 }')"
+  root_usage="$(df -P / 2>/dev/null | awk 'NR == 2 { gsub(/%/, "", $5); print $5 }' || true)"
   if [[ "$root_usage" =~ ^[0-9]+$ ]]; then
     if (( 10#$root_usage >= 95 )); then
       doctor_report ERROR "Root filesystem capacity" "$root_usage% used" \
@@ -588,12 +597,21 @@ show_recovery() {
   fi
 
   printf '\nAvailable system generations\n'
-  if command -v nix-env >/dev/null 2>&1 && [[ -e "$system_profile" ]]; then
-    if ! nix-env --list-generations --profile "$system_profile"; then
-      printf 'Could not list system generations.\n'
-    fi
+  local profile_dir="/nix/var/nix/profiles"
+  local generation_link generation_name marker
+  local -a generation_links=( "$profile_dir"/system-*-link )
+  if [[ -e "${generation_links[0]}" ]]; then
+    while IFS= read -r generation_link; do
+      generation_name="${generation_link##*/}"
+      marker=""
+      if [[ "$generation_name" == "$current_generation" ]]; then
+        marker=" (current)"
+      fi
+      printf '  %s%s -> %s\n' "$generation_name" "$marker" \
+        "$(readlink "$generation_link" 2>/dev/null || printf 'unreadable')"
+    done < <(printf '%s\n' "${generation_links[@]}" | sort -V)
   else
-    printf 'nix-env or the system profile is unavailable; generation listing skipped.\n'
+    printf 'No system generation links were found under %s.\n' "$profile_dir"
   fi
 
   cat <<'EOF'
@@ -608,8 +626,7 @@ Recovery paths
 
 2. The current generation does not reach a usable login:
    At the Limine boot menu, select an earlier NixOS generation.
-   Do not select the separate Windows Boot Manager entry unless you intend
-   to boot Windows. The configured Limine menu retains up to five generations.
+   The configured Limine menu retains up to five generations.
 
 3. A build or evaluation failed before activation:
    A failed build does not require a rollback because it has not activated a
@@ -681,7 +698,7 @@ run_checks() {
   cd "$repo_root"
 
   if [[ ! -f "$repo_root/hosts/workstation/hardware-configuration.nix" ]]; then
-    printf 'Local hardware configuration is missing. Run sudo ./install.sh --test to copy or generate it before evaluating the system.\n' >&2
+    printf 'Local hardware configuration is missing. Create hosts/workstation/hardware-configuration.nix manually (see INSTALL.md); install.sh does not copy or generate it.\n' >&2
     return 2
   fi
 
