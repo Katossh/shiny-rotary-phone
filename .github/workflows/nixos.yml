@@ -85,6 +85,21 @@ jobs:
           nix fmt -- "${nix_files[@]}"
           git diff --exit-code -- "${nix_files[@]}"
 
+      - name: Evaluate flake outputs and workstation system
+        run: |
+          nix flake check \
+            --no-build \
+            --no-update-lock-file \
+            --accept-flake-config \
+            --show-trace \
+            "path:$GITHUB_WORKSPACE"
+
+          nix eval --raw \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.system.build.toplevel.drvPath" \
+            --no-update-lock-file \
+            --accept-flake-config \
+            --show-trace
+
       - name: Verify Home Manager target enumeration
         run: |
           username="$(nix eval --raw "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.starforge.user.username" --no-update-lock-file --accept-flake-config)"
@@ -250,8 +265,11 @@ jobs:
           remove_packages_one_command: true
           remove_folders: "/usr/share/az* /usr/local/lib/node_modules /usr/local/share/chromium /usr/local/share/powershell /usr/local/aws-cli /usr/local/aws-sam-cli /usr/share/gradle /opt/pipx /usr/share/swift /usr/share/miniconda /usr/local/julia*"
 
-      - name: Report available build disk space
-        run: df -h /
+      - name: Report available build resources
+        run: |
+          df -h /
+          free -h
+          nproc
 
       - name: Install Nix
         uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31
@@ -303,9 +321,10 @@ jobs:
       - name: Build the workstation system closure
         run: |
           nix build \
+            --max-jobs 1 \
+            --cores 2 \
             --no-update-lock-file \
             --accept-flake-config \
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.system.build.toplevel" \
             --no-link \
-            --fallback \
-            --print-build-logs
+            --fallback

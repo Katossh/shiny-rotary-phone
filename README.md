@@ -648,35 +648,23 @@ in `flake.lock`.
 
 ## Development tools
 
-- The system-wide graphical editors are Zed and Visual Studio Code. Google
-  Antigravity CLI is installed system-wide as `antigravity-cli` and launched
-  with `agy`. The separate Antigravity IDE is installed per-user through Home
-  Manager from the locked Nixpkgs revision.
+- The system-wide graphical editors are Zed and Visual Studio Code.
 - GitHub CLI (`gh`) is enabled through Home Manager and is available in
-  normal terminal sessions and coding agents. Authenticate interactively with
-  `gh auth login`; credentials are not stored in this repository.
-- OpenCode CLI (`opencode`) remains installed per-user through Home Manager;
-  OpenCode Desktop is packaged separately from the upstream Linux release.
-- DSH Desktop v0.2.18 is installed from the x86_64 AppImage published by
-  the community `web-casa/DeepSeek-Harness-Desktop` project. It is packaged
-  declaratively through Nix/Home Manager; no Flatpak runtime is used. The
-  `dsh` command remains a launcher for the upstream npm CLI package and
-  downloads it through `npx` on first use.
-- Hermes Agent is installed through its official Home Manager module, which
-  provides both the `hermes` CLI and Hermes Desktop launcher using the same
-  runtime. No gateway service is enabled automatically.
-- OpenCode Desktop, DeepSeek Harness Desktop, and Hermes Desktop are user
-  applications. Their provider credentials and application state remain in
-  the user's home directory, not in the Nix store.
+  normal terminal sessions. Authenticate interactively with `gh auth login`;
+  credentials are not stored in this repository.
+
+OpenCode CLI/Desktop, `gemini-cli`, Antigravity CLI/IDE, DeepSeek Harness
+(`dsh`), and Hermes Agent are not part of this configuration.
 
 ## CI and build caching
 
 GitHub Actions runs two independent jobs in parallel:
 
 1. **Validate Nix configuration** formats maintained Nix files, runs
-   `statix` and `deadnix` using the flake's pinned development shell, and
-   evaluates flake outputs with `nix flake check --no-build`. This is the
-   quick feedback path; it does not compile the complete operating system.
+   `statix` and `deadnix` using the flake's pinned development shell, runs
+   `nix flake check --no-build`, and explicitly evaluates the complete
+   workstation system derivation. This validates the NixOS and Home Manager
+   option graph without compiling the operating system.
 2. **Build workstation system** builds the full
    `nixosConfigurations.workstation.config.system.build.toplevel` closure.
    This remains the expensive integration check.
@@ -684,9 +672,14 @@ GitHub Actions runs two independent jobs in parallel:
 Both jobs use the committed `flake.lock`; normal CI does not update
 dependencies. The full build uses Nix's `--fallback` option so a temporary
 binary-cache transfer failure can fall back to building an unavailable
-substitute from source. It can also use a public Cachix binary cache to reuse
-store paths between runs. Pull requests receive read-only cache access. Only
-pushes to `main` receive the cache write token and can publish build results.
+substitute from source. It limits Nix to one derivation at a time and two
+build cores, avoiding simultaneous large source builds (notably the custom
+CachyOS kernel and Firefox) on the hosted runner. Build logs are kept concise;
+Nix still reports the failing derivation and its error when a build fails.
+
+The build can also use a public Cachix binary cache to reuse store paths
+between runs. Pull requests receive read-only cache access. Only pushes to
+`main` receive the cache write token and can publish build results.
 
 ### Enable the Starforge Cachix cache
 
@@ -707,7 +700,7 @@ never receive or use the write token; they use the public cache in read-only
 mode. On pushes to `main`, the workflow checks whether the write token exists
 before enabling publishing. If the secret is missing, it emits a warning and
 continues with read-only cache access instead of failing the build. The cache
-must be public for token-free reads from pull requests.
+must be public for token-free reads from CI.
 
 The cache name is not a secret. Keep `CACHIX_AUTH_TOKEN` only in GitHub
 Actions secrets; never commit it to the repository or place it in the Nix
