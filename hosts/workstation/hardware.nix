@@ -22,7 +22,7 @@
   # This is a custom kernel configuration, so the upstream prebuilt kernel
   # cache may not contain the resulting kernel derivation.
   nixpkgs.overlays = [ inputs.nix-cachyos-kernel.overlays.pinned ];
-  boot.kernelPackages = (pkgs.cachyosKernels."linuxPackages-cachyos-latest-lto-zen4").extend (
+  boot.kernelPackages = pkgs.cachyosKernels."linuxPackages-cachyos-latest-lto-zen4".extend (
     _final: prev: {
       kernel = prev.kernel.override {
         structuredExtraConfig = prev.kernel.structuredExtraConfig // {
