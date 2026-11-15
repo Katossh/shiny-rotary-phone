@@ -41,13 +41,6 @@
 
     opencode-desktop-nix.url = "github:x13-me/opencode-desktop-nix";
 
-    # Official Hermes Agent flake: provides the CLI and its desktop application.
-    hermes-agent = {
-      url = "github:NousResearch/hermes-agent";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.home-manager.follows = "home-manager";
-    };
-
     terminal-dotfiles = {
       url = "github:Katossh/terminal-dotfiles";
       flake = false;
