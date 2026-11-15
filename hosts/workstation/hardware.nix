@@ -26,8 +26,8 @@
     _final: prev: {
       kernel = prev.kernel.override {
         structuredExtraConfig = prev.kernel.structuredExtraConfig // {
-          DEBUG_INFO_BTF = lib.kernel.yes;
-          RUST = lib.kernel.no;
+          DEBUG_INFO_BTF = lib.mkForce lib.kernel.yes;
+          RUST = lib.mkForce lib.kernel.no;
         };
       };
     }
