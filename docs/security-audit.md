@@ -155,16 +155,22 @@ not an unreviewed generated policy.
 
 The current configuration sets the following kernel parameters:
 
-- `mitigations=off`
+- `mitigations=auto,nosmt`
 - `slab_nomerge`
 - `page_alloc.shuffle=1`
 - `randomize_kstack_offset=on`
 
-`mitigations=off` is an intentional performance trade-off: it disables the
-kernel's CPU vulnerability mitigations and reduces protection against
-CPU-related side-channel attacks. Consequently, vulnerability status reported
-by the audit must be interpreted in light of this explicit boot parameter;
-do not mistake the resulting exposure for an unexpected configuration drift.
+`mitigations=auto,nosmt` enables the kernel's available CPU-vulnerability
+mitigations and full cross-thread protection. The kernel disables SMT only
+when a mitigation requires it for the detected CPU; otherwise SMT remains
+available. On an affected CPU this can reduce parallel throughput, which is
+an intentional security trade-off. The CachyOS kernel configuration enables
+`CONFIG_CPU_MITIGATIONS` and its supported x86 mitigation options.
+
+The configuration also sets `kernel.split_lock_mitigate=1`. This keeps
+split-lock detection and throttling enabled to prevent unprivileged workloads
+from causing system-wide denial of service through split-lock operations;
+those workloads may incur a performance penalty.
 
 The configuration also sets kernel pointer/dmesg restrictions, Yama ptrace scope,
 unprivileged BPF restrictions, and filesystem protections in
