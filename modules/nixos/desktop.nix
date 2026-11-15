@@ -7,13 +7,9 @@
     (final: prev: {
       firefox-unwrapped = prev.firefox-unwrapped.overrideAttrs (old: {
         configureFlags =
-          (builtins.filter
-            (flag:
-              !(lib.hasPrefix "--enable-lto=" flag)
-              && !(lib.hasPrefix "--enable-optimize" flag)
-            )
-            (old.configureFlags or [ ])
-          )
+          (builtins.filter (
+            flag: !(lib.hasPrefix "--enable-lto=" flag) && !(lib.hasPrefix "--enable-optimize" flag)
+          ) (old.configureFlags or [ ]))
           ++ [
             "--enable-lto=thin,cross"
             "--enable-optimize=-O3"
