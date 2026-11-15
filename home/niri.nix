@@ -209,6 +209,52 @@ in
             "control-center"
           ];
         };
+
+        # Open individual Noctalia Control Center panels directly.
+        "Mod+N" = {
+          _props.repeat = false;
+          _props."hotkey-overlay-title" = "Open notifications";
+          spawn = [
+            "noctalia"
+            "msg"
+            "panel-toggle"
+            "control-center"
+            "notifications"
+          ];
+        };
+        "Mod+Shift+W" = {
+          _props.repeat = false;
+          _props."hotkey-overlay-title" = "Open weather";
+          spawn = [
+            "noctalia"
+            "msg"
+            "panel-toggle"
+            "control-center"
+            "weather"
+          ];
+        };
+        "Mod+Shift+A" = {
+          _props.repeat = false;
+          _props."hotkey-overlay-title" = "Open calendar";
+          spawn = [
+            "noctalia"
+            "msg"
+            "panel-toggle"
+            "control-center"
+            "calendar"
+          ];
+        };
+        "Mod+Shift+M" = {
+          _props.repeat = false;
+          _props."hotkey-overlay-title" = "Open media controls";
+          spawn = [
+            "noctalia"
+            "msg"
+            "panel-toggle"
+            "control-center"
+            "media"
+          ];
+        };
         "Mod+Comma" = {
           _props."hotkey-overlay-title" = "Open Noctalia settings";
           spawn = [
