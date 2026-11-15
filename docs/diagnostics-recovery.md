@@ -12,7 +12,7 @@ different purposes and side-effect profiles.
 | `nixcfg doctor` | Checks required system services, the active desktop session, systemd failures, root filesystem capacity, and the active system profile. | No |
 | `nixcfg boot` | Shows boot timing, the 15 slowest systemd units, and the critical dependency chain. | No |
 | `nixcfg recovery` | Lists available system generations and prints host-specific recovery instructions. | No |
-| `nixcfg audit` | Performs the existing P0 security checks for Secure Boot, AppArmor, USBGuard, kernel mitigations, and AMD IOMMU. | No; it may request sudo for read-only checks and may show the documented fwupd upload prompt. |
+| `nixcfg audit` | Performs the existing P0 security checks for Secure Boot, AppArmor, USBGuard, kernel mitigations, and AMD IOMMU. | No; it may request sudo for read-only checks (which refreshes the sudo timestamp) and may show the documented fwupd upload prompt. |
 | `nixcfg check` | Runs formatting, static analysis, flake evaluation, and the full system build. | Does not activate a generation; it may download/build Nix store paths. |
 
 Run `nixcfg doctor` for a concise health report. It does not prompt for sudo,
@@ -101,8 +101,7 @@ home-directory data or reverse external changes.
 ### The current generation will not boot
 
 Use the Limine boot menu and select an earlier NixOS generation. The current
-host configuration retains up to five generations in the Limine menu. The
-separate Windows Boot Manager entry is not a NixOS recovery entry.
+host configuration retains up to five generations in the Limine menu.
 
 After booting a working generation, inspect the state with:
 

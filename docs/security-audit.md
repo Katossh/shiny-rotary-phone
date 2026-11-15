@@ -31,9 +31,8 @@ Review these outputs together:
 - `sbctl verify`: EFI files on the ESP and files registered in the sbctl
   signing database. This check is scoped to the local sbctl signing database
   key; it is not a complete validation against every certificate enrolled in
-  UEFI. In particular, Windows Boot Manager may be Microsoft-signed rather
-  than signed by the local db key enrolled on this host. Treat such output as a review item,
-  not an instruction to sign or replace the Windows loader.
+  UEFI. Treat the output as a review item, not an instruction to sign or
+  replace another loader.
 - `bootctl status`: UEFI and Secure Boot state reported by systemd-boot's
   firmware interface. This is independent of whether Limine is the active loader.
 - `fwupdmgr security`: firmware security attributes, when supported. Run the
@@ -68,9 +67,9 @@ image.
 
 Do not run key enrollment, key reset, key rotation, or `sbctl sign-all` as part
 of an audit. Do not delete or replace `dbx`. Preserve the existing Microsoft
-certificates and Windows Boot Manager chainloading path. Any experiment with
-an unsigned EFI image must use a removable test medium and a recovery path;
-do not alter the working NixOS or Windows boot files to test enforcement.
+and firmware-builtin certificates. Any experiment with an unsigned EFI image
+must use a removable test medium and a recovery path; do not alter the working
+NixOS boot files to test enforcement.
 
 ### Kernel Lockdown and module signatures
 

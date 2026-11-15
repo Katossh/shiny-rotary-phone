@@ -61,7 +61,7 @@ GPU on an AM5 platform.
 
 - AMD CPU microcode and redistributable firmware are enabled.
 - AMD P-State active mode is enabled for modern Ryzen power/performance scaling.
-- The workstation uses CachyOS `linuxPackages-cachyos-latest-lto-zen4`: Clang ThinLTO and a Zen 4 compiler target, without the BORE patch. Kernel BTF is explicitly enabled so `sched_ext` can expose `/sys/kernel/btf/vmlinux` to `scx_lavd`. Upstream Linux does not permit `CONFIG_RUST` together with BTF and LTO, so in-kernel Rust support is disabled; the NixOS Rust toolchain and Rust applications are unaffected. This custom kernel configuration may miss the upstream prebuilt kernel cache and require a local kernel build.
+- The workstation uses CachyOS `linuxPackages-cachyos-latest-lto-zen4`: Clang ThinLTO and a Zen 4 compiler target, without the BORE patch. Kernel BTF is explicitly enabled so `sched_ext` can expose `/sys/kernel/btf/vmlinux` to `scx_lavd`. Upstream Linux does not permit `CONFIG_RUST` together with BTF and LTO, so in-kernel Rust support is disabled; the NixOS Rust toolchain and Rust applications are unaffected. This custom kernel configuration may not be present in the upstream prebuilt kernel cache and may require a local kernel build.
 - The AMDGPU kernel driver is loaded in the initrd for early KMS.
 - Mesa graphics acceleration and 32-bit graphics support are enabled.
 - Vulkan and VA-API diagnostic tools are installed.
@@ -96,12 +96,16 @@ current LUKS mapping does not pass discard requests through; enabling that
 would be a separate encryption-policy decision because discard information
 reveals allocation patterns.
 
-All Btrfs data subvolumes (/, /home, /nix, and /var/log) use
-compress=zstd:1 and noatime. Level-1 Zstandard compression is a conservative
-choice that keeps CPU overhead low while compressing newly written extents.
-Changing mount options does not recompress existing data; existing files are
-compressed only when rewritten. autodefrag is intentionally omitted to avoid
-unnecessary write amplification on a copy-on-write filesystem.
+The root filesystem uses compress=zstd:1 and noatime. The /home, /nix, and
+/var/log subvolumes share the filesystem compression setting but currently
+mount with relatime; this repository does not override their per-mount
+options. If noatime is required on those subvolumes, set it in the
+machine-local hardware configuration and verify the result with `findmnt`.
+Level-1 Zstandard compression is a conservative choice that keeps CPU
+overhead low while compressing newly written extents. Changing mount options
+does not recompress existing data; existing files are compressed only when
+rewritten. autodefrag is intentionally omitted to avoid unnecessary write
+amplification on a copy-on-write filesystem.
 
 ### Btrfs snapshots
 
@@ -155,29 +159,18 @@ and optional logical position. See
 [`docs/user-configuration.md`](./docs/user-configuration.md) for examples.
 
 
-## Bootloader and Windows dual boot
+## Bootloader
 
-The workstation profile uses Limine in UEFI mode. Limine is selected here because it supports
-direct EFI chainloading from another partition by GPT partition GUID, allowing
-Windows Boot Manager to remain on its own EFI partition without relying on an
-unsigned UEFI Shell intermediary.
+The workstation profile uses Limine in UEFI mode with Secure Boot signing.
+The NixOS `/boot` partition is FAT32 and is configured through the machine-local
+`hosts/workstation/hardware-configuration.nix`; its device path and UUID are
+intentionally not published in this repository. Do not copy or reuse those
+identifiers on another machine.
 
-The current disk layout is intentionally preserved:
-
-- NixOS keeps using the existing 1 GB FAT32 `/boot` partition
-  (currently `/dev/nvme0n1p5`, filesystem UUID `FD77-5C81`).
-- Windows keeps its existing 200 MB EFI System Partition
-  (`/dev/nvme0n1p1`).
-- The Windows entry targets the Windows ESP by its GPT partition GUID:
-  `68a6f3c1-1eee-4845-8c3e-7108cec34c4a`, loading
-  `/EFI/Microsoft/Boot/bootmgfw.efi`.
-
-The NixOS `/boot` partition is FAT32 and is already used by a working UEFI
-boot entry, although its GPT type is currently reported as `Linux filesystem`
-rather than `EFI System`. This configuration deliberately does not rewrite
-the partition table or create another Windows-visible EFI System Partition.
-Do not change its GPT type or resize either EFI-related partition as part of
-this bootloader migration.
+The bootloader configuration does not rewrite the partition table or resize
+EFI-related partitions. Adding another operating system's boot entry is a
+separate change that must be designed, reviewed, and tested on the target
+firmware; this profile configures NixOS single boot.
 
 Limine is configured for Secure Boot signing with the locally provisioned
 `sbctl` database key. Key creation and enrollment remain manual workstation
@@ -194,10 +187,9 @@ per-entry icons. The default NixOS boot wallpaper is retained because the
 upstream palette theme does not include a wallpaper.
 
 Secure Boot is enabled on the workstation and both `sbctl status` and
-`bootctl status` report it active in User Mode. The enrollment retained the
-Microsoft and firmware-builtin certificates so Windows Boot Manager remains
-chainloadable through Limine. The MSI firmware is configured for Custom mode
-and the Maximum Security preset.
+`bootctl status` report it active in User Mode. The enrollment retains the
+Microsoft and firmware-builtin certificates. The MSI firmware is configured
+for Custom mode and the Maximum Security preset.
 
 **Firmware caveat:** `sbctl` still reports MSI quirk FQ0001, which warns that
 the firmware may execute EFI images despite a Secure Boot policy violation.
@@ -206,7 +198,8 @@ fail-closed enforcement should not be assumed solely from the Secure Boot
 status. Keep the known-good recovery route and do not delete the existing
 `dbx` revocation database.
 
-The workstation profile does not configure Windows volume encryption.
+This profile does not configure another operating system's boot entries or
+volume encryption.
 
 ## Memory and session protection
 
@@ -522,8 +515,8 @@ must be isolated from a potentially hostile kernel-level workload.
   container. TPM-backed unlocking is not configured yet.
 
 This is a workstation baseline, not a claim of complete isolation. The
-Noctalia session is configured to lock after ten minutes of inactivity, turn
-the displays off after fifteen minutes, and lock before suspend.
+Noctalia session is configured to lock after five minutes of inactivity, turn
+the displays off after six minutes, and lock before suspend.
 TPM-backed LUKS unlocking remains a separate, not-yet-provisioned stage:
 the passphrase path is retained until PCR policy and recovery are tested.
 IOMMU is
@@ -536,7 +529,8 @@ runtime hardware, networking, Bluetooth, and KVM modules.
 
 Run `nixcfg audit` to collect read-only diagnostics for Secure Boot,
 AppArmor, USBGuard, CPU mitigations, AMD P-State, sysctl hardening, and AMD
-IOMMU. The command does not modify system state. See
+IOMMU. The command does not modify system configuration or security policy;
+root-only checks use sudo and refresh the sudo timestamp. See
 [`docs/security-audit.md`](./docs/security-audit.md) for the review procedure
 and the safety gates before tightening any policy.
 
@@ -642,7 +636,7 @@ sudo journalctl -u usbguard -b
 - Noctalia is configured through its Home Manager module and validates its TOML.
 - Noctalia uses the Catppuccin built-in palette and Inter as its system-installed interface font.
 - LocalSend is installed for cross-platform LAN file sharing.
-- The session locks after ten idle minutes, turns displays off after fifteen,
+- The session locks after five idle minutes, turns displays off after six,
   and locks before suspend with no passwordless grace period.
 - Kitty and Zsh configuration remain owned by terminal-dotfiles to avoid
   competing Home Manager definitions.
@@ -776,8 +770,10 @@ define any different compiler versions or additional native dependencies.
 Formatting and static analysis cover tracked Nix files. The generated
 `hosts/workstation/hardware-configuration.nix` stays local and Git-ignored so
 machine-specific device paths and filesystem UUIDs are not published; it is
-still included in local flake evaluation and system builds. Prepare it with
-`install.sh` before running the full checks. Run these checks before opening a PR:
+still included in local flake evaluation and system builds. Create it manually
+before running the full checks; `install.sh` does not copy or generate it. See
+[`INSTALL.md`](./INSTALL.md) for the generation command. Run these checks
+before opening a PR:
 
 ```sh
 mapfile -t nix_files < <(git ls-files "*.nix")
@@ -849,8 +845,9 @@ follow a newer NixOS release; it remains `26.05` from the original install.
 
 ## Maintenance and recovery
 
-- Garbage collection runs weekly and removes unreferenced store paths older
-  than 14 days. Existing system generations are not automatically deleted.
+- Garbage collection runs weekly and removes unreferenced store paths.
+  Existing system generations are retained as rollback targets; remove them
+  explicitly only after confirming that a known-good generation remains.
 - Store optimisation runs weekly.
 - GitHub Actions validates formatting and evaluates the flake in a lightweight
   job, then builds the complete system closure in a separate job.
@@ -858,5 +855,5 @@ follow a newer NixOS release; it remains `26.05` from the original install.
   before changing bootloader, LUKS, Btrfs, or kernel settings.
 - Keep a known-good recovery route available before modifying bootloader
   or Secure Boot settings. The Limine menu retains up to five NixOS generations;
-  verify the active Limine and Windows chainloading paths on the host before
-  relying on them as the only recovery route.
+  verify the active Limine boot path on the host before relying on it as the
+  only recovery route.

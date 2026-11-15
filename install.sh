@@ -246,6 +246,7 @@ EOF
     || die "The existing hardware configuration is invalid. It was left untouched."
 
   log "Using the existing hardware configuration at $hardware_file (not copied or modified)."
+  log "Hardware configuration presence and syntax were validated; device paths and UUIDs are not compared with $INSTALL_ROOT."
 }
 check_secure_boot_keys() {
   if grep -Eq 'secureBoot\.enable[[:space:]]*=[[:space:]]*true' "$REPO_DIR/modules/nixos/boot.nix"; then

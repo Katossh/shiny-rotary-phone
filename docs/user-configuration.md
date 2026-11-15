@@ -44,6 +44,22 @@ Most users should change personal preferences in the single
 `home/preferences.nix` file rather than editing the implementation
 modules that consume them.
 
+### Network-dependent runtime behavior
+
+Two managed integration points can download data outside the Nix store:
+
+- Home Manager activation invokes the `terminal-dotfiles` installer, which
+  restores Oh My Zsh and its plugins from their upstream Git repositories.
+  Activation may therefore need network access when that data is missing or
+  being repaired. The terminal package set itself remains declarative.
+- The `dsh` launcher runs `npx --yes @deepseek-ai/dsh`, which fetches an
+  unpinned npm package on first use and caches it under the user's npm cache.
+  It is not part of the Nix store closure.
+
+Both downloads are intentional upstream integration points, not NixOS package
+management. Review or pin them separately if you require a fully offline or
+byte-reproducible user environment.
+
 ## Supported preferences
 
 The following typed options are declared under `starforge.user` in the
@@ -148,7 +164,7 @@ New windows are routed to these workspaces by their Niri application ID:
 | Workspace | Purpose | Applications |
 | --- | --- | --- |
 | `1` | Web | Chromium, Firefox |
-| `2` | Development | Zed, Kitty |
+| `2` | Development | Zed, Alacritty |
 | `3` | Games | Steam and Steam games, osu!, Genshin / Anime Game Launcher |
 | `4` | Communication | Discord, Telegram, LocalSend |
 
@@ -255,8 +271,9 @@ on hardware that is not attached during the build.
   VXE receiver, and LEKU keyboard.
 - `modules/nixos/hardware.nix` contains common capabilities such as firmware,
   graphics, Bluetooth, fwupd, SMART monitoring, and common diagnostic tools.
-- `modules/nixos/storage.nix` owns filesystem mount policy and the Btrfs scrub
-  timer.
+- `modules/nixos/storage.nix` owns root filesystem options and the Btrfs scrub
+  timer. The machine-local hardware configuration owns the separate
+  subvolume mount options for `/home`, `/nix`, and `/var/log`.
 - `hosts/workstation/hardware-configuration.nix` remains generated storage,
   boot, and detected-device configuration; do not hand-edit it for routine
   personalization.
@@ -380,58 +397,50 @@ sudo nixos-rebuild test --flake .#workstation
 
 ## CachyOS kernel
 
-The workstation uses the `nix-cachyos-kernel` flake input, pinned to
-a specific revision in `flake.lock`. The host selects the upstream
-`linuxPackages-cachyos-bore-lto-zen4` package directly through the pinned
-overlay, without modifying its kernel derivation. This allows Nix to use the
-prebuilt kernel from the CachyOS flake's signed binary cache.
+The workstation uses the `nix-cachyos-kernel` flake input, pinned in
+`flake.lock`. The host selects `linuxPackages-cachyos-latest-lto-zen4` and
+extends it in `hosts/workstation/hardware.nix`:
+
+- Clang/LLD ThinLTO and the explicit Zen 4 compiler target.
+- No BORE scheduler patch.
+- `CONFIG_DEBUG_INFO_BTF=y` and in-kernel Rust disabled. Upstream Kconfig
+  does not permit `CONFIG_RUST` together with BTF and LTO; the NixOS Rust
+  toolchain and Rust applications are unaffected.
 
 The input deliberately does **not** follow the root Nixpkgs input. The pinned
 overlay uses the exact Nixpkgs revision against which the CachyOS kernel and
-its matching kernel-module package set were built. Replacing it with the
-ordinary overlay or adding `nixpkgs.follows` can cause binary-cache misses
-and package/patch mismatches.
+its matching kernel-module set were built; replacing it or adding
+`nixpkgs.follows` can cause cache misses and patch mismatches.
 
-### BORE + Clang ThinLTO + Zen 4
+Because this is a custom kernel configuration, the upstream prebuilt CachyOS
+cache may not contain the resulting kernel derivation. A build can therefore
+compile the kernel locally; allow enough disk space and build time, and keep a
+known-good generation until the new kernel has booted. The final
+certificate-embedding image rebuild is a separate repackaging step: it
+disables `CONFIG_X86_DECODER_SELFTEST` only for that image build and does not
+change the kernel `.config`.
 
-The selected variant combines:
+### BTF and sched_ext
 
-- CachyOS's BORE scheduler patch.
-- Clang/LLD with ThinLTO (`CONFIG_LTO_CLANG_THIN=y`).
-- The explicit Zen 4 compiler target (`MZEN4`), rather than
-  build-machine-specific `-march=native`.
-- CachyOS's 1000 Hz timer, full-preemption, full-dynticks, and compiler
-  optimisation configuration.
+BTF is required by `scx_lavd`, and the host enables it explicitly. The NixOS
+`services.scx` module starts `scx_lavd --performance`; Ananicy-cpp is disabled
+to avoid overlapping scheduling policy.
 
-The exact pinned builder uses `pahole` 1.32 and deliberately forces
-`CONFIG_DEBUG_INFO_BTF=n` for LTO kernels until a sufficiently recent
-`pahole` is available. The ready-made binary therefore does **not** include
-kernel BTF. This is a known limitation of the prebuilt variant, not a local
-configuration override.
+After activation and reboot, verify the kernel and scheduler state:
 
-BTF is required for sched_ext BPF schedulers. The existing `scx_lavd`
-service declaration remains in the configuration, but LAVD cannot attach to
-this prebuilt kernel without `/sys/kernel/btf/vmlinux`; expect
-`scx.service` to fail and the kernel to remain on its built-in EEVDF
-scheduler. Restoring BTF with a custom kernel override would create a
-different derivation and force a local kernel build, defeating the purpose
-of using the ready-made package. To use sched_ext again, a BTF-enabled
-prebuilt CachyOS LTO kernel is needed, or the host must return to a BTF-capable
-kernel variant.
+```sh
+uname -r
+zgrep -E '^(CONFIG_(LTO_CLANG_THIN|MZEN4|SCHED_CLASS_EXT|DEBUG_INFO_BTF)=|# CONFIG_(SCHED_BORE|RUST) is not set)' /proc/config.gz
+test -r /sys/kernel/btf/vmlinux
+cat /sys/kernel/sched_ext/state
+systemctl status scx.service
+pgrep -af scx_lavd
+```
 
-### Use the prebuilt kernel
-
-The selected `linuxPackages-cachyos-bore-lto-zen4` variant is listed by the
-pinned `nix-cachyos-kernel` project as available from its binary cache.
-The repository already configures the cache URL and signing key in
-`modules/nixos/nix.nix`. Nix can therefore substitute the kernel derivation
-instead of compiling the kernel sources locally. No `allowSubstitutes =
-false`, `preferLocalBuild`, or custom Kconfig override is applied.
-
-A full NixOS build still assembles the system closure and may build other
-outputs, including the final certificate-embedding image, but it does not
-compile the CachyOS kernel from source. The resulting generation is not
-activated by the build command.
+Expected results: `CONFIG_LTO_CLANG_THIN=y`, `CONFIG_MZEN4=y`,
+`CONFIG_SCHED_CLASS_EXT=y`, and `CONFIG_DEBUG_INFO_BTF=y`; BORE and in-kernel
+Rust are not enabled. `/sys/kernel/btf/vmlinux` is readable, sched_ext is
+enabled, and `scx_lavd` is running.
 
 ### Binary cache and updates
 
@@ -439,9 +448,7 @@ The CachyOS kernel flake publishes signed binaries through
 `https://cache.lantian.pub/lantian`. The repository configures that cache and
 its public signing key in both the flake and the Nix daemon. Nix verifies
 downloaded substitutes against the configured public key, but this does not
-make the third-party cache operator part of the NixOS project. The selected
-kernel package accepts the published substitute; use the project's build
-check to confirm the cache hit for the currently pinned revision.
+make the third-party cache operator part of the NixOS project.
 
 Update only this input when reviewing a new CachyOS kernel:
 
@@ -459,89 +466,20 @@ Propeller. The CachyOS Nix builder exposes AutoFDO separately and defaults it
 to disabled; enabling it requires a compatible profile. Do not describe this
 build as profile-guided unless a profile has actually been supplied and used.
 
-### Removed local kernel overrides
+### CPU mitigations
 
-The previous custom upstream kernel module and the Clang/LLD override have
-been removed. Their manual Kconfig settings duplicated or conflicted with
-settings already owned by the CachyOS package. The machine-specific
-`X86_NATIVE_CPU` override is replaced by CachyOS's explicit Zen 4 target,
-which is reproducible on CI and does not encode the build machine's exact CPU.
-
-The final certificate-embedding image rebuild disables
-`CONFIG_X86_DECODER_SELFTEST` as a **Make command-line override for that
-repackaging derivation only**. Linux 7.3's `bzImage` target otherwise reruns
-the x86 decoder host test, but Nixpkgs' pruned `kernel.dev` tree does not
-retain `arch/x86/tools/insn_decoder_test.c`. The original CachyOS kernel
-derivation has already built the kernel image; this avoids rerunning that
-optional build-time test while embedding the module certificates. It does
-not change the `.config` used to compile the kernel or its runtime
-configuration.
-
-The certificate-bundle integration in `modules/nixos/boot.nix`, Limine,
-and Secure Boot configuration remain separate and unchanged. The kernel
-command line now uses `mitigations=auto,nosmt`, enabling the kernel's
-available CPU-vulnerability mitigations and full cross-thread protection.
-SMT is disabled only if the detected CPU requires it for a complete
-mitigation; affected processors may therefore expose fewer logical CPUs and
-lower parallel throughput. Keep the previous boot generation until the new
-kernel has booted and the desktop, networking, graphics, module loading, and
-SCX scheduler have been checked.
-
-After reboot, verify the actual kernel configuration and scheduler state:
-
-```sh
-uname -r
-cat /proc/version
-zgrep -E '^(CONFIG_(LTO_CLANG_THIN|MZEN4|SCHED_BORE|SCHED_CLASS_EXT)=|# CONFIG_DEBUG_INFO_BTF is not set)' /proc/config.gz
-test ! -e /sys/kernel/btf/vmlinux
-cat /sys/kernel/sched_ext/state
-systemctl status scx.service
-pgrep -af scx_lavd
-```
-
-`CONFIG_DEBUG_INFO_BTF` is expected to be disabled in this prebuilt LTO
-variant. Consequently `/sys/kernel/btf/vmlinux` is absent and sched_ext
-cannot attach a BPF scheduler, even though `CONFIG_SCHED_CLASS_EXT` itself
-is enabled.
-
-## Scheduling services
-
-The workstation runs `scx_lavd` through the pinned NixOS `services.scx`
-module. It starts the scheduler with `--performance`:
-
-```nix
-services.scx = {
-  enable = true;
-  scheduler = "scx_lavd";
-  extraArgs = [ "--performance" ];
-};
-```
-
-The NixOS module requires Linux 6.12 or newer, and Ananicy-cpp is disabled.
-However, the prebuilt CachyOS LTO kernel currently lacks BTF because the
-pinned builder disables it when using `pahole` 1.32. As a result, LAVD
-cannot load its BPF scheduler on this kernel; the service is configured but
-is not operational until a BTF-enabled prebuilt kernel becomes available.
-
-After activating the new generation and rebooting, inspect the running state:
-
-```sh
-cat /sys/kernel/debug/sched/preempt
-cat /sys/kernel/sched_ext/state
-systemctl status scx.service
-pgrep -af scx_lavd
-```
-
-The debugfs preemption file is available only when debugfs is mounted. The
-selected kernel is configured for full preemption by default, so no explicit
-`preempt=full` command-line parameter is required. With the current prebuilt
-kernel, sched_ext is expected to remain inactive and LAVD is expected to fail
-because kernel BTF is unavailable.
+The configured kernel command line uses `mitigations=auto,nosmt`, enabling the
+kernel's available CPU-vulnerability mitigations and full cross-thread
+protection. SMT is disabled only if the detected CPU requires it for a
+complete mitigation; affected processors may therefore expose fewer logical
+CPUs and lower parallel throughput. Verify the active command line with
+`cat /proc/cmdline` and keep the previous boot generation until the new kernel
+has booted.
 
 ## Kernel runtime tuning
 
-The existing ZRAM configuration (`zstd`) and the current
-`transparent_hugepage=always` mode are left unchanged. Only the THP
+The existing ZRAM configuration (`zstd`) is retained. The repository does not
+set the THP enabled mode; the current host reports `always`. Only the THP
 defragmentation policy is set to `defer+madvise` at boot.
 
 The existing `boot.kernel.sysctl` set is extended with these values:
