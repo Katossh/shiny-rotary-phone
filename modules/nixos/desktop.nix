@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
 
 {
   # Nixpkgs already builds Firefox with Clang and LLD. Replace its default
