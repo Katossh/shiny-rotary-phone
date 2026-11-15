@@ -12,10 +12,10 @@
   # ingress interface and source subnet so non-LAN sources on this NIC are not
   # accepted by an interface-only rule.
   networking.firewall.extraCommands = ''
-    iptables -A nixos-fw \
-      -i wlp7s0 \
-      -s 192.168.0.0/24 \
-      -p tcp --dport 1234 \
+    iptables -A nixos-fw \\
+      -i wlp7s0 \\
+      -s 192.168.0.0/24 \\
+      -p tcp --dport 1234 \\
       -j nixos-fw-accept
   '';
 
@@ -42,6 +42,7 @@
 
     ../../modules/nixos/hardware.nix
     ../../modules/nixos/storage.nix
+    ../../modules/nixos/archives.nix
     ../../modules/nixos/snapshots.nix
     ../../modules/nixos/memory.nix
     ../../modules/nixos/power.nix
