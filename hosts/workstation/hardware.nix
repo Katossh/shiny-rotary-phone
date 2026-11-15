@@ -22,17 +22,16 @@
   # This is a custom kernel configuration, so the upstream prebuilt kernel
   # cache may not contain the resulting kernel derivation.
   nixpkgs.overlays = [ inputs.nix-cachyos-kernel.overlays.pinned ];
-  boot.kernelPackages =
-    (pkgs.cachyosKernels."linuxPackages-cachyos-latest-lto-zen4").extend (
-      _final: prev: {
-        kernel = prev.kernel.override {
-          structuredExtraConfig = {
-            DEBUG_INFO_BTF = lib.kernel.yes;
-            RUST = lib.kernel.no;
-          };
+  boot.kernelPackages = (pkgs.cachyosKernels."linuxPackages-cachyos-latest-lto-zen4").extend (
+    _final: prev: {
+      kernel = prev.kernel.override {
+        structuredExtraConfig = prev.kernel.structuredExtraConfig // {
+          DEBUG_INFO_BTF = lib.kernel.yes;
+          RUST = lib.kernel.no;
         };
-      }
-    );
+      };
+    }
+  );
 
   # Enable the kernel NT synchronization primitive used by Wine/Proton.
   boot.kernelModules = [ "ntsync" ];
