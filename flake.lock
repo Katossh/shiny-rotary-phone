@@ -162,19 +162,6 @@
         "url": "https://channels.nixos.org/nixos-unstable/nixexprs.tar.zst"
       }
     },
-    "nixpkgs_3": {
-      "locked": {
-        "lastModified": 1794495034,
-        "narHash": "sha256-QG/HY0t5t3sfT2ozW/Ikis5Klqf0X4nfTuLvFaBpNno=",
-        "rev": "2074cc672349f14240fb7ea90d509e0b643e9dd4",
-        "type": "tarball",
-        "url": "https://releases.nixos.org/nixpkgs/nixpkgs-26.11pre1118975.2074cc672349/nixexprs.tar.zst"
-      },
-      "original": {
-        "type": "tarball",
-        "url": "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.zst"
-      }
-    },
     "nixpkgs_4": {
       "locked": {
         "lastModified": 1794580336,
@@ -225,24 +212,6 @@
         "type": "github"
       }
     },
-    "opencode-desktop-nix": {
-      "inputs": {
-        "nixpkgs": "nixpkgs_3"
-      },
-      "locked": {
-        "lastModified": 1794563737,
-        "narHash": "sha256-tRszTEf3cPSfyeDdJIudy7j+uXldqUmN1csDnh3/H8A=",
-        "owner": "x13-me",
-        "repo": "opencode-desktop-nix",
-        "rev": "711effaf0ad3c2e768ac1b684d210f62d982f783",
-        "type": "github"
-      },
-      "original": {
-        "owner": "x13-me",
-        "repo": "opencode-desktop-nix",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
         "aagl": "aagl",
@@ -251,7 +220,6 @@
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs",
         "noctalia": "noctalia",
-        "opencode-desktop-nix": "opencode-desktop-nix",
         "terminal-dotfiles": "terminal-dotfiles"
       }
     },

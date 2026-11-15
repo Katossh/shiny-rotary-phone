@@ -39,8 +39,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    opencode-desktop-nix.url = "github:x13-me/opencode-desktop-nix";
-
     terminal-dotfiles = {
       url = "github:Katossh/terminal-dotfiles";
       flake = false;

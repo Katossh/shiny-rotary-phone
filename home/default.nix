@@ -13,7 +13,6 @@
     ./noctalia.nix
     ./terminal-dotfiles.nix
     ./containers.nix
-    ./ai-tools.nix
   ];
 
   home = {
@@ -31,7 +30,6 @@
       telegram-desktop
       tor-browser
       localsend
-      opencode
       kalker
       wl-clipboard
     ];
@@ -43,6 +41,8 @@
     enable = true;
     enableZshIntegration = true;
   };
+
+  programs.gh.enable = true;
 
   xdg = {
     userDirs = {
