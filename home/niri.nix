@@ -445,6 +445,13 @@ in
             "clipboard"
           ];
         };
+        "Mod+Shift+C" = {
+          _props."hotkey-overlay-title" = "Pick screen color";
+          spawn = [
+            "hyprpicker"
+            "--autocopy"
+          ];
+        };
         "Mod+Ctrl+V" = {
           _props."hotkey-overlay-title" = "Toggle floating window";
           "toggle-window-floating" = { };
