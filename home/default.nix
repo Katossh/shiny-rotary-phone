@@ -25,6 +25,7 @@
       brightnessctl
       discord
       grim
+      hyprpicker
       playerctl
       pavucontrol
       slurp
@@ -37,6 +38,7 @@
     ];
 
     file."Pictures/Screenshots/.keep".text = "";
+
   };
 
   programs.yazi = {
