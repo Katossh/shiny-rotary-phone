@@ -14,5 +14,18 @@
     alacritty
     kitty
     vim
+
+    # Nix workflow utilities.
+    comma
+    nix-your-shell
+    bottom
   ];
+
+  # Keep the user's configured Zsh when entering nix develop, nix shell,
+  # and nix-shell instead of falling back to Bash.
+  programs.zsh.interactiveShellInit = ''
+    if command -v nix-your-shell >/dev/null 2>&1; then
+      nix-your-shell zsh | source /dev/stdin
+    fi
+  '';
 }
