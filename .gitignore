@@ -5,3 +5,4 @@
 *.swp
 *.tmp
 /hosts/workstation/hardware-configuration.nix
+/tasks.md

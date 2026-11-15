@@ -40,6 +40,13 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Reject tracked machine-local hardware configuration
+        run: |
+          if git ls-files --error-unmatch hosts/workstation/hardware-configuration.nix >/dev/null 2>&1; then
+            echo "hosts/workstation/hardware-configuration.nix is machine-local and must not be tracked." >&2
+            exit 1
+          fi
+
       - name: Prepare local hardware configuration fixture
         run: |
           cat > hosts/workstation/hardware-configuration.nix <<'NIX'
@@ -145,6 +152,52 @@ jobs:
             exit 1
           fi
 
+      - name: Validate Btrfs and Snapper evaluation
+        run: |
+          cat > hosts/workstation/hardware-configuration.nix <<'NIX'
+          { modulesPath, ... }:
+          {
+            imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
+            boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" ];
+            fileSystems."/" = {
+              device = "/dev/disk/by-label/nixos";
+              fsType = "btrfs";
+              options = [ "subvol=@" ];
+            };
+            fileSystems."/home" = {
+              device = "/dev/disk/by-label/nixos";
+              fsType = "btrfs";
+              options = [ "subvol=@home" ];
+            };
+            fileSystems."/nix" = {
+              device = "/dev/disk/by-label/nixos";
+              fsType = "btrfs";
+              options = [ "subvol=@nix" ];
+            };
+            fileSystems."/var/log" = {
+              device = "/dev/disk/by-label/nixos";
+              fsType = "btrfs";
+              options = [ "subvol=@log" ];
+            };
+            fileSystems."/boot" = {
+              device = "/dev/disk/by-label/ESP";
+              fsType = "vfat";
+            };
+          }
+          NIX
+          configs="$(nix eval --raw \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.services.snapper.configs" \
+            --apply 'configs: builtins.concatStringsSep "," (builtins.attrNames configs)' \
+            --no-update-lock-file \
+            --accept-flake-config)"
+          printf 'Snapper configs: %s\n' "$configs"
+          grep -qE '(^|,)root(,|$)' <<< "$configs"
+          grep -qE '(^|,)home(,|$)' <<< "$configs"
+          nix eval --raw \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.system.build.toplevel.drvPath" \
+            --no-update-lock-file \
+            --accept-flake-config >/dev/null
+
   build:
     name: Build workstation system
     runs-on: ubuntu-24.04
@@ -156,6 +209,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+
+      - name: Reject tracked machine-local hardware configuration
+        run: |
+          if git ls-files --error-unmatch hosts/workstation/hardware-configuration.nix >/dev/null 2>&1; then
+            echo "hosts/workstation/hardware-configuration.nix is machine-local and must not be tracked." >&2
+            exit 1
+          fi
 
       - name: Prepare local hardware configuration fixture
         run: |
