@@ -4,7 +4,7 @@
   # Nixpkgs already builds Firefox with Clang and LLD. Replace its default
   # full cross-language LTO with ThinLTO and request -O3 explicitly.
   nixpkgs.overlays = [
-    (final: prev: {
+    (_final: prev: {
       firefox-unwrapped = prev.firefox-unwrapped.overrideAttrs (old: {
         configureFlags =
           (builtins.filter (
