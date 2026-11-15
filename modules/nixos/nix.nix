@@ -8,10 +8,6 @@ _:
         "flakes"
       ];
 
-      # Let parallel-capable derivations, including the kernel build, use
-      # all 12 logical CPU threads on this workstation.
-      cores = 12;
-
       # Keep builds sandboxed and restrict who can talk to the daemon.
       sandbox = true;
       allowed-users = [
@@ -31,11 +27,11 @@ _:
       ];
     };
 
-    # Collect unreferenced store paths; leave old system generations intact.
+    # Collect unreferenced store paths; system generations remain available
+    # as rollback targets until they are removed explicitly.
     gc = {
       automatic = true;
       dates = "weekly";
-      options = "--delete-older-than 14d";
     };
 
     # Deduplicate identical store files once a week, Sunday at 03:45.
