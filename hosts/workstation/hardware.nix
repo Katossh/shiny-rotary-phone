@@ -25,7 +25,7 @@
   boot.kernelPackages = (pkgs.cachyosKernels."linuxPackages-cachyos-latest-lto-zen4").extend (
     _final: prev: {
       kernel = prev.kernel.override {
-        structuredExtraConfig = prev.kernel.structuredExtraConfig // {
+        structuredExtraConfig = prev.kernel.structuredConfig // {
           DEBUG_INFO_BTF = lib.kernel.yes;
           RUST = lib.kernel.no;
         };
