@@ -137,6 +137,7 @@ jobs:
 
           split_lock_mitigate="$(nix eval --raw \
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.boot.kernel.sysctl.\"kernel.split_lock_mitigate\"" \
+            --apply 'value: toString value'
             --no-update-lock-file \
             --accept-flake-config)"
           if [[ "$split_lock_mitigate" != "1" ]]; then
