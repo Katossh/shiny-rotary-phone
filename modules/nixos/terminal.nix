@@ -16,10 +16,16 @@
     vim
 
     # Nix workflow utilities.
-    comma
     nix-your-shell
     bottom
   ];
+
+  # Install Comma and use it for Zsh's command-not-found suggestions.
+  # Its nix-index database must be initialized separately.
+  programs.comma = {
+    enable = true;
+    enableZshIntegration = true;
+  };
 
   # Keep the user's configured Zsh when entering nix develop, nix shell,
   # and nix-shell instead of falling back to Bash.
