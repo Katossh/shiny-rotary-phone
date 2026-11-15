@@ -211,6 +211,10 @@ jobs:
                 exit 1
               }
             done
+            grep -Fq 'deny owner /run/user/[0-9]*/containers/auth.json rw,' <<< "$profile" || {
+              echo "AppArmor profile $policy is missing the runtime Podman auth denial." >&2
+              exit 1
+            }
           done
 
       - name: Ensure CPU vulnerability mitigations are fully enabled
