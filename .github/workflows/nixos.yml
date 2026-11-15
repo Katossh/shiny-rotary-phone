@@ -122,6 +122,29 @@ jobs:
             exit 1
           fi
 
+      - name: Ensure CPU vulnerability mitigations are fully enabled
+        run: |
+          kernel_params="$(nix eval --raw \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.boot.kernelParams" \
+            --apply 'params: builtins.concatStringsSep "\n" params' \
+            --no-update-lock-file \
+            --accept-flake-config)"
+          if ! grep -Fxq 'mitigations=auto,nosmt' <<< "$kernel_params"; then
+            echo "Full CPU vulnerability mitigations are not configured:" >&2
+            grep -E '^mitigations=' <<< "$kernel_params" >&2 || true
+            exit 1
+          fi
+
+          split_lock_mitigate="$(nix eval --raw \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.boot.kernel.sysctl.\"kernel.split_lock_mitigate\"" \
+            --apply 'value: toString value' \
+            --no-update-lock-file \
+            --accept-flake-config)"
+          if [[ "$split_lock_mitigate" != "1" ]]; then
+            echo "kernel.split_lock_mitigate must remain enabled (expected 1)." >&2
+            exit 1
+          fi
+
   build:
     name: Build workstation system
     runs-on: ubuntu-24.04
