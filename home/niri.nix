@@ -114,7 +114,7 @@ in
           };
         }
         {
-          # Development: Zed and Kitty.
+          # Development: Zed and Alacritty.
           window-rule = {
             match._props."app-id" = "^(dev\\.zed\\.Zed|(?i:alacritty))$";
             "open-on-workspace" = "2";
@@ -238,7 +238,7 @@ in
         };
         "Alt+F4" = {
           _props.repeat = false;
-          _props."hotkey-overlay-title" = null;
+          _props."hotkey-overlay-title" = "Close focused window";
           "close-window" = { };
         };
 
