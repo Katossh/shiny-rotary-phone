@@ -479,10 +479,11 @@ configuration.
 
 The certificate-bundle integration in `modules/nixos/boot.nix`, Limine,
 and Secure Boot configuration remain separate and unchanged. The kernel
-command line retains the existing `mitigations=off` setting as explicitly
-requested. This disables eligible CPU vulnerability mitigations and reduces
-side-channel protection; it is a separate security trade-off from the
-scheduler and memory tuning. Keep the previous boot generation until the new
+command line now uses `mitigations=auto,nosmt`, enabling the kernel's
+available CPU-vulnerability mitigations and full cross-thread protection.
+SMT is disabled only if the detected CPU requires it for a complete
+mitigation; affected processors may therefore expose fewer logical CPUs and
+lower parallel throughput. Keep the previous boot generation until the new
 kernel has booted and the desktop, networking, graphics, module loading, and
 SCX scheduler have been checked.
 
@@ -550,12 +551,13 @@ The existing `boot.kernel.sysctl` set is extended with these values:
 "vm.page-cluster" = 0;
 "vm.dirty_background_bytes" = 67108864;
 "vm.dirty_bytes" = 268435456;
-"kernel.split_lock_mitigate" = 0;
+"kernel.split_lock_mitigate" = 1;
 ```
 
-The split-lock mitigation setting is separate from `mitigations=off`; both
-are retained as explicitly requested. The NVMe udev rule sets the scheduler
-to `none`, delegating request scheduling to the device. The `ntsync` module
+The split-lock mitigation is explicitly enabled with
+`kernel.split_lock_mitigate=1`; this is independent of the CPU vulnerability
+mitigations selected by `mitigations=auto,nosmt`. The NVMe udev rule sets the
+scheduler to `none`, delegating request scheduling to the device. The `ntsync` module
 is loaded for Wine/Proton, and its device node uses mode `0660` plus the
 `uaccess` tag so logind can grant access to the active local seat rather
 than making it world-writable.
