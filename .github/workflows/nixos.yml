@@ -154,6 +154,19 @@ jobs:
         run: |
           echo "::notice::Cachix is not configured. Create a public cache and set the CACHIX_CACHE_NAME repository variable to enable it."
 
+      # Firefox's profile-guided build can exceed the stock runner's 3 GiB swap.
+      # Add temporary disk-backed swap; this affects only the ephemeral CI runner.
+      - name: Add swap space for memory-intensive Nix builds
+        run: |
+          if [[ ! -e /swapfile ]]; then
+            sudo fallocate -l 16G /swapfile
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+          fi
+          free -h
+          swapon --show
+
       - name: Build the workstation system closure
         run: |
           nix build \
