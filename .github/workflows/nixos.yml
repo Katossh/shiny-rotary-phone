@@ -71,7 +71,7 @@ jobs:
           bash -n scripts/nixcfg.sh
 
       - name: Install Nix
-        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31
+        uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
@@ -272,7 +272,7 @@ jobs:
           nproc
 
       - name: Install Nix
-        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31
+        uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
@@ -318,11 +318,24 @@ jobs:
         run: |
           echo "::notice::Cachix is not configured. Create a public cache and set the CACHIX_CACHE_NAME repository variable to enable it."
 
+      # Firefox's profile-guided build can exceed the stock runner's 3 GiB swap.
+      # Add temporary disk-backed swap; this affects only the ephemeral CI runner.
+      - name: Add swap space for memory-intensive Nix builds
+        run: |
+          if [[ ! -e /swapfile ]]; then
+            sudo fallocate -l 16G /swapfile
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+          fi
+          free -h
+          swapon --show
+
       - name: Build the workstation system closure
         run: |
           nix build \
             --max-jobs 1 \
-            --cores 2 \
+            --cores 1 \
             --no-update-lock-file \
             --accept-flake-config \
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.system.build.toplevel" \
