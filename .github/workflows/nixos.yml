@@ -157,6 +157,8 @@ jobs:
       - name: Build the workstation system closure
         run: |
           nix build \
+            --max-jobs 1 \
+            --cores 1 \
             --no-update-lock-file \
             --accept-flake-config \
             .#nixosConfigurations.workstation.config.system.build.toplevel \
