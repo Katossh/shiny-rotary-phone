@@ -52,8 +52,7 @@
   programs.zed-editor = {
     enable = true;
     package = null; # Zed itself is installed system-wide by the NixOS module.
-    userSettings.lsp."rust-analyzer".binary.path =
-      "${pkgs.rust-analyzer}/bin/rust-analyzer";
+    userSettings.lsp."rust-analyzer".binary.path = "${pkgs.rust-analyzer}/bin/rust-analyzer";
   };
 
   xdg = {
