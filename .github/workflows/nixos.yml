@@ -335,7 +335,7 @@ jobs:
         run: |
           nix build \
             --max-jobs 1 \
-            --cores 2 \
+            --cores 1 \
             --no-update-lock-file \
             --accept-flake-config \
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.system.build.toplevel" \
