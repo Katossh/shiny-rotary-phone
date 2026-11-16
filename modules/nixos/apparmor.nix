@@ -7,14 +7,25 @@
 
 let
   credentialDenials = ''
-    # Desktop applications do not need direct access to local developer credentials.
+    # Keep unrelated desktop applications and generic CLI tools away from
+    # credentials owned by developer tools, cloud CLIs, and container runtimes.
     deny owner @{HOME}/.ssh/** rw,
     deny owner @{HOME}/.gnupg/** rw,
     deny owner @{HOME}/.aws/** rw,
+    deny owner @{HOME}/.azure/** rw,
+    deny owner @{HOME}/.config/azure/** rw,
     deny owner @{HOME}/.config/gh/** rw,
     deny owner @{HOME}/.config/gcloud/** rw,
     deny owner @{HOME}/.kube/** rw,
     deny owner @{HOME}/.docker/config.json rw,
+    deny owner @{HOME}/.config/containers/auth.json rw,
+    deny owner /run/user/[0-9]*/containers/auth.json rw,
+    deny owner @{HOME}/.config/rclone/rclone.conf rw,
+    deny owner @{HOME}/.config/terraform.d/credentials.tfrc.json rw,
+    deny owner @{HOME}/.terraform.d/credentials.tfrc.json rw,
+    deny owner @{HOME}/.git-credentials rw,
+    deny owner @{HOME}/.npmrc rw,
+    deny owner @{HOME}/.pypirc rw,
     deny owner @{HOME}/.config/sops/age/keys.txt rw,
     deny owner @{HOME}/.password-store/** rw,
   '';
@@ -329,12 +340,8 @@ in
             # access local credentials even when given an attacker-controlled URL.
             owner @{HOME}/ rw,
             owner @{HOME}/** rwk,
-            deny owner @{HOME}/.ssh/** rw,
-            deny owner @{HOME}/.gnupg/** rw,
-            deny owner @{HOME}/.aws/** rw,
-            deny owner @{HOME}/.config/gh/** rw,
-            deny owner @{HOME}/.config/gcloud/** rw,
 
+            ${credentialDenials}
             ${networkClientRules}
           }
         '';

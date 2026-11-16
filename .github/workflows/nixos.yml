@@ -144,6 +144,79 @@ jobs:
             exit 1
           fi
 
+      - name: Verify AppArmor policy modes and credential exclusions
+        run: |
+          policy_states="$(nix eval --json \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.security.apparmor.policies" \
+            --apply 'policies: builtins.mapAttrs (_: policy: policy.state) policies' \
+            --no-update-lock-file \
+            --accept-flake-config)"
+          python3 - "$policy_states" <<'PY'
+          import json
+          import sys
+
+          states = json.loads(sys.argv[1])
+          expected = {
+              "curl": "enforce",
+              "firefox": "complain",
+              "chromium": "complain",
+              "localsend": "complain",
+              "telegram": "complain",
+              "discord": "complain",
+              "mpv": "complain",
+              "yt-dlp": "complain",
+              "ffmpeg": "complain",
+              "jq": "complain",
+              "btop": "complain",
+              "fastfetch": "complain",
+              "pavucontrol": "complain",
+              "virt-manager": "complain",
+              "vscode": "complain",
+              "neovim": "complain",
+              "zed": "complain",
+          }
+          for name, state in expected.items():
+              actual = states.get(name)
+              if actual != state:
+                  raise SystemExit(
+                      f"Unexpected AppArmor state for {name}: {actual!r}; expected {state!r}"
+                  )
+          print("AppArmor policy modes match the reviewed rollout matrix.")
+          PY
+
+          for policy in curl jq; do
+            profile="$(nix eval --raw \
+              "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.security.apparmor.policies.$policy.profile" \
+              --no-update-lock-file \
+              --accept-flake-config)"
+            for protected_path in \
+              '.ssh/**' \
+              '.gnupg/**' \
+              '.aws/**' \
+              '.azure/**' \
+              '.config/azure/**' \
+              '.config/gh/**' \
+              '.config/gcloud/**' \
+              '.kube/**' \
+              '.docker/config.json' \
+              '.config/containers/auth.json' \
+              '.config/rclone/rclone.conf' \
+              '.git-credentials' \
+              '.npmrc' \
+              '.pypirc' \
+              '.config/sops/age/keys.txt' \
+              '.password-store/**'; do
+              grep -Fq "deny owner @{HOME}/$protected_path rw," <<< "$profile" || {
+                echo "AppArmor profile $policy is missing credential denial: $protected_path" >&2
+                exit 1
+              }
+            done
+            grep -Fq 'deny owner /run/user/[0-9]*/containers/auth.json rw,' <<< "$profile" || {
+              echo "AppArmor profile $policy is missing the runtime Podman auth denial." >&2
+              exit 1
+            }
+          done
+
       - name: Ensure CPU vulnerability mitigations are fully enabled
         run: |
           kernel_params="$(nix eval --raw \

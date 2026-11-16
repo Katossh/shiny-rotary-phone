@@ -116,9 +116,41 @@ The current baseline enforces the curl profile. Firefox, Chromium, LocalSend,
 Telegram, Discord, mpv, yt-dlp, FFmpeg, jq, btop, fastfetch, pavucontrol,
 virt-manager, Neovim, VS Code, and Zed are intentionally configured in complain mode.
 
+The shared `credentialDenials` rules apply to profiles that do not own these
+credential workflows, including the enforced curl profile. They explicitly deny
+direct access to common SSH/GPG keys, cloud credentials, Kubernetes and
+container-registry authentication, rclone and Terraform tokens, Git credentials,
+npm/PyPI tokens, age keys, and password-store data. The same deny rules remain
+effective in complain mode; complain mode does not override explicit
+`deny` rules. Curl still has broad home-directory read/write permissions for
+ordinary file transfers, so this is a credential exclusion list, not a
+general-purpose filesystem sandbox.
+
 Review `aa-status` and the kernel journal entries. In complain mode, operations
-that would have been denied are generally logged as `apparmor="ALLOWED"`
-with a `denied_mask`; explicit deny rules remain effective.
+that would have been denied by allow-list policy are generally logged as
+`apparmor="ALLOWED"` with a `denied_mask`; explicit deny rules still block the
+listed credential paths.
+
+Useful read-only inspection commands:
+
+```sh
+sudo aa-status
+sudo journalctl -k -b --no-pager --grep='apparmor="ALLOWED".*denied_mask='
+sudo journalctl -k -b --no-pager --grep='apparmor="DENIED"'
+```
+
+To interactively inspect suggested rules from the current boot, NixOS provides
+`aa-logprof` with its temporary profile directory under
+`/var/cache/apparmor/logprof`:
+
+```sh
+sudo journalctl -k -b --no-pager --grep='apparmor=' | sudo aa-logprof
+```
+
+Treat generated suggestions as evidence to review, not as trusted policy.
+Manually transfer only justified rules into `modules/nixos/apparmor.nix`;
+do not edit the generated `/etc/apparmor.d` tree or make the temporary
+`aa-logprof` output the configuration source of truth.
 
 Before changing a profile to `enforce`:
 
@@ -129,10 +161,14 @@ Before changing a profile to `enforce`:
    operation, and profile involved.
 3. Add only the narrowest required rule.
 4. Test the profile in a temporary generation before making it the default.
+5. Restart the application after activation so its new process starts confined;
+   this host deliberately keeps `killUnconfinedConfinables = false`.
 
 Do not promote browser or editor profiles wholesale. Editors execute user code
 and spawn tools; browsers have complex helper and portal workflows. Their
-profiles need separate review.
+profiles need separate review. We have not promoted additional profiles here
+because this environment cannot inspect the workstation's live complain-mode
+events.
 
 ## 3. USBGuard
 
