@@ -6,21 +6,27 @@
 }:
 
 let
-  btrfsMountPoints = lib.attrNames (
-    lib.filterAttrs (_: fs: (fs.fsType or null) == "btrfs") config.fileSystems
-  );
+  # Inspect only the mount points supported by this workstation profile.
+  # Enumerating config.fileSystems here would make this module depend on
+  # the option set it is extending and cause infinite recursion.
+  btrfsMountPoints = lib.filter
+    (mountPoint: (config.fileSystems.${mountPoint}.fsType or null) == "btrfs")
+    [
+      "/"
+      "/home"
+      "/nix"
+      "/var/log"
+    ];
 in
 {
-  # Scrub only systems that actually have a Btrfs filesystem. Nixpkgs derives
-  # the unique scrub mount points from fileSystems and avoids duplicate work
-  # for multiple subvolumes on the same device.
+  # Scrub only the Btrfs filesystems that are actually configured.
   services.btrfs.autoScrub = lib.mkIf (btrfsMountPoints != [ ]) {
     enable = true;
+    fileSystems = btrfsMountPoints;
     interval = "monthly";
   };
 
-  # Apply compression and atime policy only to filesystems that are actually
-  # Btrfs; this also works when the installer detects a simpler mount layout.
+  # Apply compression and atime policy only to detected Btrfs mount points.
   fileSystems = lib.genAttrs btrfsMountPoints (_: {
     options = [
       "compress=zstd:1"
