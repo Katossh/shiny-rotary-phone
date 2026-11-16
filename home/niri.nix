@@ -101,7 +101,7 @@ in
       # Repeated top-level KDL nodes must use root _children.
       # Output nodes are generated from starforge.user.desktop.monitors.
       _children = monitorOutputNodes ++ [
-        # Keep four named workspaces; Niri supplies the empty dynamic workspace.
+        # Workspaces 1–3 are assigned below; 4 is reserved and Niri supplies dynamic workspace 5.
         { workspace._args = [ "1" ]; }
         { workspace._args = [ "2" ]; }
         { workspace._args = [ "3" ]; }
