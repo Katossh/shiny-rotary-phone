@@ -18,8 +18,7 @@
     clippy
     rust-analyzer
 
-    # Python.
-    python3
+    # Python (python3 is already provided by terminal-dotfiles' Nix package manifest).
     uv
     ruff
     basedpyright
@@ -55,17 +54,10 @@
     shellcheck
     shfmt
 
-    # Everyday development utilities.
-    git
-    gh
-    ripgrep
-    fd
-    fzf
+    # Everyday utilities not already owned by terminal-dotfiles or Home Manager.
     just
     tree
-    curl
     wget
-    unzip
   ];
 
   # Preserve rust-analyzer access to the Rust standard-library sources.
