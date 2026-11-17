@@ -194,7 +194,7 @@ jobs:
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.security.apparmor.policies.vscode.profile" \
             --no-update-lock-file \
             --accept-flake-config)"
-          if ! grep -Eq '^profile /nix/store/[^[:space:]]+/bin/code \\{' <<< "$vscode_profile"; then
+          if ! grep -Eq '^profile /nix/store/[^[:space:]]+/bin/code[[:space:]]*[{]' <<< "$vscode_profile"; then
             echo "VS Code AppArmor profile must target the FHS /bin/code launcher." >&2
             exit 1
           fi
