@@ -1,6 +1,9 @@
 _:
 
 {
+  # Map the physical power key to an immediate system shutdown.
+  services.logind.settings.Login.HandlePowerKey = "poweroff";
+
   # No persistent swap/resume target is configured. zram alone cannot provide
   # a hibernation image, so disable hibernation-related sleep modes explicitly.
   environment.etc."systemd/sleep.conf.d/20-nixos.conf".text = ''
