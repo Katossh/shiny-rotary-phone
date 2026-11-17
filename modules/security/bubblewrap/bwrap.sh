@@ -3,7 +3,7 @@
 usage() {
   cat <<'USAGE'
 Usage:
-  bwrap dev [--network] [--cargo-cache] PROJECT -- COMMAND [ARG...]
+  bwrap dev [--network] [--cargo-cache] [--home] [PROJECT] -- COMMAND [ARG...]
   bwrap network [--workspace DIR] -- COMMAND [ARG...]
   bwrap isolated [--workspace DIR] -- COMMAND [ARG...]
   bwrap help
@@ -11,11 +11,14 @@ Usage:
 Profiles:
   dev       Expose PROJECT read-write. Network is disabled unless --network is set.
             --cargo-cache also exposes ~/.cargo/registry read-write.
+            --home exposes the host home read-write except protected credential
+            and browser-data paths. PROJECT may be omitted with --home.
   network   Share the host network. An optional workspace is read-only.
   isolated  Disable networking. An optional workspace is read-only.
 
 The host home directory, user-session sockets, and host runtime directories are
-never mounted. Only Nix-store executables are available through PATH.
+never mounted unless dev is explicitly invoked with --home. Only Nix-store
+executables are available through PATH.
 Use `bubblewrap` to invoke the underlying Bubblewrap binary directly.
 USAGE
 }
@@ -36,6 +39,7 @@ network_enabled=0
 workspace_input=
 workspace=
 cargo_cache_enabled=0
+home_access_enabled=0
 
 case "$profile" in
   help|-h|--help)
@@ -53,27 +57,44 @@ case "$profile" in
           cargo_cache_enabled=1
           shift
           ;;
+        --home)
+          home_access_enabled=1
+          shift
+          ;;
         *) break ;;
       esac
     done
-    [[ $# -gt 0 ]] || die "dev requires a project directory"
-    workspace_input=$1
-    shift
+    if [[ ${1-} != -- && -n ${1-} ]]; then
+      workspace_input=$1
+      shift
+    elif [[ "$home_access_enabled" -eq 0 ]]; then
+      die "dev requires a project directory unless --home is set"
+    fi
     ;;
   network)
+    while [[ ${1-} == --* ]]; do
+      case "$1" in
+        --workspace)
+          [[ $# -ge 2 ]] || die "--workspace requires a directory"
+          workspace_input=$2
+          shift 2
+          ;;
+        *) break ;;
+      esac
+    done
     network_enabled=1
-    if [[ ${1-} == --workspace ]]; then
-      [[ $# -ge 2 ]] || die "--workspace requires a directory"
-      workspace_input=$2
-      shift 2
-    fi
     ;;
   isolated)
-    if [[ ${1-} == --workspace ]]; then
-      [[ $# -ge 2 ]] || die "--workspace requires a directory"
-      workspace_input=$2
-      shift 2
-    fi
+    while [[ ${1-} == --* ]]; do
+      case "$1" in
+        --workspace)
+          [[ $# -ge 2 ]] || die "--workspace requires a directory"
+          workspace_input=$2
+          shift 2
+          ;;
+        *) break ;;
+      esac
+    done
     ;;
   *)
     usage >&2
@@ -84,6 +105,49 @@ esac
 [[ ${1-} == -- ]] || die "expected '--' before the command"
 shift
 [[ $# -gt 0 ]] || die "no command was supplied"
+
+home_real=
+protected_home_relatives=(
+  .ssh
+  .gnupg
+  .aws
+  .azure
+  .kube
+  .docker
+  .password-store
+  .pki
+  .mozilla
+  .netrc
+  .git-credentials
+  .npmrc
+  .pypirc
+  .pgpass
+  .my.cnf
+  .cargo/credentials
+  .cargo/credentials.toml
+  .config/gh
+  .config/gcloud
+  .config/rclone
+  .config/sops
+  .config/containers
+  .config/1Password
+  .config/Bitwarden
+  .config/keepassxc
+  .config/keepass
+  .config/BraveSoftware
+  .config/google-chrome
+  .config/chromium
+  .config/AmneziaVPN
+  .config/amnezia
+  .config/wireguard
+  .config/Nextcloud
+  .local/share/keyrings
+  .local/share/TelegramDesktop
+)
+
+if [[ -n ${HOME:-} ]]; then
+  home_real="$(realpath -e -- "$HOME" 2>/dev/null)" || die "cannot resolve HOME"
+fi
 
 if [[ -n "$workspace_input" ]]; then
   [[ -d "$workspace_input" ]] || die "workspace is not a directory: $workspace_input"
@@ -97,29 +161,20 @@ if [[ -n "$workspace_input" ]]; then
     fi
   done
 
-  if [[ -n ${HOME:-} ]]; then
-    home_real="$(realpath -e -- "$HOME" 2>/dev/null)" || die "cannot resolve HOME"
-    if [[ "$home_real" == "$workspace" || "$home_real" == "$workspace/"* ]]; then
-      die "refusing to expose a directory that contains the host home directory"
-    fi
+  if [[ -n "$home_real" ]]; then
+    [[ "$workspace" != "$home_real" && "$home_real" != "$workspace/"* ]] || die "refusing to expose the host home directory or a directory containing it"
 
-    protected_home_paths=(
-      "$home_real/.ssh"
-      "$home_real/.gnupg"
-      "$home_real/.aws"
-      "$home_real/.kube"
-      "$home_real/.docker"
-      "$home_real/.password-store"
-      "$home_real/.config"
-      "$home_real/.local/share"
-      "$home_real/.mozilla"
-    )
-    for protected_path in "${protected_home_paths[@]}"; do
+    for relative_path in "${protected_home_relatives[@]}"; do
+      protected_path="$home_real/$relative_path"
       if [[ "$workspace" == "$protected_path" || "$workspace" == "$protected_path/"* || "$protected_path" == "$workspace/"* ]]; then
         die "workspace overlaps a protected credential or application-data path: $protected_path"
       fi
     done
   fi
+fi
+
+if [[ "$home_access_enabled" -eq 1 ]]; then
+  [[ -n "$home_real" && -d "$home_real" ]] || die "--home requires a resolvable host home directory"
 fi
 
 # Keep only PATH entries that resolve into the immutable Nix store. This makes
@@ -236,8 +291,38 @@ if [[ -d /etc/ssl/certs ]]; then
   bwrap_args+=(--ro-bind "$certs_real" /etc/ssl/certs)
 fi
 
-if [[ "$profile" == dev && "$cargo_cache_enabled" -eq 1 && -n ${HOME:-} ]]; then
-  cargo_registry="$(realpath -e -- "$HOME/.cargo/registry" 2>/dev/null)" || {
+if [[ "$home_access_enabled" -eq 1 ]]; then
+  # Expose the normal home tree for interactive development tools such as Zed,
+  # then cover known credential stores and browser profiles with private mounts.
+  bwrap_args+=(--bind "$home_real" /tmp/home)
+  bwrap_args+=(
+    --setenv XDG_CACHE_HOME /tmp/home/.cache
+    --setenv XDG_CONFIG_HOME /tmp/home/.config
+    --setenv XDG_DATA_HOME /tmp/home/.local/share
+    --setenv XDG_STATE_HOME /tmp/home/.local/state
+  )
+
+  for relative_path in "${protected_home_relatives[@]}"; do
+    protected_path="$home_real/$relative_path"
+    [[ -e "$protected_path" || -L "$protected_path" ]] || continue
+
+    protected_real="$(realpath -e -- "$protected_path" 2>/dev/null)" || continue
+    case "$protected_real" in
+      "$home_real"/*) ;;
+      *) continue ;;
+    esac
+
+    sandbox_protected="/tmp/home/${protected_real#"$home_real"/}"
+    if [[ -d "$protected_real" ]]; then
+      bwrap_args+=(--tmpfs "$sandbox_protected")
+    else
+      bwrap_args+=(--dev-bind /dev/null "$sandbox_protected")
+    fi
+  done
+fi
+
+if [[ "$profile" == dev && "$cargo_cache_enabled" -eq 1 && -n "$home_real" ]]; then
+  cargo_registry="$(realpath -e -- "$home_real/.cargo/registry" 2>/dev/null)" || {
     printf 'bwrap: --cargo-cache requested, but ~/.cargo/registry does not exist; continuing without it\n' >&2
   }
   if [[ -n ${cargo_registry:-} && -d "$cargo_registry" ]]; then
