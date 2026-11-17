@@ -1,28 +1,13 @@
-{ lib, pkgs, ... }:
+{ pkgs, ... }:
 
 {
-  # Nixpkgs already builds Firefox with Clang and LLD. Replace its default
-  # full cross-language LTO with ThinLTO and request -O3 explicitly.
-  nixpkgs.overlays = [
-    (_final: prev: {
-      firefox-unwrapped = prev.firefox-unwrapped.overrideAttrs (old: {
-        configureFlags =
-          (builtins.filter (
-            flag: !(lib.hasPrefix "--enable-lto=" flag) && !(lib.hasPrefix "--enable-optimize" flag)
-          ) (old.configureFlags or [ ]))
-          ++ [
-            "--enable-lto=thin,cross"
-            "--enable-optimize=-O3"
-          ];
-      });
-    })
-  ];
-
   programs = {
     niri.enable = true;
 
     firefox = {
       enable = true;
+      # Keep the unmodified Nixpkgs package so CI and workstations can use
+      # the upstream binary cache instead of rebuilding Firefox from source.
       # Firefox implements PRIMARY-selection paste itself on Linux.
       preferences."middlemouse.paste" = false;
     };
