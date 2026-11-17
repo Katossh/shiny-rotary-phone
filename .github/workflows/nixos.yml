@@ -20,6 +20,12 @@ on:
       - ".github/workflows/nixos.yml"
       - ".github/workflows/update-flake-lock.yml"
   workflow_dispatch:
+    inputs:
+      build_full_system:
+        description: "Build the complete workstation closure, including the custom CachyOS kernel"
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -286,8 +292,12 @@ jobs:
             --no-update-lock-file \
             --accept-flake-config >/dev/null
 
+  # The regular PR/push checks intentionally stop at evaluation and static
+  # validation. Building the complete closure can compile the custom kernel
+  # and other large packages; run it manually only when explicitly requested.
   build:
     name: Build workstation system
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_full_system }}
     runs-on: ubuntu-24.04
     # Keep a long fallback timeout in case the pinned CachyOS kernel cache misses.
     timeout-minutes: 360
@@ -391,9 +401,9 @@ jobs:
         run: |
           echo "::notice::Cachix is not configured. Create a public cache and set the CACHIX_CACHE_NAME repository variable to enable it."
 
-      # Ubuntu runners already have a 3 GiB /swapfile, so checking whether
-      # /swapfile exists silently skips the additional swap Firefox needs.
-      # Use a separate temporary swap file for this Nix build.
+      # Ubuntu runners already have a 3 GiB /swapfile. A cache miss for the
+      # custom CachyOS kernel or another large source build may need more.
+      # Use a separate temporary swap file for this explicitly requested build.
       - name: Add swap space for memory-intensive Nix builds
         run: |
           swapfile=/swapfile-nix-build
@@ -415,6 +425,7 @@ jobs:
 
       - name: Build the workstation system closure
         run: |
+          echo "Manual full-closure build requested; this may compile large packages."
           nix build \
             --max-jobs 1 \
             --cores 1 \
