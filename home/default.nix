@@ -39,12 +39,23 @@
 
   };
 
-  programs.yazi = {
-    enable = true;
-    enableZshIntegration = true;
-  };
+  programs = {
+    yazi = {
+      enable = true;
+      enableZshIntegration = true;
+    };
 
-  programs.gh.enable = true;
+    gh.enable = true;
+
+    # Use Nixpkgs' rust-analyzer wrapper, which supplies the matching Rust
+    # standard-library sources through RUST_SRC_PATH. Zed otherwise may download
+    # its own server binary, which does not know about Nix's separate rust-src.
+    zed-editor = {
+      enable = true;
+      package = null; # Zed itself is installed system-wide by the NixOS module.
+      userSettings.lsp."rust-analyzer".binary.path = "${pkgs.rust-analyzer}/bin/rust-analyzer";
+    };
+  };
 
   xdg = {
     userDirs = {
