@@ -101,37 +101,30 @@ in
       # Repeated top-level KDL nodes must use root _children.
       # Output nodes are generated from starforge.user.desktop.monitors.
       _children = monitorOutputNodes ++ [
-        # Keep four named workspaces; Niri supplies the empty dynamic workspace.
+        # Workspaces 1–3 are assigned below; 4 is reserved and Niri supplies dynamic workspace 5.
         { workspace._args = [ "1" ]; }
         { workspace._args = [ "2" ]; }
         { workspace._args = [ "3" ]; }
         { workspace._args = [ "4" ]; }
         {
-          # Web browsers: Chromium and Firefox.
-          window-rule = {
-            match._props."app-id" = "(?i)(chromium|firefox)";
-            "open-on-workspace" = "1";
-          };
-        }
-        {
           # Development: Zed and Alacritty.
           window-rule = {
             match._props."app-id" = "^(dev\\.zed\\.Zed|(?i:alacritty))$";
-            "open-on-workspace" = "2";
+            "open-on-workspace" = "1";
           };
         }
         {
           # Games: Steam and its game windows, osu!, and Genshin/Anime Game Launcher.
           window-rule = {
             match._props."app-id" = "(?i)(steam|osu|genshin|anime.?game)";
-            "open-on-workspace" = "3";
+            "open-on-workspace" = "2";
           };
         }
         {
           # Communication: Discord, Telegram, and LocalSend.
           window-rule = {
             match._props."app-id" = "(?i)(discord|telegram|localsend)";
-            "open-on-workspace" = "4";
+            "open-on-workspace" = "3";
           };
         }
         {
