@@ -10,9 +10,10 @@ _:
     AllowSuspendThenHibernate=no
   '';
 
-  # These services expose battery and user-selectable power profiles to the
-  # desktop shell. They are power-management services, not hardware setup.
+  # Configure the physical power key and expose power-management services to
+  # the desktop shell.
   services = {
+    logind.settings.Login.HandlePowerKey = "poweroff";
     upower.enable = true;
     power-profiles-daemon.enable = true;
   };

@@ -216,6 +216,9 @@ volume encryption.
   off after 6 minutes; the locked-session display-off timeout is 60 seconds.
   It locks before suspend and has no passwordless post-lock grace period.
   Active idle inhibitors, such as video playback, are respected.
+- The physical power button is handled by systemd-logind and shuts the
+  workstation down (`HandlePowerKey = "poweroff"`). This does not change
+  the actions exposed by Noctalia's on-screen power menu.
 - Hibernation, hybrid sleep, and suspend-then-hibernate are disabled because
   this host currently has zram only and no persistent swap/resume target.
   Suspend-to-RAM remains available. Add and test persistent swap before
