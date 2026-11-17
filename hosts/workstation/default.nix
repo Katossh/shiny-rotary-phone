@@ -17,6 +17,20 @@
       -s 192.168.0.0/24 \
       -p tcp --dport 1234 \
       -j nixos-fw-accept
+
+    # LocalSend uses TCP for transfers and UDP for LAN device discovery.
+    # Permit both only from clients on the home Wi-Fi subnet.
+    iptables -A nixos-fw \
+      -i wlp7s0 \
+      -s 192.168.0.0/24 \
+      -p tcp --dport 53317 \
+      -j nixos-fw-accept
+
+    iptables -A nixos-fw \
+      -i wlp7s0 \
+      -s 192.168.0.0/24 \
+      -p udp --dport 53317 \
+      -j nixos-fw-accept
   '';
 
   # The single interactive account shared by NixOS and Home Manager.
