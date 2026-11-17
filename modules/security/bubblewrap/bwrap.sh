@@ -166,7 +166,13 @@ if [[ -n "$workspace_input" ]]; then
 
     for relative_path in "${protected_home_relatives[@]}"; do
       protected_path="$home_real/$relative_path"
-      if [[ "$workspace" == "$protected_path" || "$workspace" == "$protected_path/"* || "$protected_path" == "$workspace/"* ]]; then
+      [[ -e "$protected_path" || -L "$protected_path" ]] || continue
+      protected_real="$(realpath -e -- "$protected_path" 2>/dev/null)" || continue
+      case "$protected_real" in
+        "$home_real"/*) ;;
+        *) continue ;;
+      esac
+      if [[ "$workspace" == "$protected_real" || "$workspace" == "$protected_real/"* || "$protected_real" == "$workspace/"* ]]; then
         die "workspace overlaps a protected credential or application-data path: $protected_path"
       fi
     done
