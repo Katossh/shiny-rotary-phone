@@ -197,7 +197,6 @@ The Maximum Security preset is selected, but the persistent warning means
 fail-closed enforcement should not be assumed solely from the Secure Boot
 status. Keep the known-good recovery route and do not delete the existing
 `dbx` revocation database.
-
 This profile does not configure another operating system's boot entries or
 volume encryption.
 
@@ -397,8 +396,7 @@ instead. See the [Podman volume documentation](https://docs.podman.io/en/latest/
 If Home Manager reports `Permission denied` while creating a link under
 `~/.config`, inspect the exact parent directory with `namei -l PATH`. Restore
 ownership only on the directory that Home Manager must write into; do not
-recursively change ownership of the whole home or `.config` tree. The
-`install.sh` switch path now checks the parent directories of declared
+recursively change ownership of the whole home or `.config` tree. The`install.sh` switch path now checks the parent directories of declared
 Home Manager targets and stops before activation when one is not writable.
 
 ### Bubblewrap
@@ -414,6 +412,7 @@ The profiles are explicit and opt-in:
 | Command | Filesystem | Network | Intended use |
 | --- | --- | --- | --- |
 | `bwrap dev PROJECT -- COMMAND` | Selected project read-write | Disabled | Builds and tests |
+| `bwrap dev --home [PROJECT] -- COMMAND` | Host home read-write except protected credential/browser paths; optional project read-write | Disabled | Editors and interactive development tools |
 | `bwrap dev --network PROJECT -- COMMAND` | Selected project read-write | Host network | Fetching dependencies or networked tests |
 | `bwrap network -- COMMAND` | Nix store plus private temporary files | Host network | Network clients without home access |
 | `bwrap network --workspace DIR -- COMMAND` | Optional workspace read-only | Host network | Running a local tool that only needs input files |
@@ -443,17 +442,24 @@ bwrap help
 
 The sandbox starts from Bubblewrap's empty mount namespace. It mounts the Nix
 store read-only, creates private `/proc`, `/dev`, and `/tmp`, and exposes only
-the selected workspace. The workspace is the only persistent writable path in
-the `dev` profile. The host home directory, `/run`, session sockets, SSH
-credentials, browser profiles, and arbitrary host environment variables are
-not mounted or inherited. Workspace arguments are treated as an explicit
-trust boundary: the wrapper refuses the home directory itself and known
-credential/application-data locations such as `.ssh`, `.gnupg`, `.aws`,
-`.kube`, `.docker`, `.password-store`, `.config`, `.local/share`, and
-`.mozilla`. Do not point a workspace at directories containing personal
-documents or other data you do not want the command to access. The command's
-`PATH` is rebuilt from host PATH entries that resolve into `/nix/store`; a
-small allowlist of compiler/build variables is passed to `dev`.
+the selected workspace by default. The workspace is the only persistent
+writable path in the default `dev` profile. The host home directory, `/run`,
+session sockets, and arbitrary host environment variables are not mounted or
+inherited.
+
+The opt-in `dev --home` mode additionally mounts the host home directory
+read-write for interactive tools that need normal user configuration and
+application state. It masks known credential stores and sensitive application
+data, including `.ssh`, `.gnupg`, `.aws`, `.azure`, `.kube`, `.docker`,
+`.password-store`, browser profiles, GitHub CLI credentials, cloud CLI
+credentials, password-manager data, and keyrings. Ordinary paths such as
+`.config/zed`, `.local/share/zed`, `.cache`, and project directories remain
+available. The home mount is deliberately broad: any sensitive path not in the
+explicit deny list is visible and writable, so review the list before using
+this mode with untrusted code. Workspace arguments remain a separate trust
+boundary and cannot overlap a protected path. The command's `PATH` is rebuilt
+from host PATH entries that resolve into `/nix/store`; a small allowlist of
+compiler/build variables is passed to `dev`.
 
 `dev` disables networking by default. Use `--network` only when the build
 really needs it. Network-enabled profiles share the host network namespace:
@@ -597,8 +603,7 @@ accesses and normal workflows have been reviewed on the workstation.
 After deploying, verify the loaded profiles and inspect AppArmor events:
 
 ```sh
-sudo aa-status
-sudo systemctl status apparmor.service
+sudo aa-statussudo systemctl status apparmor.service
 sudo journalctl -k -b --grep='apparmor="ALLOWED"'
 sudo journalctl -k -b --grep='apparmor="DENIED"'
 ```
@@ -798,58 +803,3 @@ validates generated settings during the build.
 ## Apply safely
 
 First build the new system, then activate it as a test:
-
-```sh
-sudo nixos-rebuild build --flake .#workstation
-sudo nixos-rebuild test --flake .#workstation
-```
-
-Check the Niri session, Noctalia shell, networking, Bluetooth, audio, portals,
-screenshots, media keys, display controls, Vulkan/VA-API, sensors, and a test VM.
-Only after those checks pass, make the generation the default:
-
-```sh
-sudo nixos-rebuild switch --flake .#workstation
-```
-
-Keep the previous generation available in the firmware boot menu. To roll back
-from a running system, use:
-
-```sh
-sudo nixos-rebuild switch --rollback
-```
-
-The generated hardware configuration contains the host's disk UUIDs and mount
-layout. It is preserved under `hosts/workstation/` and must not be copied to a
-different machine without regenerating it.
-
-## Updating dependencies
-
-Inputs are pinned by `flake.lock`. Review updates rather than tracking moving
-branches at every rebuild:
-
-```sh
-nix flake update
-git diff -- flake.lock
-nix fmt
-nix flake check path:. --no-build --no-update-lock-file --show-trace
-```
-
-Review Nixpkgs, Home Manager, Noctalia, and terminal-dotfiles changes before
-applying them to the host. Do not change `system.stateVersion` merely to
-follow a newer NixOS release; it remains `26.05` from the original install.
-
-## Maintenance and recovery
-
-- Garbage collection runs weekly and removes unreferenced store paths.
-  Existing system generations are retained as rollback targets; remove them
-  explicitly only after confirming that a known-good generation remains.
-- Store optimisation runs weekly.
-- GitHub Actions validates formatting and evaluates the flake in a lightweight
-  job, then builds the complete system closure in a separate job.
-- Keep a known-good generation and a copy of the hardware configuration
-  before changing bootloader, LUKS, Btrfs, or kernel settings.
-- Keep a known-good recovery route available before modifying bootloader
-  or Secure Boot settings. The Limine menu retains up to five NixOS generations;
-  verify the active Limine boot path on the host before relying on it as the
-  only recovery route.
