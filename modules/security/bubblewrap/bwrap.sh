@@ -126,6 +126,9 @@ protected_home_relatives=(
   .cargo/credentials
   .cargo/credentials.toml
   .config/gh
+  .config/git/credentials
+  .config/git/credential
+  .config/Code/User/globalStorage
   .config/gcloud
   .config/rclone
   .config/sops
@@ -142,6 +145,8 @@ protected_home_relatives=(
   .config/wireguard
   .config/Nextcloud
   .local/share/keyrings
+  .local/share/kwalletd
+  .local/share/gnome-keyring
   .local/share/TelegramDesktop
 )
 
