@@ -455,7 +455,8 @@ in
 
       vscode = {
         state = "complain";
-        profile = editorProfile "${pkgs.vscode}/lib/vscode/code";
+        # Match the FHS launcher installed in environment.systemPackages.
+        profile = editorProfile "${pkgs.vscode.fhs}/bin/code";
       };
 
       neovim = {
