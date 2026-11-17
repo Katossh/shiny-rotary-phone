@@ -391,18 +391,27 @@ jobs:
         run: |
           echo "::notice::Cachix is not configured. Create a public cache and set the CACHIX_CACHE_NAME repository variable to enable it."
 
-      # Firefox's profile-guided build can exceed the stock runner's 3 GiB swap.
-      # Add temporary disk-backed swap; this affects only the ephemeral CI runner.
+      # Ubuntu runners already have a 3 GiB /swapfile, so checking whether
+      # /swapfile exists silently skips the additional swap Firefox needs.
+      # Use a separate temporary swap file for this Nix build.
       - name: Add swap space for memory-intensive Nix builds
         run: |
-          if [[ ! -e /swapfile ]]; then
-            sudo fallocate -l 16G /swapfile
-            sudo chmod 600 /swapfile
-            sudo mkswap /swapfile
-            sudo swapon /swapfile
+          swapfile=/swapfile-nix-build
+          if [[ ! -e "$swapfile" ]]; then
+            sudo fallocate -l 16G "$swapfile"
+            sudo chmod 600 "$swapfile"
+            sudo mkswap "$swapfile"
+          fi
+          if ! swapon --show=NAME --noheadings | grep -Fxq "$swapfile"; then
+            sudo swapon "$swapfile"
           fi
           free -h
           swapon --show
+          swap_kib="$(awk 'NR > 1 { total += $3 } END { print total + 0 }' /proc/swaps)"
+          if (( swap_kib < 16 * 1024 * 1024 )); then
+            echo "Expected at least 16 GiB of active swap, found ${swap_kib} KiB." >&2
+            exit 1
+          fi
 
       - name: Build the workstation system closure
         run: |
