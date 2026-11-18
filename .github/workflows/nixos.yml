@@ -191,6 +191,24 @@ jobs:
           print("AppArmor policy modes match the reviewed rollout matrix.")
           PY
 
+          vscode_profile="$(nix eval --raw \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.security.apparmor.policies.vscode.profile" \
+            --no-update-lock-file \
+            --accept-flake-config)"
+          if ! grep -Eq '^profile /nix/store/[^[:space:]]+/bin/code[[:space:]]*[{]' <<< "$vscode_profile"; then
+            echo "VS Code AppArmor profile must target the FHS /bin/code launcher." >&2
+            exit 1
+          fi
+
+          ozone_wayland="$(nix eval --raw \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.environment.sessionVariables.NIXOS_OZONE_WL" \
+            --no-update-lock-file \
+            --accept-flake-config)"
+          if [[ "$ozone_wayland" != "1" ]]; then
+            echo "NIXOS_OZONE_WL must be enabled for the Niri desktop session." >&2
+            exit 1
+          fi
+
           for policy in curl jq; do
             profile="$(nix eval --raw \
               "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.security.apparmor.policies.$policy.profile" \

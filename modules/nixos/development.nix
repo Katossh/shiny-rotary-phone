@@ -61,5 +61,12 @@
   ];
 
   # Preserve rust-analyzer access to the Rust standard-library sources.
-  environment.sessionVariables.RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
+  environment.sessionVariables = {
+    RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
+
+    # Nixpkgs' VS Code wrapper enables Electron's native Wayland backend when
+    # this is set and WAYLAND_DISPLAY is present. This avoids relying on XWayland
+    # under Niri while remaining harmless in non-Wayland sessions.
+    NIXOS_OZONE_WL = "1";
+  };
 }
