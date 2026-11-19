@@ -39,6 +39,11 @@ let
       # The bundled AGW PEM files contain a final newline that changes the
       # derived decryption key. Match the bytes embedded by the upstream build.
       preConfigure = (previousAttrs.preConfigure or "") + ''
+        # The upstream 5.1.0.6 tag commit is 2026-11-02T16:23:52Z.
+        # Use its verified Unix timestamp instead of reading the malformed
+        # .source-date-epoch emitted by the overridden source fetcher.
+        export SOURCE_DATE_EPOCH=1793636632
+
         export DEV_AGW_PUBLIC_KEY="''${DEV_AGW_PUBLIC_KEY%\\n}"
         export PROD_AGW_PUBLIC_KEY="''${PROD_AGW_PUBLIC_KEY%\\n}"
       '';
