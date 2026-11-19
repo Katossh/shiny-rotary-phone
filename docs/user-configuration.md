@@ -60,6 +60,28 @@ Both downloads are intentional upstream integration points, not NixOS package
 management. Review or pin them separately if you require a fully offline or
 byte-reproducible user environment.
 
+## Network proxy client
+
+The workstation user receives the **v2rayN** desktop client through
+Home Manager (`pkgs.v2rayn` from the root flake's locked Nixpkgs input).
+v2rayN is an open-source GUI frontend that supports Xray and sing-box cores.
+For VLESS + REALITY profiles, select the Xray core in v2rayN.
+
+The Nixpkgs package installs the GUI frontend; it does not bundle the Xray
+core binaries. Use v2rayN's core manager to install or update the Xray core
+before connecting. Core downloads managed by the application are separate
+from the flake lock and are not pinned by this repository.
+
+Installing the client does not connect to a server, enable TUN mode, install
+a system-wide VPN service, or change the machine's default routing. Do not
+run the desktop application as root. TUN mode requires separate privileged
+network setup and should be reviewed independently before use.
+
+There is currently no dedicated AppArmor policy for v2rayN in
+`modules/nixos/apparmor.nix`; this installation must not be treated as an
+AppArmor-confined workload. Review its runtime file and network access before
+considering a dedicated profile.
+
 ## Supported preferences
 
 The following typed options are declared under `starforge.user` in the
