@@ -14,7 +14,7 @@ let
         owner = "amnezia-vpn";
         repo = "amnezia-client";
         tag = finalAttrs.version;
-        hash = "sha256-o09F55FjmlBXtFTWwWmAOsea+56QlJiA4DuRFuBVtRI=";
+        hash = "sha256-CC0pxktunkfCjP53ArftEn6h0Wsw/oWJrGjEpXcxjqM=";
         fetchSubmodules = true;
       };
 
