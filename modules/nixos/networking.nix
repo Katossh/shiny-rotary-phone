@@ -16,6 +16,12 @@ let
         tag = finalAttrs.version;
         hash = "sha256-CC0pxktunkfCjP53ArftEn6h0Wsw/oWJrGjEpXcxjqM=";
         fetchSubmodules = true;
+
+        # Preserve the metadata consumed by the inherited preConfigure hook.
+        postCheckout = ''
+          git -C "$out" rev-parse --short HEAD > "$out/.git-revision"
+          git -C "$out" show -s --format=%ct HEAD > "$out/.source-date-epoch"
+        '';
       };
 
       postPatch = (previousAttrs.postPatch or "") + ''
