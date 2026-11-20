@@ -30,6 +30,7 @@
       slurp
       telegram-desktop
       tor-browser
+      v2rayn
       localsend
       kalker
       wl-clipboard
