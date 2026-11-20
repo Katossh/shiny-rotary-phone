@@ -65,8 +65,6 @@ byte-reproducible user environment.
 The workstation user receives the **v2rayN** desktop client through
 Home Manager (`pkgs.v2rayn` from the root flake's locked Nixpkgs input).
 v2rayN is an open-source GUI frontend that supports Xray and sing-box cores.
-For VLESS + REALITY profiles, select the Xray core in v2rayN.
-
 The Nixpkgs package installs the GUI frontend; it does not bundle the Xray
 core binaries. Home Manager therefore installs `pkgs.xray` separately and
 links it into the exact per-user location that v2rayN checks on Linux:
