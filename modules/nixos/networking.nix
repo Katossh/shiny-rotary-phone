@@ -52,7 +52,13 @@ let
 in
 {
   networking = {
-    networkmanager.enable = true;
+    networkmanager = {
+      enable = true;
+
+      # Disable Wi-Fi power saving for more consistent responsiveness.
+      # The trade-off is slightly higher power consumption while Wi-Fi is on.
+      wifi.powersave = false;
+    };
 
     # Network exposure policy belongs with network configuration. Keep the
     # default iptables backend for compatibility with libvirt networking.
