@@ -65,12 +65,29 @@ byte-reproducible user environment.
 The workstation user receives the **v2rayN** desktop client through
 Home Manager (`pkgs.v2rayn` from the root flake's locked Nixpkgs input).
 v2rayN is an open-source GUI frontend that supports Xray and sing-box cores.
-For VLESS + REALITY profiles, select the Xray core in v2rayN.
-
 The Nixpkgs package installs the GUI frontend; it does not bundle the Xray
-core binaries. Use v2rayN's core manager to install or update the Xray core
-before connecting. Core downloads managed by the application are separate
-from the flake lock and are not pinned by this repository.
+core binaries. Home Manager therefore installs `pkgs.xray` separately and
+links it into the exact per-user location that v2rayN checks on Linux:
+`~/.local/share/v2rayN/bin/xray/xray`. It also links the matching
+`geoip.dat` and `geosite.dat` from the locked `v2ray-rules-dat` package
+into `~/.local/share/v2rayN/bin/`, which v2rayN passes to Xray as its asset
+directory.
+
+The Xray executable is also available as `xray` in the user's shell. Its
+version and routing databases follow the root flake's locked Nixpkgs input.
+Do not install or update this managed core through v2rayN's core downloader:
+update the Nixpkgs input and rebuild the configuration instead. Select the
+Xray core in v2rayN for VLESS + REALITY profiles.
+
+After applying the configuration, restart v2rayN and verify the managed files:
+
+```sh
+xray version
+test -x ~/.local/share/v2rayN/bin/xray/xray
+ls -l ~/.local/share/v2rayN/bin/{geoip.dat,geosite.dat}
+```
+
+Installing the core does not create a system service or enable TUN mode.
 
 Installing the client does not connect to a server, enable TUN mode, install
 a system-wide VPN service, or change the machine's default routing. Do not
