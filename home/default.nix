@@ -31,12 +31,30 @@
       telegram-desktop
       tor-browser
       v2rayn
+      xray
       localsend
       kalker
       wl-clipboard
     ];
 
-    file."Pictures/Screenshots/.keep".text = "";
+    file = {
+      "Pictures/Screenshots/.keep".text = "";
+
+      # v2rayN resolves Xray from this per-user core directory, not from PATH.
+      # Keep the binary and routing databases linked to the locked Nixpkgs inputs.
+      ".local/share/v2rayN/bin/xray/xray" = {
+        source = "${pkgs.xray}/bin/xray";
+        force = true;
+      };
+      ".local/share/v2rayN/bin/geoip.dat" = {
+        source = "${pkgs.v2ray-rules-dat}/share/v2ray/geoip.dat";
+        force = true;
+      };
+      ".local/share/v2rayN/bin/geosite.dat" = {
+        source = "${pkgs.v2ray-rules-dat}/share/v2ray/geosite.dat";
+        force = true;
+      };
+    };
 
   };
 
