@@ -107,6 +107,22 @@ jobs:
             --accept-flake-config \
             --show-trace
 
+      - name: Build pinned Xray core
+        run: |
+          xray_version="$(nix eval --raw \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.pkgs.xray.version" \
+            --no-update-lock-file \
+            --accept-flake-config)"
+          if [[ "$xray_version" != "26.11.9" ]]; then
+            echo "Expected Xray 26.11.9, got $xray_version" >&2
+            exit 1
+          fi
+          nix build \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.pkgs.xray" \
+            --no-link \
+            --no-update-lock-file \
+            --accept-flake-config
+
       - name: Verify Home Manager target enumeration
         run: |
           username="$(nix eval --raw "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.starforge.user.username" --no-update-lock-file --accept-flake-config)"
