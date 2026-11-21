@@ -53,8 +53,8 @@ buildGo127Module (finalAttrs: {
   };
 
   postFixup = ''
-    wrapProgram $out/bin/xray \\
-      --set-default V2RAY_LOCATION_ASSET $assetsDrv/share/v2ray \\
+    wrapProgram $out/bin/xray \
+      --set-default V2RAY_LOCATION_ASSET $assetsDrv/share/v2ray \
       --set-default XRAY_LOCATION_ASSET $assetsDrv/share/v2ray
   '';
 
