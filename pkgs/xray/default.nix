@@ -27,8 +27,7 @@ buildGo127Module (finalAttrs: {
   ];
 
   postPatch = ''
-    sed -i '/golang\\.org\\/x\\/crypto\\/x509roots\\/fallback/d' go.mod
-    sed -i '/golang\\.org\\/x\\/crypto\\/x509roots\\/fallback/d' go.sum
+    sed -i '/x509roots\\/fallback/d' go.mod go.sum
   '';
 
   nativeBuildInputs = [ makeWrapper ];
