@@ -73,11 +73,16 @@ links it into the exact per-user location that v2rayN checks on Linux:
 into `~/.local/share/v2rayN/bin/`, which v2rayN passes to Xray as its asset
 directory.
 
-The Xray executable is also available as `xray` in the user's shell. Its
-version and routing databases follow the root flake's locked Nixpkgs input.
-Do not install or update this managed core through v2rayN's core downloader:
-update the Nixpkgs input and rebuild the configuration instead. Select the
-Xray core in v2rayN for VLESS + REALITY profiles.
+The Xray executable is also available as `xray` in the user's shell. The
+core is pinned independently to upstream Xray-core v26.11.9 by
+`pkgs/xray/default.nix`; fixed source and Go vendor hashes make the source
+reproducible without updating the root Nixpkgs lock. The workstation overlay
+in `modules/nixos/xray.nix` installs this package for Home Manager.
+The `geoip.dat` and `geosite.dat` files remain supplied by the root
+Nixpkgs-locked `v2ray-rules-dat` package. Do not install or update this
+managed core through v2rayN's core downloader: update the pinned version and
+hashes in the package expression, then rebuild the configuration instead.
+Select the Xray core in v2rayN for VLESS + REALITY profiles.
 
 After applying the configuration, restart v2rayN and verify the managed files:
 

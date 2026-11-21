@@ -41,7 +41,7 @@
       "Pictures/Screenshots/.keep".text = "";
 
       # v2rayN resolves Xray from this per-user core directory, not from PATH.
-      # Keep the binary and routing databases linked to the locked Nixpkgs inputs.
+      # Keep the binary and routing databases declaratively managed.
       ".local/share/v2rayN/bin/xray/xray" = {
         source = "${pkgs.xray}/bin/xray";
         force = true;
