@@ -63,6 +63,7 @@ case "$1" in
     preset_name='Main + references (60 / 20 / 20)'
     widths=(60 20 20)
     group_sizes=(1 1 1)
+    expected_count=3
     ;;
   -h|--help)
     usage
