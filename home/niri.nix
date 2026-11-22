@@ -105,30 +105,24 @@ in
       # Repeated top-level KDL nodes must use root _children.
       # Output nodes are generated from starforge.user.desktop.monitors.
       _children = monitorOutputNodes ++ [
-        # Workspaces 1–3 are assigned below; 4 is reserved and Niri supplies dynamic workspace 5.
+        # Workspaces 1–5 are persistent; Niri supplies an additional dynamic workspace at the end.
         { workspace._args = [ "1" ]; }
         { workspace._args = [ "2" ]; }
         { workspace._args = [ "3" ]; }
         { workspace._args = [ "4" ]; }
-        {
-          # Development: Zed and Alacritty.
-          window-rule = {
-            match._props."app-id" = "^(dev\\.zed\\.Zed|(?i:alacritty))$";
-            "open-on-workspace" = "1";
-          };
-        }
+        { workspace._args = [ "5" ]; }
         {
           # Games: Steam and its game windows, osu!, and Genshin/Anime Game Launcher.
           window-rule = {
             match._props."app-id" = "(?i)(steam|osu|genshin|anime.?game)";
-            "open-on-workspace" = "2";
+            "open-on-workspace" = "4";
           };
         }
         {
           # Communication: Discord, Telegram, and LocalSend.
           window-rule = {
             match._props."app-id" = "(?i)(discord|telegram|localsend)";
-            "open-on-workspace" = "3";
+            "open-on-workspace" = "5";
           };
         }
         {
@@ -410,7 +404,7 @@ in
           "move-column-to-workspace-up" = { };
         };
 
-        # Use names for the four persistent workspaces and an index for the dynamic fifth.
+        # Use names for persistent workspaces 1–5 and indices for additional dynamic workspaces.
         "Mod+1" = {
           _props."hotkey-overlay-title" = "Switch to workspace 1";
           focus-workspace._args = [ "1" ];
@@ -429,7 +423,7 @@ in
         };
         "Mod+5" = {
           _props."hotkey-overlay-title" = "Switch to workspace 5";
-          focus-workspace._args = [ 5 ];
+          focus-workspace._args = [ "5" ];
         };
         "Mod+6".focus-workspace._args = [ 6 ];
         "Mod+7".focus-workspace._args = [ 7 ];
@@ -440,7 +434,7 @@ in
         "Mod+Ctrl+2".move-column-to-workspace._args = [ "2" ];
         "Mod+Ctrl+3".move-column-to-workspace._args = [ "3" ];
         "Mod+Ctrl+4".move-column-to-workspace._args = [ "4" ];
-        "Mod+Ctrl+5".move-column-to-workspace._args = [ 5 ];
+        "Mod+Ctrl+5".move-column-to-workspace._args = [ "5" ];
         "Mod+Ctrl+6".move-column-to-workspace._args = [ 6 ];
         "Mod+Ctrl+7".move-column-to-workspace._args = [ 7 ];
         "Mod+Ctrl+8".move-column-to-workspace._args = [ 8 ];
