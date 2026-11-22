@@ -39,21 +39,25 @@ case "$1" in
     preset_name='Developer (50 / 25 / 25)'
     widths=(50 25 25)
     group_sizes=(1 2 1)
+    expected_count=4
     ;;
   triple)
     preset_name='Triple (33 / 33 / 33)'
     widths=(33.333333 33.333333 33.333333)
     group_sizes=(1 1 1)
+    expected_count=3
     ;;
   asymmetric)
     preset_name='Asymmetric (25 / 37.5 / 37.5)'
     widths=(25 37.5 37.5)
     group_sizes=(2 1 1)
+    expected_count=4
     ;;
   quad)
     preset_name='Quad (25 / 25 / 25 / 25)'
     widths=(25 25 25 25)
     group_sizes=(1 1 1 1)
+    expected_count=4
     ;;
   references)
     preset_name='Main + references (60 / 20 / 20)'
@@ -77,7 +81,7 @@ workspace_id=$(jq -er '(.Ok.Workspaces // .Workspaces // []) | map(select(.is_fo
   || fail 'Could not identify the focused workspace.'
 
 windows_response=$(niri msg --json windows) || fail 'Could not query Niri windows.'
-window_rows=$(jq -r --argjson workspace_id "$workspace_id" '
+window_ids_output=$(jq -r --argjson workspace_id "$workspace_id" '
   (.Ok.Windows // .Windows // [])
   | map(select(
       .workspace_id == $workspace_id
@@ -85,23 +89,15 @@ window_rows=$(jq -r --argjson workspace_id "$workspace_id" '
       and (.layout.pos_in_scrolling_layout | type == "array")
     ))
   | sort_by(.layout.pos_in_scrolling_layout[0], .layout.pos_in_scrolling_layout[1])
-  | if length == 0 then empty else .[] |
-      [(.id | tostring),
-       (.layout.pos_in_scrolling_layout[0] | tostring),
-       (.layout.pos_in_scrolling_layout[1] | tostring),
-       ((.is_focused // false) | tostring)] | @tsv
-    end
+  | .[].id
 ' <<<"$windows_response") || fail 'Could not read tiled window positions from Niri.'
 
-rows=()
-if [[ -n "$window_rows" ]]; then
-  mapfile -t rows <<<"$window_rows"
+window_ids=()
+window_count=0
+if [[ -n "$window_ids_output" ]]; then
+  mapfile -t window_ids <<<"$window_ids_output"
+  window_count=$(printf '%s\n' "$window_ids_output" | wc -l)
 fi
-window_count=${#rows[@]}
-expected_count=0
-for size in "${group_sizes[@]}"; do
-  ((expected_count += size))
-done
 
 if ((window_count != expected_count)); then
   fail "$preset_name needs exactly $expected_count tiled windows on this workspace; found $window_count. No windows were moved."
@@ -150,10 +146,6 @@ for column in "${original_columns[@]}"; do
 done
 
 # Rebuild the target column groups from left to right.
-window_ids=()
-for row in "${rows[@]}"; do
-  window_ids+=("${row%%
-done
 window_offset=0
 target_column=1
 for index in "${!group_sizes[@]}"; do
