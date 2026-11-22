@@ -97,7 +97,7 @@ window_ids=()
 window_count=0
 if [[ -n "$window_ids_output" ]]; then
   mapfile -t window_ids <<<"$window_ids_output"
-  window_count=$(printf '%s\n' "$window_ids_output" | wc -l)
+  window_count=${#window_ids[@]}
 fi
 
 if ((window_count != expected_count)); then
