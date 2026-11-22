@@ -139,7 +139,7 @@ for column in "${original_columns[@]}"; do
   ' <<<"$windows_response")
   mapfile -t ids_in_column <<<"$column_ids"
   if (("${#ids_in_column[@]}" > 1)); then
-    run_action focus-window "${ids_in_column[0]}"
+    run_action focus-window --id "${ids_in_column[0]}"
     for ((index = 1; index < ${#ids_in_column[@]}; index++)); do
       run_action expel-window-from-column
     done
@@ -170,7 +170,7 @@ done
 
 # Keep the user's original focused window selected after the transformation.
 if [[ -n "$focused_id" ]]; then
-  run_action focus-window "$focused_id"
+  run_action focus-window --id "$focused_id"
 fi
 
 notify 'Layout applied' "$preset_name"
