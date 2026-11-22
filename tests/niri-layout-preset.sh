@@ -80,7 +80,7 @@ run_width_test() {
   local preset=$1
   local expected_widths=$2
   : >"$NIRI_ACTION_LOG"
-  "$script" "$preset" >/dev/null
+  bash "$script" "$preset" >/dev/null
   local actual_widths
   actual_widths=$(grep '^set-column-width ' "$NIRI_ACTION_LOG" | sed 's/^set-column-width //')
   assert_equals "$expected_widths" "$actual_widths"
@@ -97,7 +97,7 @@ cat >"$NIRI_WINDOWS_JSON" <<'JSON'
 ]}}
 JSON
 : >"$NIRI_ACTION_LOG"
-output=$("$script" developer)
+output=$(bash "$script" developer)
 assert_contains 'Applied Developer (50 / 25 / 25) to 4 tiled windows.' "$output"
 expected=$(cat <<'EXPECTED'
 focus-column 1
@@ -131,7 +131,7 @@ cat >"$NIRI_WINDOWS_JSON" <<'JSON'
 ]}}
 JSON
 : >"$NIRI_ACTION_LOG"
-"$script" asymmetric >/dev/null
+bash "$script" asymmetric >/dev/null
 actual=$(cat "$NIRI_ACTION_LOG")
 assert_contains $'focus-window 201\nexpel-window-from-column\nfocus-column 1\nconsume-window-into-column\nset-column-width 25%' "$actual"
 assert_contains 'set-column-width 37.5%' "$actual"
@@ -152,7 +152,7 @@ cat >"$NIRI_WINDOWS_JSON" <<'JSON'
 ]}}
 JSON
 : >"$NIRI_ACTION_LOG"
-if "$script" triple >/dev/null 2>&1; then
+if bash "$script" triple >/dev/null 2>&1; then
   echo 'Expected a window-count mismatch to fail.' >&2
   exit 1
 fi
