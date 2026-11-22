@@ -197,7 +197,7 @@ communication apps. Niri also maintains an empty dynamic workspace at the end
 of each monitor; on this single-monitor setup it initially occupies position
 6. `Mod+1` through `Mod+5` focus the five named workspaces.
 `Mod+Ctrl+1` through `Mod+Ctrl+5` move the focused column to the matching
-named workspace. `Mod+6` and higher target workspaces by their current
+named workspace. `Mod+6` through `Mod+9` target workspaces by their current
 position, so those bindings remain useful for additional dynamic workspaces.
 
 Named workspaces remain present even when empty. The dynamic workspace is
