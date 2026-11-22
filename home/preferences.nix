@@ -181,7 +181,7 @@ in
 
         gaps = mkOption {
           type = types.ints.between 0 64;
-          default = 10;
+          default = 8;
           example = 8;
           description = ''
             Niri layout gap in logical pixels. Accepted range: 0 through 64.
