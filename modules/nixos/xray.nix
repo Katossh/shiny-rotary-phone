@@ -1,4 +1,4 @@
-{ ... }:
+_:
 
 {
   # Update only Xray-core independently of the root Nixpkgs lock. This keeps
