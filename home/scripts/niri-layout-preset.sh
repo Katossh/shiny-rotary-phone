@@ -152,8 +152,37 @@ done
 # Rebuild the target column groups from left to right.
 window_ids=()
 for row in "${rows[@]}"; do
-  IFS=$'\t' read -r window_id _column _tile _focused <<<"$row"
-  window_ids+=("$window_id")
+  window_ids+=("${row%%
+done
+window_offset=0
+target_column=1
+for index in "${!group_sizes[@]}"; do
+  group_size=${group_sizes[$index]}
+  run_action focus-column "$target_column"
+
+  for ((tile = 1; tile < group_size; tile++)); do
+    run_action consume-window-into-column
+  done
+
+  run_action set-column-width "${widths[$index]}%"
+  run_action set-column-display normal
+
+  for ((tile = 0; tile < group_size; tile++)); do
+    run_action reset-window-height --id "${window_ids[$((window_offset + tile))]}"
+  done
+
+  ((window_offset += group_size))
+  ((target_column += 1))
+done
+
+# Keep the user's original focused window selected after the transformation.
+if [[ -n "$focused_id" ]]; then
+  run_action focus-window "$focused_id"
+fi
+
+notify 'Layout applied' "$preset_name"
+printf 'Applied %s to %d tiled windows.\n' "$preset_name" "$window_count"
+\t'*}")
 done
 window_offset=0
 target_column=1
