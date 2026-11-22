@@ -114,7 +114,7 @@ focus-column 3
 set-column-width 25%
 set-column-display normal
 reset-window-height --id 104
-focus-window 102
+focus-window --id 102
 EXPECTED
 )
 actual=$(cat "$NIRI_ACTION_LOG")
@@ -133,9 +133,9 @@ JSON
 : >"$NIRI_ACTION_LOG"
 bash "$script" asymmetric >/dev/null
 actual=$(cat "$NIRI_ACTION_LOG")
-assert_contains $'focus-window 201\nexpel-window-from-column\nfocus-column 1\nconsume-window-into-column\nset-column-width 25%' "$actual"
+assert_contains $'focus-window --id 201\nexpel-window-from-column\nfocus-column 1\nconsume-window-into-column\nset-column-width 25%' "$actual"
 assert_contains 'set-column-width 37.5%' "$actual"
-assert_contains 'focus-window 204' "$actual"
+assert_contains 'focus-window --id 204' "$actual"
 
 # Floating windows are ignored; each preset must produce its declared column widths.
 write_linear_fixture 3 true
