@@ -240,6 +240,22 @@ columns. Use `Mod+Ctrl+Comma` to consume a neighbouring window into the
 focused column, or `Mod+Period` to expel a window from its column. Dynamic
 workspaces continue to work beyond the initial five.
 
+#### One-key layout presets
+
+Use `Mod+Alt+1` through `Mod+Alt+5` to apply a complete layout to the tiled windows on the **currently focused workspace**:
+
+| Shortcut | Preset | Column widths | Window arrangement |
+|---|---|---|---|
+| `Mod+Alt+1` | Developer | 50 / 25 / 25 | 1 window / 2 stacked / 1 window |
+| `Mod+Alt+2` | Triple | 33.33 / 33.33 / 33.33 | 3 side-by-side windows |
+| `Mod+Alt+3` | Asymmetric | 25 / 37.5 / 37.5 | 2 stacked / 1 window / 1 window |
+| `Mod+Alt+4` | Quad | 25 / 25 / 25 / 25 | 4 side-by-side windows |
+| `Mod+Alt+5` | Main + references | 60 / 20 / 20 | 3 side-by-side windows |
+
+The percentages are proportions of the available layout width; Niri accounts for the configured gaps. Each preset requires exactly the number of tiled windows shown (three or four) on the focused workspace. If the count does not match, the script reports the mismatch and makes no layout changes. Floating windows are ignored, existing tiled windows are ordered left-to-right and then top-to-bottom, and the previously focused window is refocused after the layout is applied.
+
+These shortcuts are one-shot transformations, not workspace profiles: they do not change the default width for future windows, and they do not affect other workspaces. The regular `Mod+R` width cycling and manual column/window resizing remain available.
+
 ## Example
 
 To use automatic light/dark switching, change the corresponding defaults in
