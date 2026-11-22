@@ -119,8 +119,10 @@ Home Manager configuration.
 | `starforge.user.hardware.deepcoolDigital.enable` | `false` | Starts the DeepCool Digital daemon as a per-user systemd service; requires a compatible display and a host-specific hidraw udev ACL. |
 | `starforge.user.desktop.niri.keyboardLayout` | `"us,ru"` | Comma-separated XKB layout identifiers passed to Niri. |
 | `starforge.user.desktop.niri.keyboardLayoutOptions` | `"grp:alt_shift_toggle"` | XKB layout options passed to Niri. |
-| `starforge.user.desktop.niri.gaps` | `12` | Niri layout gap in logical pixels; integer range 0–64. |
+| `starforge.user.desktop.niri.gaps` | `10` | Niri layout gap in logical pixels; integer range 0–64. |
 | `starforge.user.desktop.monitors` | `{}` | Niri output map keyed by connector name; supports mode, scale, and position. |
+
+The Niri layout also applies `top -2` and `bottom -2` struts. This makes the configured top and bottom outer gaps 2 logical pixels smaller than the regular gap (8 px with the default gap of 10 px).
 
 Built-in Noctalia palettes supported by the currently pinned Noctalia input:
 
@@ -250,7 +252,7 @@ To use automatic light/dark switching, change the corresponding defaults in
 -        default = "Catppuccin";
 +        default = "Tokyo-Night";
 
--        default = 12;
+-        default = 10;
 +        default = 8;
 ```
 
