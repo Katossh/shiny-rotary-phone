@@ -10,6 +10,7 @@
     ./deepcool-digital.nix
     ./gtk.nix
     ./niri.nix
+    ./niri-layout-presets.nix
     ./noctalia.nix
     ./terminal-dotfiles.nix
     ./containers.nix
