@@ -46,10 +46,6 @@ in
 
       layout = {
         gaps = config.starforge.user.desktop.niri.gaps;
-        struts = {
-          top = -2;
-          bottom = -2;
-        };
         "center-focused-column" = "on-overflow";
         "default-column-width" = {
           proportion = 0.5;
