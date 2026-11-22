@@ -190,42 +190,42 @@ did not provide any additional template or palette files to migrate.
 
 ### Niri workspaces
 
-Niri declares four persistent named workspaces: `"1"` through `"4"`.
-Workspaces 1–3 have automatic application assignments; workspace 4 is a
-persistent reserve. Niri also maintains one empty dynamic workspace at the end
-of each monitor, which occupies position 5 in a fresh single-monitor session.
-`Mod+1` through `Mod+4` focus the named workspaces; `Mod+5` targets the
-workspace currently in position 5. `Mod+Ctrl+1` through `Mod+Ctrl+4` move
-the focused column to the named workspaces, while `Mod+Ctrl+5` targets the
-workspace currently in position 5.
+Niri declares five persistent named workspaces: `"1"` through `"5"`.
+Workspaces 1–3 are general-purpose: no application is pinned to them.
+Workspace 4 is reserved for games, and workspace 5 is reserved for
+communication apps. Niri also maintains an empty dynamic workspace at the end
+of each monitor; on this single-monitor setup it initially occupies position
+6. `Mod+1` through `Mod+5` focus the five named workspaces.
+`Mod+Ctrl+1` through `Mod+Ctrl+5` move the focused column to the matching
+named workspace. `Mod+6` through `Mod+9` target workspaces by their current
+position, so those bindings remain useful for additional dynamic workspaces.
 
-The fifth workspace is dynamic, not persistent. Niri always keeps an empty
-workspace at the end; when a window is placed there, it creates another empty
-workspace below it. The count therefore starts at five but is not a hard
-maximum.
+Named workspaces remain present even when empty. The dynamic workspace is
+separate: when a window is placed there, Niri creates another empty workspace
+below it. The workspace count is therefore not capped at six.
 
 #### Automatic application placement
 
-New windows are routed to these workspaces by their Niri application ID:
+Only games and communication apps have automatic workspace assignments:
 
 | Workspace | Purpose | Applications |
 | --- | --- | --- |
-| `1` | Development | Zed, Alacritty |
-| `2` | Games | Steam and Steam games, osu!, Genshin / Anime Game Launcher |
-| `3` | Communication | Discord, Telegram, LocalSend |
-| `4` | Reserve | No automatic application placement |
-| `5` | Reserve | Niri's empty dynamic workspace |
+| `1` | General | No automatic application placement |
+| `2` | General | No automatic application placement |
+| `3` | General | No automatic application placement |
+| `4` | Games | Steam and Steam games, osu!, Genshin / Anime Game Launcher |
+| `5` | Communication | Discord, Telegram, LocalSend |
+| `6` | Dynamic | Niri's empty dynamic workspace |
 
 These are opening rules: they apply when a window is created, not retroactively
-to windows that are already open. Move an existing window to one of the four
-named workspaces with `Mod+Ctrl+1` through `Mod+Ctrl+4`; `Mod+Ctrl+5`
-targets whichever workspace currently occupies position 5. Browsers,
-utilities, media applications, and any other app without a matching rule open
-on the currently focused workspace by default; browsers are not pinned to a
-dedicated workspace. If an application is not routed as expected, run
-`niri msg pick-window` and click it to inspect its actual app ID; adjust the
-matching expression in `home/niri.nix` if the application reports a different
-identifier.
+to windows that are already open. Move an existing window to the game or
+communication workspace with `Mod+Ctrl+4` or `Mod+Ctrl+5`.
+Browsers, terminals, editors, utilities, media applications, and any other app
+without a matching rule open on the currently focused workspace by default;
+none is pinned to workspaces 1–3. If an application is not routed as expected,
+run `niri msg pick-window` and click it to inspect its actual app ID; adjust
+the matching expression in `home/niri.nix` if the application reports a
+different identifier.
 
 Navigate vertically between workspaces with either `Mod+Up` / `Mod+Down`
 or the Vim-style `Mod+K` / `Mod+J` shortcuts. `Mod+Page_Up` and
