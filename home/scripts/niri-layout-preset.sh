@@ -1,0 +1,177 @@
+set -Eeuo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage: niri-layout-preset PRESET
+
+Apply a layout to tiled windows on the focused Niri workspace.
+PRESET is one of: developer, triple, asymmetric, quad, references.
+USAGE
+}
+
+notify() {
+  local title=$1
+  local message=$2
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send --app-name='Niri layout' "$title" "$message" >/dev/null 2>&1 || true
+  fi
+}
+
+fail() {
+  printf 'niri-layout-preset: %s\n' "$1" >&2
+  notify 'Layout not applied' "$1"
+  exit 1
+}
+
+run_action() {
+  if ! niri msg action "$@" >/dev/null; then
+    fail "Niri rejected action: $*. The layout may be partially changed."
+  fi
+}
+
+if (($# != 1)); then
+  usage >&2
+  exit 2
+fi
+
+case "$1" in
+  developer)
+    preset_name='Developer (50 / 25 / 25)'
+    widths=(50 25 25)
+    group_sizes=(1 2 1)
+    expected_count=4
+    ;;
+  triple)
+    preset_name='Triple (33 / 33 / 33)'
+    widths=(33.333333 33.333333 33.333333)
+    group_sizes=(1 1 1)
+    expected_count=3
+    ;;
+  asymmetric)
+    preset_name='Asymmetric (25 / 37.5 / 37.5)'
+    widths=(25 37.5 37.5)
+    group_sizes=(2 1 1)
+    expected_count=4
+    ;;
+  quad)
+    preset_name='Quad (25 / 25 / 25 / 25)'
+    widths=(25 25 25 25)
+    group_sizes=(1 1 1 1)
+    expected_count=4
+    ;;
+  references)
+    preset_name='Main + references (60 / 20 / 20)'
+    widths=(60 20 20)
+    group_sizes=(1 1 1)
+    expected_count=3
+    ;;
+  -h|--help)
+    usage
+    exit 0
+    ;;
+  *)
+    usage >&2
+    fail "Unknown preset: $1"
+    ;;
+esac
+
+command -v niri >/dev/null 2>&1 || fail 'niri was not found in PATH.'
+
+workspace_response=$(niri msg --json workspaces) || fail 'Could not query Niri workspaces.'
+workspace_id=$(jq -er '(.Ok.Workspaces // .Workspaces // []) | map(select(.is_focused == true)) | .[0].id // empty' <<<"$workspace_response") \
+  || fail 'Could not identify the focused workspace.'
+
+windows_response=$(niri msg --json windows) || fail 'Could not query Niri windows.'
+window_ids_output=$(jq -r --argjson workspace_id "$workspace_id" '
+  (.Ok.Windows // .Windows // [])
+  | map(select(
+      .workspace_id == $workspace_id
+      and .is_floating == false
+      and (.layout.pos_in_scrolling_layout | type == "array")
+    ))
+  | sort_by(.layout.pos_in_scrolling_layout[0], .layout.pos_in_scrolling_layout[1])
+  | .[].id
+' <<<"$windows_response") || fail 'Could not read tiled window positions from Niri.'
+
+window_ids=()
+window_count=0
+if [[ -n "$window_ids_output" ]]; then
+  mapfile -t window_ids <<<"$window_ids_output"
+  window_count=${#window_ids[@]}
+fi
+
+if ((window_count != expected_count)); then
+  fail "$preset_name needs exactly $expected_count tiled windows on this workspace; found $window_count. No windows were moved."
+fi
+
+# Capture the original focus and each column's top window before changing anything.
+focused_id=$(jq -r --argjson workspace_id "$workspace_id" '
+  (.Ok.Windows // .Windows // [])
+  | map(select(.workspace_id == $workspace_id and .is_focused == true))
+  | .[0].id // empty
+' <<<"$windows_response")
+
+mapfile -t original_columns < <(jq -r --argjson workspace_id "$workspace_id" '
+  (.Ok.Windows // .Windows // [])
+  | map(select(
+      .workspace_id == $workspace_id
+      and .is_floating == false
+      and (.layout.pos_in_scrolling_layout | type == "array")
+    ))
+  | map(.layout.pos_in_scrolling_layout[0])
+  | unique
+  | reverse
+  | .[]
+' <<<"$windows_response")
+
+# Flatten existing stacks from right to left. Expelling bottom tiles creates
+# adjacent columns, preserving the visual left-to-right/top-to-bottom order.
+for column in "${original_columns[@]}"; do
+  column_ids=$(jq -r --argjson workspace_id "$workspace_id" --argjson column "$column" '
+    (.Ok.Windows // .Windows // [])
+    | map(select(
+        .workspace_id == $workspace_id
+        and .is_floating == false
+        and .layout.pos_in_scrolling_layout[0] == $column
+      ))
+    | sort_by(.layout.pos_in_scrolling_layout[1])
+    | .[].id
+  ' <<<"$windows_response")
+  mapfile -t ids_in_column <<<"$column_ids"
+  if (("${#ids_in_column[@]}" > 1)); then
+    run_action focus-window --id "${ids_in_column[0]}"
+    for ((index = 1; index < ${#ids_in_column[@]}; index++)); do
+      run_action expel-window-from-column
+    done
+  fi
+done
+
+# Rebuild the target column groups from left to right.
+window_offset=0
+target_column=1
+for index in "${!group_sizes[@]}"; do
+  group_size=${group_sizes[$index]}
+  run_action focus-column "$target_column"
+
+  for ((tile = 1; tile < group_size; tile++)); do
+    run_action consume-window-into-column
+  done
+
+  run_action set-column-width "${widths[$index]}%"
+  run_action set-column-display normal
+
+  for ((tile = 0; tile < group_size; tile++)); do
+    run_action reset-window-height --id "${window_ids[$((window_offset + tile))]}"
+  done
+
+  ((window_offset += group_size))
+  ((target_column += 1))
+done
+
+# Keep the user's original focused window selected after the transformation.
+if [[ -n "$focused_id" ]]; then
+  run_action focus-window --id "$focused_id"
+fi
+
+notify 'Layout applied' "$preset_name"
+printf 'Applied %s to %d tiled windows.\n' "$preset_name" "$window_count"
