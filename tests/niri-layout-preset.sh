@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-script=\${1:?usage: test-niri-layout-preset.sh PATH_TO_SCRIPT}
+script=${1:?usage: test-niri-layout-preset.sh PATH_TO_SCRIPT}
 test_root=$(mktemp -d)
 trap 'rm -rf "$test_root"' EXIT
 mkdir -p "$test_root/bin"
@@ -43,7 +43,7 @@ JSON
 write_windows() {
   local count=$1
   local focused_index=$2
-  local floating=\${3:-false}
+  local floating=${3:-false}
   jq -n --argjson count "$count" --argjson focused_index "$focused_index" --argjson floating "$floating" '
     [
       [range(1; $count + 1) as $column | {
