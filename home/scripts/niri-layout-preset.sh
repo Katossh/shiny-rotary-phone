@@ -119,13 +119,13 @@ fi
 
 # Capture the original focus and each column's top window before changing anything.
 focused_id=$(jq -r --argjson workspace_id "$workspace_id" '
-  (.Ok.Windows // .Windows // [])
+  .
   | map(select(.workspace_id == $workspace_id and .is_focused == true))
   | .[0].id // empty
 ' <<<"$windows_list")
 
 mapfile -t original_columns < <(jq -r --argjson workspace_id "$workspace_id" '
-  (.Ok.Windows // .Windows // [])
+  .
   | map(select(
       .workspace_id == $workspace_id
       and .is_floating == false
@@ -141,7 +141,7 @@ mapfile -t original_columns < <(jq -r --argjson workspace_id "$workspace_id" '
 # adjacent columns, preserving the visual left-to-right/top-to-bottom order.
 for column in "${original_columns[@]}"; do
   column_ids=$(jq -r --argjson workspace_id "$workspace_id" --argjson column "$column" '
-    (.Ok.Windows // .Windows // [])
+    .
     | map(select(
         .workspace_id == $workspace_id
         and .is_floating == false
