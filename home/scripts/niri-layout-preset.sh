@@ -129,12 +129,19 @@ focused_id=$(jq -er --argjson workspace_id "$workspace_id" '
   | .[0].id // empty
 ' <<<"$windows_list") || fail 'Focus a tiled window before applying a layout preset.'
 
-ordered_window_ids=("$focused_id")
-for window_id in "${window_ids[@]}"; do
-  if [[ "$window_id" != "$focused_id" ]]; then
-    ordered_window_ids+=("$window_id")
+focused_index=-1
+for index in "${!window_ids[@]}"; do
+  if [[ "${window_ids[$index]}" == "$focused_id" ]]; then
+    focused_index=$index
+    break
   fi
 done
+if ((focused_index < 0)); then
+  fail 'Could not locate the focused window in the tiled workspace.'
+fi
+
+# Rotate the selection so it proceeds rightward from the focused window.
+ordered_window_ids=("${window_ids[@]:$focused_index}" "${window_ids[@]:0:$focused_index}")
 window_ids=("${ordered_window_ids[@]}")
 
 mapfile -t original_columns < <(jq -r --argjson workspace_id "$workspace_id" '
@@ -177,6 +184,16 @@ done
 # separate columns to the right and remain reachable by scrolling.
 run_action focus-window --id "$focused_id"
 run_action move-column-to-first
+
+# Move the columns that were left of the focused window behind the columns
+# that were right of it, matching the rotated selection order above.
+right_window_count=$((window_count - focused_index - 1))
+if ((right_window_count > 0)); then
+  for ((index = 0; index < focused_index; index++)); do
+    run_action focus-column 2
+    run_action move-column-to-last
+  done
+fi
 
 # Rebuild the target column groups from left to right.
 window_offset=0
