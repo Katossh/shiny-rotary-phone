@@ -269,6 +269,32 @@ Because QEMU runs unprivileged, direct USB/PCI device assignment may require
 additional per-device permissions. Do not solve that by running all QEMU
 processes as root; add narrowly scoped access for the specific device instead.
 
+### Network emulation and packet capture
+
+GNS3 is installed as a native desktop application with a local NixOS-managed
+server:
+
+- The GUI connects to the local server at `127.0.0.1:3080`. The API listens
+  only on loopback; no firewall port is opened.
+- The NixOS service runs under its dedicated `gns3` account. uBridge,
+  Dynamips, and VPCS support are enabled.
+- The service receives the `kvm` group so its QEMU nodes can use
+  `/dev/kvm`; libvirt access is provided by the existing service integration.
+- `inetutils` provides `telnet` for GNS3 node consoles.
+
+Wireshark is installed with its Qt GUI. The NixOS module grants members of the
+`wireshark` group network-capture access through the `dumpcap` wrapper.
+USB capture is deliberately disabled. After the first rebuild, log out and
+back in so the new group membership is applied.
+
+Useful checks:
+
+```sh
+systemctl status gns3-server
+curl -fsS http://127.0.0.1:3080/v2/version
+dumpcap -D
+```
+
 ### AMD IOMMU
 
 The host is prepared for AMD IOMMU-backed PCI device passthrough. Enable

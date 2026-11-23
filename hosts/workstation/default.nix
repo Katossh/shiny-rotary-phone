@@ -70,6 +70,7 @@
     ../../modules/nixos/terminal.nix
     ../../modules/nixos/containers.nix
     ../../modules/nixos/virtualisation.nix
+    ../../modules/nixos/network-tools.nix
     ../../modules/nixos/observability.nix
   ];
 

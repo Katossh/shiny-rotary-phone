@@ -41,6 +41,7 @@ in
       extraGroups = [
         "wheel"
         "networkmanager"
+        "wireshark"
       ];
     };
   };
