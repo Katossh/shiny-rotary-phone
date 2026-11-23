@@ -442,10 +442,12 @@ in
 
         # Alt+6/7 move only the focused window; Ctrl+1–9 still move columns.
         "Mod+Alt+6" = {
+          _props."allow-inhibiting" = false;
           _props."hotkey-overlay-title" = "Move focused window to workspace 6";
           move-window-to-workspace._args = [ 6 ];
         };
         "Mod+Alt+7" = {
+          _props."allow-inhibiting" = false;
           _props."hotkey-overlay-title" = "Move focused window to workspace 7";
           move-window-to-workspace._args = [ 7 ];
         };
