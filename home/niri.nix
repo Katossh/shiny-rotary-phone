@@ -1,6 +1,15 @@
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 
 let
+  niriMoveWindowWorkspace = pkgs.writeShellApplication {
+    name = "niri-move-window-workspace";
+    runtimeInputs = [
+      pkgs.jq
+      pkgs.libnotify
+    ];
+    text = builtins.readFile ./scripts/niri-move-window-workspace.sh;
+  };
+
   monitorOutputNodes = lib.mapAttrsToList (outputName: monitor: {
     output = {
       _args = [ outputName ];
@@ -13,6 +22,8 @@ let
   }) config.starforge.user.desktop.monitors;
 in
 {
+  home.packages = [ niriMoveWindowWorkspace ];
+
   wayland.windowManager.niri = {
     enable = true;
 
@@ -342,17 +353,23 @@ in
           "move-column-right" = { };
         };
         "Mod+Ctrl+H"."move-column-left" = { };
-        # Arrow keys reorder a window inside its current column. Vim keys move
-        # the focused window between adjacent workspaces instead.
+        # Vim keys move the focused window between the five named workspaces;
+        # Up/Down remain dedicated to reordering windows inside a column.
         "Mod+Ctrl+J" = {
           _props."allow-inhibiting" = false;
-          _props."hotkey-overlay-title" = "Move window to next workspace";
-          "move-window-to-workspace-down" = { };
+          _props."hotkey-overlay-title" = "Move window to next named workspace";
+          spawn = [
+            "niri-move-window-workspace"
+            "next"
+          ];
         };
         "Mod+Ctrl+K" = {
           _props."allow-inhibiting" = false;
-          _props."hotkey-overlay-title" = "Move window to previous workspace";
-          "move-window-to-workspace-up" = { };
+          _props."hotkey-overlay-title" = "Move window to previous named workspace";
+          spawn = [
+            "niri-move-window-workspace"
+            "previous"
+          ];
         };
         "Mod+Ctrl+L"."move-column-right" = { };
         "Mod+Ctrl+Home"."move-column-to-first" = { };
