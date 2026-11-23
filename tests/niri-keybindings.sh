@@ -19,11 +19,25 @@ assert_absent() {
   fi
 }
 
-# Mod is the focus layer.
-assert_contains '"Mod+H"."focus-column-left" = { };'
-assert_contains '"Mod+L"."focus-column-right" = { };'
+# Mod is the focus layer. Horizontal navigation goes through the row-aware helper.
 assert_contains '"Mod+K"."focus-window-up" = { };'
 assert_contains '"Mod+J"."focus-window-down" = { };'
+
+assert_spawn_binding() {
+  local key=$1
+  local direction=$2
+  local block
+  block=$(grep -A8 -F "\"$key\" = {" "$config")
+  if [[ "$block" != *niri-focus-adjacent-window* || "$block" != *"\"$direction\""* ]]; then
+    printf 'Expected %s to spawn niri-focus-adjacent-window %s.\n' "$key" "$direction" >&2
+    exit 1
+  fi
+}
+
+assert_spawn_binding 'Mod+H' left
+assert_spawn_binding 'Mod+L' right
+assert_spawn_binding 'Mod+Left' left
+assert_spawn_binding 'Mod+Right' right
 
 # Ctrl+Mod is the movement layer.
 assert_contains '"Mod+Ctrl+H"."move-column-left" = { };'
