@@ -229,10 +229,17 @@ run `niri msg pick-window` and click it to inspect its actual app ID; adjust
 the matching expression in `home/niri.nix` if the application reports a
 different identifier.
 
-Window navigation uses three modifier layers over the same home-row keys:
+Window navigation uses three modifier layers over the same home-row keys.
+Horizontal focus is row-aware: rather than activating whichever tile Niri last
+remembered in the neighboring column, it selects the tile with the nearest
+vertical index to the currently focused window. In a 2×2 grid, pressing
+`Mod+H` from the lower-right window therefore focuses the lower-left window.
+Floating windows retain Niri's native directional focus behavior.
 
-- **Focus — `Mod+H/J/K/L`:** `H/L` focus the column to the left/right;
-  `K/J` focus the window above/below inside the current column.
+- **Focus — `Mod+H/J/K/L`:** `H/L` focus the vertically nearest
+  window in the adjacent column, preserving the current tile row where
+  possible; `K/J` focus the window above/below inside the current column.
+  The `Mod+Left` / `Mod+Right` aliases use the same row-aware behavior.
 - **Move — `Mod+Ctrl+H/J/K/L`:** `H/L` move the entire focused column
   left/right; `K/J` move the focused window up/down inside its column.
   `Mod+Ctrl+Up` / `Mod+Ctrl+Down` remain arrow-key aliases for vertical
