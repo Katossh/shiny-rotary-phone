@@ -24,7 +24,7 @@ fail() {
 }
 
 run_action() {
-  if ! niri msg action "$$" >/dev/null; then
+  if ! niri msg action "$@" >/dev/null; then
     fail "Niri rejected action: $*. The layout may be partially changed."
   fi
 }
@@ -222,18 +222,18 @@ done
 window_offset=0
 target_column=1
 for index in "${!group_sizes[@]}"; do
-  group_size=${group_sizes[index]}
+  group_size=${group_sizes[$index]}
   run_action focus-column "$target_column"
 
   for ((tile = 1; tile < group_size; tile++)); do
     run_action consume-window-into-column
   done
 
-  run_action set-column-width "${widths[index]}%"
-  run_action set-column-display "${display_modes[index]}"
+  run_action set-column-width "${widths[$index]}%"
+  run_action set-column-display "${display_modes[$index]}"
 
   for ((tile = 0; tile < group_size; tile++)); do
-    run_action reset-window-height --id "${window_ids[@((window_offset + tile))]}"
+    run_action reset-window-height --id "${window_ids[$((window_offset + tile))]}"
   done
 
   ((window_offset += group_size))
