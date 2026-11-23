@@ -103,6 +103,8 @@ assert_contains 'Applied Developer (50 / 25 / 25) to 4 tiled windows.' "$output"
 expected=$(cat <<'EXPECTED'
 focus-window --id 102
 move-column-to-first
+focus-column 2
+move-column-to-last
 focus-column 1
 set-column-width 50%
 set-column-display normal
@@ -111,12 +113,12 @@ focus-column 2
 consume-window-into-column
 set-column-width 25%
 set-column-display normal
-reset-window-height --id 101
 reset-window-height --id 103
+reset-window-height --id 104
 focus-column 3
 set-column-width 25%
 set-column-display normal
-reset-window-height --id 104
+reset-window-height --id 101
 focus-window --id 102
 EXPECTED
 )
@@ -177,10 +179,11 @@ assert_contains 'Applied Triple (33 / 33 / 33) to 3 of 5 tiled windows; 2 extra 
 actual=$(cat "$NIRI_ACTION_LOG")
 assert_contains 'focus-window --id 503' "$actual"
 assert_contains 'move-column-to-first' "$actual"
+assert_contains 'move-column-to-last' "$actual"
 assert_contains 'reset-window-height --id 503' "$actual"
-assert_contains 'reset-window-height --id 501' "$actual"
-assert_contains 'reset-window-height --id 502' "$actual"
-if grep -Eq 'focus-column 4|reset-window-height --id 504|reset-window-height --id 505' <<<"$actual"; then
+assert_contains 'reset-window-height --id 504' "$actual"
+assert_contains 'reset-window-height --id 505' "$actual"
+if grep -Eq 'focus-column 4|reset-window-height --id 501|reset-window-height --id 502' <<<"$actual"; then
   printf 'Surplus windows were included in the selected layout:\n%s\n' "$actual" >&2
   exit 1
 fi
