@@ -78,20 +78,33 @@ esac
 command -v niri >/dev/null 2>&1 || fail 'niri was not found in PATH.'
 
 workspace_response=$(niri msg --json workspaces) || fail 'Could not query Niri workspaces.'
-workspace_id=$(jq -er '(.Ok.Workspaces // .Workspaces // []) | map(select(.is_focused == true)) | .[0].id // empty' <<<"$workspace_response") \
+workspace_list=$(jq -ce '
+  if type == "array" then .
+  elif (.Ok.Workspaces | type) == "array" then .Ok.Workspaces
+  elif (.Workspaces | type) == "array" then .Workspaces
+  else error("Niri did not return a workspace array")
+  end
+' <<<"$workspace_response") || fail 'Could not read the Niri workspace list.'
+workspace_id=$(jq -er 'map(select(.is_focused == true)) | .[0].id // empty' <<<"$workspace_list") \
   || fail 'Could not identify the focused workspace.'
 
 windows_response=$(niri msg --json windows) || fail 'Could not query Niri windows.'
+windows_list=$(jq -ce '
+  if type == "array" then .
+  elif (.Ok.Windows | type) == "array" then .Ok.Windows
+  elif (.Windows | type) == "array" then .Windows
+  else error("Niri did not return a window array")
+  end
+' <<<"$windows_response") || fail 'Could not read the Niri window list.'
 window_ids_output=$(jq -r --argjson workspace_id "$workspace_id" '
-  (.Ok.Windows // .Windows // [])
-  | map(select(
+  map(select(
       .workspace_id == $workspace_id
       and .is_floating == false
       and (.layout.pos_in_scrolling_layout | type == "array")
     ))
   | sort_by(.layout.pos_in_scrolling_layout[0], .layout.pos_in_scrolling_layout[1])
   | .[].id
-' <<<"$windows_response") || fail 'Could not read tiled window positions from Niri.'
+' <<<"$windows_list") || fail 'Could not read tiled window positions from Niri.'
 
 window_ids=()
 window_count=0
@@ -109,7 +122,7 @@ focused_id=$(jq -r --argjson workspace_id "$workspace_id" '
   (.Ok.Windows // .Windows // [])
   | map(select(.workspace_id == $workspace_id and .is_focused == true))
   | .[0].id // empty
-' <<<"$windows_response")
+' <<<"$windows_list")
 
 mapfile -t original_columns < <(jq -r --argjson workspace_id "$workspace_id" '
   (.Ok.Windows // .Windows // [])
@@ -122,7 +135,7 @@ mapfile -t original_columns < <(jq -r --argjson workspace_id "$workspace_id" '
   | unique
   | reverse
   | .[]
-' <<<"$windows_response")
+' <<<"$windows_list")
 
 # Flatten existing stacks from right to left. Expelling bottom tiles creates
 # adjacent columns, preserving the visual left-to-right/top-to-bottom order.
@@ -136,7 +149,7 @@ for column in "${original_columns[@]}"; do
       ))
     | sort_by(.layout.pos_in_scrolling_layout[1])
     | .[].id
-  ' <<<"$windows_response")
+  ' <<<"$windows_list")
   mapfile -t ids_in_column <<<"$column_ids"
   if (("${#ids_in_column[@]}" > 1)); then
     run_action focus-window --id "${ids_in_column[0]}"
