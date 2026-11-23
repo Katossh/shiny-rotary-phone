@@ -158,7 +158,7 @@ focused_id=$(jq -er --argjson workspace_id "$workspace_id" '
 
 focused_index=-1
 for index in "${!window_ids[@]}"; do
-  if [[ "${window_ids[@index]}" == "$focused_id" ]]; then
+  if [[ "${window_ids[$index]}" == "$focused_id" ]]; then
     focused_index=$index
     break
   fi
