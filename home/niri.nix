@@ -365,6 +365,7 @@ in
           _props."hotkey-overlay-title" = "Move window to next named workspace";
           spawn = [
             "niri-move-window-workspace"
+            "window"
             "next"
           ];
         };
@@ -373,6 +374,7 @@ in
           _props."hotkey-overlay-title" = "Move window to previous named workspace";
           spawn = [
             "niri-move-window-workspace"
+            "window"
             "previous"
           ];
         };
@@ -418,12 +420,20 @@ in
           "focus-workspace-previous" = { };
         };
         "Mod+Ctrl+Page_Down" = {
-          _props."hotkey-overlay-title" = "Move column to next workspace";
-          "move-column-to-workspace-down" = { };
+          _props."hotkey-overlay-title" = "Move column to next named workspace";
+          spawn = [
+            "niri-move-window-workspace"
+            "column"
+            "next"
+          ];
         };
         "Mod+Ctrl+Page_Up" = {
-          _props."hotkey-overlay-title" = "Move column to previous workspace";
-          "move-column-to-workspace-up" = { };
+          _props."hotkey-overlay-title" = "Move column to previous named workspace";
+          spawn = [
+            "niri-move-window-workspace"
+            "column"
+            "previous"
+          ];
         };
 
         # The five named workspaces are directly addressable; Niri manages its trailing empty workspace.
