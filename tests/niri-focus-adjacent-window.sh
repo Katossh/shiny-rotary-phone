@@ -94,7 +94,28 @@ run_focus_test 12 right 'focus-window 22'
 run_focus_test 11 right 'focus-window 21'
 
 # If the adjacent column has fewer windows, choose its closest available row.
-run_focus_test 22 left 'focus-window 12'
+write_sparse_windows() {
+  jq -n --argjson focused_id 22 '
+    def tile($id; $column; $row; $workspace):
+      {
+        id: $id,
+        workspace_id: $workspace,
+        is_focused: ($id == $focused_id),
+        is_floating: false,
+        layout: { pos_in_scrolling_layout: [$column, $row] }
+      };
+
+    [
+      tile(11; 1; 1; 1),
+      tile(21; 2; 1; 1),
+      tile(22; 2; 2; 1)
+    ]
+  ' >"$NIRI_WINDOWS_JSON"
+}
+write_sparse_windows
+: >"$NIRI_ACTION_LOG"
+bash "$script" left >/dev/null
+assert_equals 'focus-window 11' "$(cat "$NIRI_ACTION_LOG")"
 
 # Do not cross workspace boundaries or select windows from another workspace.
 run_focus_test 11 left ''
