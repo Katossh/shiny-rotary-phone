@@ -113,16 +113,36 @@ if [[ -n "$window_ids_output" ]]; then
   window_count=${#window_ids[@]}
 fi
 
-if ((window_count != expected_count)); then
-  fail "$preset_name needs exactly $expected_count tiled windows on this workspace; found $window_count. No windows were moved."
+if ((window_count < expected_count)); then
+  fail "$preset_name needs at least $expected_count tiled windows on this workspace; found $window_count. No windows were moved."
 fi
 
-# Capture the original focus and each column's top window before changing anything.
-focused_id=$(jq -r --argjson workspace_id "$workspace_id" '
-  .
-  | map(select(.workspace_id == $workspace_id and .is_focused == true))
+# Use the focused tiled window as the first selected window, then preserve the
+# existing left-to-right/top-to-bottom order for the remaining candidates.
+focused_id=$(jq -er --argjson workspace_id "$workspace_id" '
+  map(select(
+    .workspace_id == $workspace_id
+    and .is_focused == true
+    and .is_floating == false
+    and (.layout.pos_in_scrolling_layout | type == "array")
+  ))
   | .[0].id // empty
-' <<<"$windows_list")
+' <<<"$windows_list") || fail 'Focus a tiled window before applying a layout preset.'
+
+focused_index=-1
+for index in "${!window_ids[@]}"; do
+  if [[ "${window_ids[$index]}" == "$focused_id" ]]; then
+    focused_index=$index
+    break
+  fi
+done
+if ((focused_index < 0)); then
+  fail 'Could not locate the focused window in the tiled workspace.'
+fi
+
+# Rotate the selection so it proceeds rightward from the focused window.
+ordered_window_ids=("${window_ids[@]:$focused_index}" "${window_ids[@]:0:$focused_index}")
+window_ids=("${ordered_window_ids[@]}")
 
 mapfile -t original_columns < <(jq -r --argjson workspace_id "$workspace_id" '
   .
@@ -159,6 +179,22 @@ for column in "${original_columns[@]}"; do
   fi
 done
 
+# Put the focused window first. The selected preset windows can then be
+# arranged at the start of the scrolling layout; surplus windows stay as
+# separate columns to the right and remain reachable by scrolling.
+run_action focus-window --id "$focused_id"
+run_action move-column-to-first
+
+# Move the columns that were left of the focused window behind the columns
+# that were right of it, matching the rotated selection order above.
+right_window_count=$((window_count - focused_index - 1))
+if ((right_window_count > 0)); then
+  for ((index = 0; index < focused_index; index++)); do
+    run_action focus-column 2
+    run_action move-column-to-last
+  done
+fi
+
 # Rebuild the target column groups from left to right.
 window_offset=0
 target_column=1
@@ -186,5 +222,12 @@ if [[ -n "$focused_id" ]]; then
   run_action focus-window --id "$focused_id"
 fi
 
-notify 'Layout applied' "$preset_name"
-printf 'Applied %s to %d tiled windows.\n' "$preset_name" "$window_count"
+if ((window_count > expected_count)); then
+  extra_count=$((window_count - expected_count))
+  notify 'Layout applied' "$preset_name — $extra_count extra window(s) left to the right."
+  printf 'Applied %s to %d of %d tiled windows; %d extra windows remain to the right.\n' \
+    "$preset_name" "$expected_count" "$window_count" "$extra_count"
+else
+  notify 'Layout applied' "$preset_name"
+  printf 'Applied %s to %d tiled windows.\n' "$preset_name" "$window_count"
+fi
