@@ -217,7 +217,7 @@ Only games and communication apps have automatic workspace assignments:
 | `3` | General | No automatic application placement |
 | `4` | Games | Steam and Steam games, osu!, Genshin / Anime Game Launcher |
 | `5` | Communication | Discord, Telegram, LocalSend |
-| `6` | Dynamic | Niri's empty dynamic workspace |
+| Trailing | Dynamic | Niri-managed empty workspace; no shortcut targets it |
 
 These are opening rules: they apply when a window is created, not retroactively
 to windows that are already open. Move an existing window to the game or
