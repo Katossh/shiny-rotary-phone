@@ -425,31 +425,31 @@ in
           _props."hotkey-overlay-title" = "Switch to workspace 5";
           focus-workspace._args = [ "5" ];
         };
-        "Mod+6".focus-workspace._args = [ 6 ];
-        "Mod+7".focus-workspace._args = [ 7 ];
-        "Mod+8".focus-workspace._args = [ 8 ];
-        "Mod+9".focus-workspace._args = [ 9 ];
-
-        "Mod+Ctrl+1".move-column-to-workspace._args = [ "1" ];
-        "Mod+Ctrl+2".move-column-to-workspace._args = [ "2" ];
-        "Mod+Ctrl+3".move-column-to-workspace._args = [ "3" ];
-        "Mod+Ctrl+4".move-column-to-workspace._args = [ "4" ];
-        "Mod+Ctrl+5".move-column-to-workspace._args = [ "5" ];
-        "Mod+Ctrl+6".move-column-to-workspace._args = [ 6 ];
-        "Mod+Ctrl+7".move-column-to-workspace._args = [ 7 ];
-        "Mod+Ctrl+8".move-column-to-workspace._args = [ 8 ];
-        "Mod+Ctrl+9".move-column-to-workspace._args = [ 9 ];
-
-        # Alt+6/7 move only the focused window; Ctrl+1–9 still move columns.
-        "Mod+Alt+6" = {
+        # Move only the focused window to one of the five named workspaces.
+        "Mod+Ctrl+1" = {
           _props."allow-inhibiting" = false;
-          _props."hotkey-overlay-title" = "Move focused window to workspace 6";
-          move-window-to-workspace._args = [ 6 ];
+          _props."hotkey-overlay-title" = "Move focused window to workspace 1";
+          move-window-to-workspace._args = [ "1" ];
         };
-        "Mod+Alt+7" = {
+        "Mod+Ctrl+2" = {
           _props."allow-inhibiting" = false;
-          _props."hotkey-overlay-title" = "Move focused window to workspace 7";
-          move-window-to-workspace._args = [ 7 ];
+          _props."hotkey-overlay-title" = "Move focused window to workspace 2";
+          move-window-to-workspace._args = [ "2" ];
+        };
+        "Mod+Ctrl+3" = {
+          _props."allow-inhibiting" = false;
+          _props."hotkey-overlay-title" = "Move focused window to workspace 3";
+          move-window-to-workspace._args = [ "3" ];
+        };
+        "Mod+Ctrl+4" = {
+          _props."allow-inhibiting" = false;
+          _props."hotkey-overlay-title" = "Move focused window to workspace 4";
+          move-window-to-workspace._args = [ "4" ];
+        };
+        "Mod+Ctrl+5" = {
+          _props."allow-inhibiting" = false;
+          _props."hotkey-overlay-title" = "Move focused window to workspace 5";
+          move-window-to-workspace._args = [ "5" ];
         };
 
         "Mod+R"."switch-preset-column-width" = { };
