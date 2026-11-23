@@ -5,7 +5,7 @@ usage() {
 Usage: niri-layout-preset PRESET
 
 Apply a layout to tiled windows on the focused Niri workspace.
-PRESET is one of: focus-stack, double, triple, quad, references.
+PRESET is one of: focus-stack, double, triple, quad, references, grid, sidebar.
 USAGE
 }
 
@@ -83,6 +83,26 @@ case "$1" in
     minimum_count=3
     expected_count=3
     focus_offset=1
+    selection_mode=preset
+    ;;
+  grid)
+    preset_name='2x2 Grid (50 / 50)'
+    widths=(50 50)
+    group_sizes=(2 2)
+    display_modes=(normal normal)
+    minimum_count=4
+    expected_count=4
+    focus_offset=0
+    selection_mode=preset
+    ;;
+  sidebar)
+    preset_name='Main + split sidebar (65 / 35)'
+    widths=(65 35)
+    group_sizes=(1 2)
+    display_modes=(normal normal)
+    minimum_count=3
+    expected_count=3
+    focus_offset=0
     selection_mode=preset
     ;;
   -h|--help)
