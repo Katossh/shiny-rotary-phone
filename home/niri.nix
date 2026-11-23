@@ -313,7 +313,7 @@ in
           ];
         };
 
-        # Focus columns horizontally; workspace navigation is vertical in Niri.
+        # Home-row focus layer: H/L moves between columns, K/J between windows in a column.
         "Mod+Left" = {
           _props."hotkey-overlay-title" = "Focus column to the left";
           "focus-column-left" = { };
@@ -324,20 +324,10 @@ in
         };
         "Mod+H"."focus-column-left" = { };
         "Mod+L"."focus-column-right" = { };
+        "Mod+K"."focus-window-up" = { };
+        "Mod+J"."focus-window-down" = { };
         "Mod+Home"."focus-column-first" = { };
         "Mod+End"."focus-column-last" = { };
-
-        # Preserve vertical window focus on Alt-modified bindings.
-        "Mod+Alt+Up" = {
-          _props."hotkey-overlay-title" = "Focus window above in column";
-          "focus-window-up" = { };
-        };
-        "Mod+Alt+Down" = {
-          _props."hotkey-overlay-title" = "Focus window below in column";
-          "focus-window-down" = { };
-        };
-        "Mod+Alt+K"."focus-window-up" = { };
-        "Mod+Alt+J"."focus-window-down" = { };
 
         "Mod+Ctrl+Left" = {
           _props."hotkey-overlay-title" = "Move column left";
@@ -358,25 +348,17 @@ in
           "move-column-right" = { };
         };
         "Mod+Ctrl+H"."move-column-left" = { };
-        # Vim keys move the focused window between the five named workspaces;
-        # Up/Down remain dedicated to reordering windows inside a column.
-        "Mod+Ctrl+J" = {
-          _props."allow-inhibiting" = false;
-          _props."hotkey-overlay-title" = "Move window to next named workspace";
-          spawn = [
-            "niri-move-window-workspace"
-            "window"
-            "next"
-          ];
-        };
+        # Home-row movement layer mirrors the focus layer: Ctrl+H/L moves columns,
+        # while Ctrl+K/J reorders the focused window vertically within its column.
         "Mod+Ctrl+K" = {
           _props."allow-inhibiting" = false;
-          _props."hotkey-overlay-title" = "Move window to previous named workspace";
-          spawn = [
-            "niri-move-window-workspace"
-            "window"
-            "previous"
-          ];
+          _props."hotkey-overlay-title" = "Move window up within column";
+          "move-window-up" = { };
+        };
+        "Mod+Ctrl+J" = {
+          _props."allow-inhibiting" = false;
+          _props."hotkey-overlay-title" = "Move window down within column";
+          "move-window-down" = { };
         };
         "Mod+Ctrl+L"."move-column-right" = { };
         "Mod+Ctrl+Home"."move-column-to-first" = { };
@@ -413,8 +395,11 @@ in
           _props."hotkey-overlay-title" = "Focus previous workspace";
           "focus-workspace-up" = { };
         };
-        "Mod+J"."focus-workspace-down" = { };
-        "Mod+K"."focus-workspace-up" = { };
+        # Alt is the workspace-navigation layer; keep arrow-key aliases as fallbacks.
+        "Mod+Alt+Up"."focus-workspace-up" = { };
+        "Mod+Alt+Down"."focus-workspace-down" = { };
+        "Mod+Alt+K"."focus-workspace-up" = { };
+        "Mod+Alt+J"."focus-workspace-down" = { };
         "Mod+Tab" = {
           _props."hotkey-overlay-title" = "Return to previous workspace";
           "focus-workspace-previous" = { };
