@@ -59,24 +59,32 @@ assert_equals() {
 }
 
 run_move_test() {
-  local current=$1
-  local direction=$2
-  local expected=$3
+  local kind=$1
+  local current=$2
+  local direction=$3
+  local expected=$4
   write_workspaces "$current"
   : >"$NIRI_ACTION_LOG"
-  bash "$script" "$direction" >/dev/null
+  bash "$script" "$kind" "$direction" >/dev/null
   assert_equals "$expected" "$(cat "$NIRI_ACTION_LOG")"
 }
 
-# Directional movement changes only the focused window's destination.
-run_move_test 3 next 'move-window-to-workspace 4'
-run_move_test 3 previous 'move-window-to-workspace 2'
+# Vim-style directional movement affects only the focused window.
+run_move_test window 3 next 'move-window-to-workspace 4'
+run_move_test window 3 previous 'move-window-to-workspace 2'
 
-# The movement is bounded by the five persistent workspaces.
-run_move_test 1 previous ''
-run_move_test 5 next ''
+# Page Up/Down retains whole-column movement, using the same named targets.
+run_move_test column 3 next 'move-column-to-workspace 4'
+run_move_test column 3 previous 'move-column-to-workspace 2'
 
-# Never move into Niri's automatically maintained dynamic trailing workspace.
-run_move_test dynamic next ''
+# Both kinds of movement are bounded by the five persistent workspaces.
+run_move_test window 1 previous ''
+run_move_test window 5 next ''
+run_move_test column 1 previous ''
+run_move_test column 5 next ''
+
+# Neither kind of movement enters Niri's automatically maintained trailing workspace.
+run_move_test window dynamic next ''
+run_move_test column dynamic next ''
 
 printf 'Niri named-workspace movement tests passed.\n'
