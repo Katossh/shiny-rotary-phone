@@ -100,77 +100,31 @@ write_windows 5 3
 output=$(bash "$script" focus-stack)
 assert_contains 'Applied Main + tab stack (65 / 35) to 5 tiled windows.' "$output"
 actual=$(cat "$NIRI_ACTION_LOG")
-assert_contains 
-# Main + references: the focused window is central, with its immediate
-# neighbors placed on the left and right. Other windows remain after the trio.
-write_fixture
-write_windows 5 3
-: >"$NIRI_ACTION_LOG"
-output=$(bash "$script" references)
-assert_contains 'Applied Main centered (20 / 60 / 20) to 3 of 5 tiled windows; 2 extra windows remain to the right.' "$output"
-actual=$(cat "$NIRI_ACTION_LOG")
-assert_contains $'focus-window --id 102\nmove-column-to-first\nfocus-column 2\nmove-column-to-last\nfocus-column 1\nset-column-width 20%\nset-column-display normal\nreset-window-height --id 102\nfocus-column 2\nset-column-width 60%\nset-column-display normal\nreset-window-height --id 103\nfocus-column 3\nset-column-width 20%\nset-column-display normal\nreset-window-height --id 104\nfocus-window --id 103' "$actual"
-if grep -Eq 'reset-window-height --id 101|reset-window-height --id 105' <<<"$actual"; then
-  printf 'Non-selected reference windows were modified:\n%s\n' "$actual" >&2
-  exit 1
-fi
-
-# Wraparound still leaves the main window in the middle when it is first.
-write_fixture
-write_windows 4 1
-: >"$NIRI_ACTION_LOG"
-bash "$script" references >/dev/null
-actual=$(cat "$NIRI_ACTION_LOG")
-assert_contains 'reset-window-height --id 104' "$actual"
-assert_contains 'reset-window-height --id 101' "$actual"
-assert_contains 'reset-window-height --id 102' "$actual"
-assert_contains 'focus-window --id 101' "$actual"
-if grep -Fq 'reset-window-height --id 103' <<<"$actual"; then
-  printf 'Surplus window was included in the centered reference layout:\n%s\n' "$actual" >&2
-  exit 1
-fi
-
-# Floating windows are ignored when counting and selecting tiled windows.
-write_fixture
-write_windows 3 2 true
-: >"$NIRI_ACTION_LOG"
-output=$(bash "$script" triple)
-assert_contains 'Applied Triple (33.33 / 33.33 / 33.33) to 3 tiled windows.' "$output"
-if grep -Fq -- '--id 199' "$NIRI_ACTION_LOG"; then
-  printf 'Floating window was modified:\n%s\n' "$(cat "$NIRI_ACTION_LOG")" >&2
-  exit 1
-fi
-
-# The script also accepts the older wrapped IPC response shape.
-cat >"$NIRI_WORKSPACES_JSON" <<'JSON'
-{"Ok":{"Workspaces":[{"id":7,"is_focused":true}]}}
-JSON
-cat >"$NIRI_WINDOWS_JSON" <<'JSON'
-{"Ok":{"Windows":[
-  {"id":101,"workspace_id":7,"is_focused":true,"is_floating":false,"layout":{"pos_in_scrolling_layout":[1,1]}},
-  {"id":102,"workspace_id":7,"is_focused":false,"is_floating":false,"layout":{"pos_in_scrolling_layout":[2,1]}},
-  {"id":103,"workspace_id":7,"is_focused":false,"is_floating":false,"layout":{"pos_in_scrolling_layout":[3,1]}}
-]}}
-JSON
-: >"$NIRI_ACTION_LOG"
-bash "$script" triple >/dev/null
-assert_contains 'set-column-width 33.333333%' "$(cat "$NIRI_ACTION_LOG")"
-
-# Too few tiled windows must fail before issuing any mutating action.
-write_fixture
-write_windows 2 1
-: >"$NIRI_ACTION_LOG"
-if bash "$script" triple >/dev/null 2>&1; then
-  echo 'Expected a window-count mismatch to fail.' >&2
-  exit 1
-fi
-if [[ -s "$NIRI_ACTION_LOG" ]]; then
-  printf 'Preset mutated windows despite too few windows:\n%s\n' "$(cat "$NIRI_ACTION_LOG")" >&2
-  exit 1
-fi
-
-printf 'Niri layout preset tests passed.\n'
-focus-window --id 103\nmove-column-to-first\nfocus-column 2\nmove-column-to-last\nfocus-column 2\nmove-column-to-last\nfocus-column 1\nset-column-width 65%\nset-column-display normal\nreset-window-height --id 103\nfocus-column 2\nconsume-window-into-column\nconsume-window-into-column\nconsume-window-into-column\nset-column-width 35%\nset-column-display tabbed\nreset-window-height --id 104\nreset-window-height --id 105\nreset-window-height --id 101\nreset-window-height --id 102\nfocus-window --id 103' "$actual"
+expected_actions=$(cat <<'ACTIONS'
+focus-window --id 103
+move-column-to-first
+focus-column 2
+move-column-to-last
+focus-column 2
+move-column-to-last
+focus-column 1
+set-column-width 65%
+set-column-display normal
+reset-window-height --id 103
+focus-column 2
+consume-window-into-column
+consume-window-into-column
+consume-window-into-column
+set-column-width 35%
+set-column-display tabbed
+reset-window-height --id 104
+reset-window-height --id 105
+reset-window-height --id 101
+reset-window-height --id 102
+focus-window --id 103
+ACTIONS
+)
+assert_contains "$expected_actions" "$actual"
 if [[ $(grep -c '^consume-window-into-column
 # Main + references: the focused window is central, with its immediate
 # neighbors placed on the left and right. Other windows remain after the trio.
