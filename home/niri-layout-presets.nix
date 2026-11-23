@@ -20,7 +20,10 @@ in
         "allow-inhibiting" = false;
         "hotkey-overlay-title" = "Apply single-window layout (100%)";
       };
-      spawn = [ "niri-layout-preset" "single" ];
+      spawn = [
+        "niri-layout-preset"
+        "single"
+      ];
     };
     "Mod+Alt+2" = {
       _props = {
@@ -28,7 +31,10 @@ in
         "allow-inhibiting" = false;
         "hotkey-overlay-title" = "Apply two-window layout (50 / 50)";
       };
-      spawn = [ "niri-layout-preset" "double" ];
+      spawn = [
+        "niri-layout-preset"
+        "double"
+      ];
     };
     "Mod+Alt+3" = {
       _props = {
@@ -36,7 +42,10 @@ in
         "allow-inhibiting" = false;
         "hotkey-overlay-title" = "Apply three-window layout (33 / 33 / 33)";
       };
-      spawn = [ "niri-layout-preset" "triple" ];
+      spawn = [
+        "niri-layout-preset"
+        "triple"
+      ];
     };
     "Mod+Alt+4" = {
       _props = {
@@ -44,7 +53,10 @@ in
         "allow-inhibiting" = false;
         "hotkey-overlay-title" = "Apply four-window layout (25 / 25 / 25 / 25)";
       };
-      spawn = [ "niri-layout-preset" "quad" ];
+      spawn = [
+        "niri-layout-preset"
+        "quad"
+      ];
     };
     "Mod+Alt+5" = {
       _props = {
@@ -52,7 +64,10 @@ in
         "allow-inhibiting" = false;
         "hotkey-overlay-title" = "Apply centered main + references layout (20 / 60 / 20)";
       };
-      spawn = [ "niri-layout-preset" "references" ];
+      spawn = [
+        "niri-layout-preset"
+        "references"
+      ];
     };
   };
 }
