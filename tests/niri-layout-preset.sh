@@ -144,7 +144,51 @@ write_windows 5 2
 output=$(bash "$script" grid)
 assert_contains 'Applied 2x2 Grid (50 / 50) to 4 of 5 tiled windows; 1 extra windows remain to the right.' "$output"
 actual=$(cat "$NIRI_ACTION_LOG")
-assert_contains # neighbors placed on the left and right. Other windows remain after the trio.
+# Verify the 2x2 grouping: the first two selected windows share column 1,
+# and the next two share column 2.
+expected_actions=$(cat <<'ACTIONS'
+focus-column 1
+consume-window-into-column
+set-column-width 50%
+set-column-display normal
+reset-window-height --id 102
+reset-window-height --id 103
+focus-column 2
+consume-window-into-column
+set-column-width 50%
+set-column-display normal
+reset-window-height --id 104
+reset-window-height --id 105
+focus-window --id 102
+ACTIONS
+)
+assert_contains "$expected_actions" "$actual"
+
+# Mod+Alt+7: keep the focused main window left and stack two references on the right.
+run_width_test sidebar 5 2 '65%|35%'
+write_fixture
+write_windows 5 2
+: >"$NIRI_ACTION_LOG"
+output=$(bash "$script" sidebar)
+assert_contains 'Applied Main + split sidebar (65 / 35) to 3 of 5 tiled windows; 2 extra windows remain to the right.' "$output"
+actual=$(cat "$NIRI_ACTION_LOG")
+expected_actions=$(cat <<'ACTIONS'
+focus-column 1
+set-column-width 65%
+set-column-display normal
+reset-window-height --id 102
+focus-column 2
+consume-window-into-column
+set-column-width 35%
+set-column-display normal
+reset-window-height --id 103
+reset-window-height --id 104
+focus-window --id 102
+ACTIONS
+)
+assert_contains "$expected_actions" "$actual"
+
+# Main + references: the focused window is central, with its immediate
 write_fixture
 write_windows 5 3
 : >"$NIRI_ACTION_LOG"
