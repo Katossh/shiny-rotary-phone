@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 usage() {
-  printf 'Usage: niri-move-window-workspace {previous|next}\n' >&2
+  printf 'Usage: niri-move-window-workspace {window|column} {previous|next}\n' >&2
 }
 
 notify() {
@@ -11,12 +11,21 @@ notify() {
   fi
 }
 
-if (($# != 1)); then
+if (($# != 2)); then
   usage
   exit 2
 fi
 
 case "$1" in
+  window) action=move-window-to-workspace ;;
+  column) action=move-column-to-workspace ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac
+
+case "$2" in
   previous) direction=previous ;;
   next) direction=next ;;
   *)
@@ -74,7 +83,7 @@ case "$current_name:$direction" in
     ;;
 esac
 
-if ! niri msg action move-window-to-workspace "$target" >/dev/null; then
+if ! niri msg action "$action" "$target" >/dev/null; then
   notify 'Workspace movement failed' "Could not move the focused window to workspace $target."
   exit 1
 fi
