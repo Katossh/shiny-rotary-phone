@@ -51,11 +51,11 @@ write_windows() {
 
     [
       tile(11; 1; 1; 1),
+      # This decoy comes first to ensure workspace filtering is tested.
+      tile(32; 1; 2; 2),
       tile(12; 1; 2; 1),
       tile(21; 2; 1; 1),
       tile(22; 2; 2; 1),
-      # A matching position on another workspace must never be selected.
-      tile(32; 1; 2; 2),
       {
         id: 99,
         workspace_id: 1,
