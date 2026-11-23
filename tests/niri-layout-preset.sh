@@ -36,7 +36,7 @@ export NIRI_ACTION_LOG="$test_root/actions.log"
 
 write_fixture() {
   cat >"$NIRI_WORKSPACES_JSON" <<'JSON'
-{"Ok":{"Workspaces":[{"id":7,"is_focused":true}]}}
+[{"id":7,"is_focused":true}]
 JSON
 }
 
@@ -89,12 +89,12 @@ run_width_test() {
 # Four initially separate windows: developer layout should stack windows 2+3.
 write_fixture
 cat >"$NIRI_WINDOWS_JSON" <<'JSON'
-{"Ok":{"Windows":[
+[
   {"id":101,"workspace_id":7,"is_focused":false,"is_floating":false,"layout":{"pos_in_scrolling_layout":[1,1]}},
   {"id":102,"workspace_id":7,"is_focused":true,"is_floating":false,"layout":{"pos_in_scrolling_layout":[2,1]}},
   {"id":103,"workspace_id":7,"is_focused":false,"is_floating":false,"layout":{"pos_in_scrolling_layout":[3,1]}},
   {"id":104,"workspace_id":7,"is_focused":false,"is_floating":false,"layout":{"pos_in_scrolling_layout":[4,1]}}
-]}}
+]
 JSON
 : >"$NIRI_ACTION_LOG"
 output=$(bash "$script" developer)
