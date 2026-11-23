@@ -5,7 +5,7 @@ usage() {
 Usage: niri-layout-preset PRESET
 
 Apply a layout to tiled windows on the focused Niri workspace.
-PRESET is one of: developer, triple, asymmetric, quad, references.
+PRESET is one of: single, double, triple, quad, references.
 USAGE
 }
 
@@ -35,35 +35,40 @@ if (($# != 1)); then
 fi
 
 case "$1" in
-  developer)
-    preset_name='Developer (50 / 25 / 25)'
-    widths=(50 25 25)
-    group_sizes=(1 2 1)
-    expected_count=4
+  single)
+    preset_name='Single (100%)'
+    widths=(100)
+    group_sizes=(1)
+    expected_count=1
+    focus_offset=0
+    ;;
+  double)
+    preset_name='Double (50 / 50)'
+    widths=(50 50)
+    group_sizes=(1 1)
+    expected_count=2
+    focus_offset=0
     ;;
   triple)
-    preset_name='Triple (33 / 33 / 33)'
+    preset_name='Triple (33.33 / 33.33 / 33.33)'
     widths=(33.333333 33.333333 33.333333)
     group_sizes=(1 1 1)
     expected_count=3
-    ;;
-  asymmetric)
-    preset_name='Asymmetric (25 / 37.5 / 37.5)'
-    widths=(25 37.5 37.5)
-    group_sizes=(2 1 1)
-    expected_count=4
+    focus_offset=0
     ;;
   quad)
     preset_name='Quad (25 / 25 / 25 / 25)'
     widths=(25 25 25 25)
     group_sizes=(1 1 1 1)
     expected_count=4
+    focus_offset=0
     ;;
   references)
-    preset_name='Main + references (60 / 20 / 20)'
-    widths=(60 20 20)
+    preset_name='Main centered (20 / 60 / 20)'
+    widths=(20 60 20)
     group_sizes=(1 1 1)
     expected_count=3
+    focus_offset=1
     ;;
   -h|--help)
     usage
@@ -117,8 +122,8 @@ if ((window_count < expected_count)); then
   fail "$preset_name needs at least $expected_count tiled windows on this workspace; found $window_count. No windows were moved."
 fi
 
-# Use the focused tiled window as the first selected window, then preserve the
-# existing left-to-right/top-to-bottom order for the remaining candidates.
+# Anchor the preset on the focused window. Most presets start there;
+# the centered-reference preset starts with its left-hand reference instead.
 focused_id=$(jq -er --argjson workspace_id "$workspace_id" '
   map(select(
     .workspace_id == $workspace_id
@@ -140,8 +145,10 @@ if ((focused_index < 0)); then
   fail 'Could not locate the focused window in the tiled workspace.'
 fi
 
-# Rotate the selection so it proceeds rightward from the focused window.
-ordered_window_ids=("${window_ids[@]:$focused_index}" "${window_ids[@]:0:$focused_index}")
+# focus_offset is zero for ordinary presets and one for Main + references:
+# [previous window, focused main window, next window].
+anchor_index=$(((focused_index - focus_offset + window_count) % window_count))
+ordered_window_ids=("${window_ids[@]:$anchor_index}" "${window_ids[@]:0:$anchor_index}")
 window_ids=("${ordered_window_ids[@]}")
 
 mapfile -t original_columns < <(jq -r --argjson workspace_id "$workspace_id" '
@@ -179,21 +186,15 @@ for column in "${original_columns[@]}"; do
   fi
 done
 
-# Put the focused window first. The selected preset windows can then be
-# arranged at the start of the scrolling layout; surplus windows stay as
-# separate columns to the right and remain reachable by scrolling.
-run_action focus-window --id "$focused_id"
+# Move the anchor window to the first column, then rotate the columns
+# before it to the end. This makes the compositor order match window_ids.
+anchor_id=${window_ids[0]}
+run_action focus-window --id "$anchor_id"
 run_action move-column-to-first
-
-# Move the columns that were left of the focused window behind the columns
-# that were right of it, matching the rotated selection order above.
-right_window_count=$((window_count - focused_index - 1))
-if ((right_window_count > 0)); then
-  for ((index = 0; index < focused_index; index++)); do
-    run_action focus-column 2
-    run_action move-column-to-last
-  done
-fi
+for ((index = 0; index < anchor_index; index++)); do
+  run_action focus-column 2
+  run_action move-column-to-last
+done
 
 # Rebuild the target column groups from left to right.
 window_offset=0
