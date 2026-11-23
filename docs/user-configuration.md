@@ -246,13 +246,13 @@ Use `Mod+Alt+1` through `Mod+Alt+5` to apply a complete layout to the tiled wind
 
 | Shortcut | Preset | Column widths | Window arrangement |
 |---|---|---|---|
-| `Mod+Alt+1` | Single | 100 | 1 focused window |
+| `Mod+Alt+1` | Main + tab stack | 65 / 35 | Focused main window + every other tiled window grouped as tabs on the right |
 | `Mod+Alt+2` | Double | 50 / 50 | 2 side-by-side windows |
 | `Mod+Alt+3` | Triple | 33.33 / 33.33 / 33.33 | 3 side-by-side windows |
 | `Mod+Alt+4` | Quad | 25 / 25 / 25 / 25 | 4 side-by-side windows |
 | `Mod+Alt+5` | Main + references | 20 / 60 / 20 | Reference / centered main / reference |
 
-The percentages are proportions of the available layout width; Niri accounts for the configured gaps. Each preset needs at least the number of tiled windows shown on the focused workspace. Presets 1–4 start with the currently focused tiled window and select subsequent windows to the right, wrapping to the leftmost column when needed. Preset 5 treats the focused window as the main window in the center; its immediate left and right neighbors become the two references, with selection wrapping around the workspace if necessary. Any tiled windows beyond the preset's selection are moved to columns after the layout and remain reachable by scrolling. Floating windows are ignored. Existing stacks are flattened before rebuilding the selected preset, and the originally focused window is refocused after the layout is applied. If there are too few tiled windows, the script reports the mismatch without changing the layout.
+The percentages are proportions of the available layout width; Niri accounts for the configured gaps. Preset 1 needs at least two tiled windows: the currently focused window becomes the 65%-wide main column, while every other tiled window is consumed into a single 35%-wide tabbed column on the right. Switch between those tabs with the existing vertical focus bindings (`Mod+Alt+Up/Down` or `Mod+Alt+K/J`). Presets 2–4 need at least the number of windows shown; they start with the currently focused tiled window and select subsequent windows to the right, wrapping to the leftmost column when needed. Preset 5 treats the focused window as the main window in the center; its immediate left and right neighbors become the two references, with selection wrapping around the workspace if necessary. For presets 2–5, any tiled windows beyond the preset's selection are moved to columns after the layout and remain reachable by scrolling. Floating windows are ignored. Existing stacks are flattened before rebuilding the selected preset, and the originally focused window is refocused after the layout is applied. If there are too few tiled windows, the script reports the mismatch without changing the layout.
 
 These shortcuts are one-shot transformations, not workspace profiles: they do not change the default width for future windows, and they do not affect other workspaces. The regular `Mod+R` width cycling and manual column/window resizing remain available.
 
