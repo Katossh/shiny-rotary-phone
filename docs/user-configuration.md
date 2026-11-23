@@ -196,13 +196,15 @@ Workspace 4 is reserved for games, and workspace 5 is reserved for
 communication apps. Niri also maintains an empty dynamic workspace at the end
 of each monitor; on this single-monitor setup it initially occupies position
 6. `Mod+1` through `Mod+5` focus the five named workspaces.
-`Mod+Ctrl+1` through `Mod+Ctrl+5` move the focused column to the matching
-named workspace. `Mod+6` through `Mod+9` target workspaces by their current
-position, so those bindings remain useful for additional dynamic workspaces.
+`Mod+Ctrl+1` through `Mod+Ctrl+5` move only the focused window to the
+matching named workspace; other windows in its column stay behind.
+`Mod+Ctrl+Page_Up` / `Mod+Ctrl+Page_Down` move the entire focused column
+to the previous/next named workspace. No movement shortcut targets a workspace
+outside the five named workspaces.
 
-Named workspaces remain present even when empty. The dynamic workspace is
-separate: when a window is placed there, Niri creates another empty workspace
-below it. The workspace count is therefore not capped at six.
+The five named workspaces remain present even when empty. Niri also keeps
+its normal empty trailing workspace automatically; it is not one of the
+five named workspaces and has no dedicated numeric shortcut.
 
 #### Automatic application placement
 
@@ -215,7 +217,7 @@ Only games and communication apps have automatic workspace assignments:
 | `3` | General | No automatic application placement |
 | `4` | Games | Steam and Steam games, osu!, Genshin / Anime Game Launcher |
 | `5` | Communication | Discord, Telegram, LocalSend |
-| `6` | Dynamic | Niri's empty dynamic workspace |
+| Trailing | Dynamic | Niri-managed empty workspace; no shortcut targets it |
 
 These are opening rules: they apply when a window is created, not retroactively
 to windows that are already open. Move an existing window to the game or
@@ -232,17 +234,24 @@ or the Vim-style `Mod+K` / `Mod+J` shortcuts. `Mod+Page_Up` and
 `Mod+Page_Down` remain available as alternatives. Vertical window focus is
 available on `Mod+Alt+Up` / `Mod+Alt+Down` and `Mod+Alt+K` / `Mod+Alt+J`.
 
-Reorder windows inside a column with `Mod+Ctrl+Up` / `Mod+Ctrl+Down` or
-the Vim-style `Mod+Ctrl+K` / `Mod+Ctrl+J`. These shortcuts bypass application
-shortcut inhibition. They only visibly reorder windows when the column contains
-multiple windows; Niri otherwise lays windows out as separate horizontal
-columns. Use `Mod+Ctrl+Comma` to consume a neighbouring window into the
-focused column, or `Mod+Period` to expel a window from its column. Dynamic
-workspaces continue to work beyond the initial five.
+Move only the focused window between adjacent named workspaces with
+`Mod+Ctrl+K` (previous) and `Mod+Ctrl+J` (next). The helper resolves the
+currently focused workspace by its name and targets only workspaces `1`–`5`;
+at either edge it does nothing rather than moving a window into Niri's
+automatically maintained trailing workspace. The direct `Mod+Ctrl+1` through
+`Mod+Ctrl+5` bindings also move only the focused window, but target a specific
+named workspace.
+Reorder windows vertically inside a column with `Mod+Ctrl+Up` /
+`Mod+Ctrl+Down`; these arrow bindings retain their original meaning.
+Use `Mod+Ctrl+Page_Up` / `Mod+Ctrl+Page_Down` when you intend to move the
+entire focused column to the previous/next named workspace; these are bounded
+to workspaces `1`–`5` just like `Mod+Ctrl+J/K`. Use `Mod+Ctrl+Comma` to
+consume a neighbouring window into the focused column, or `Mod+Period` to
+expel a window from its column.
 
 #### One-key layout presets
 
-Use `Mod+Alt+1` through `Mod+Alt+5` to apply a complete layout to the tiled windows on the **currently focused workspace**:
+Use `Mod+Alt+1` through `Mod+Alt+7` to apply a complete layout to the tiled windows on the **currently focused workspace**:
 
 | Shortcut | Preset | Column widths | Window arrangement |
 |---|---|---|---|
@@ -251,8 +260,10 @@ Use `Mod+Alt+1` through `Mod+Alt+5` to apply a complete layout to the tiled wind
 | `Mod+Alt+3` | Triple | 33.33 / 33.33 / 33.33 | 3 side-by-side windows |
 | `Mod+Alt+4` | Quad | 25 / 25 / 25 / 25 | 4 side-by-side windows |
 | `Mod+Alt+5` | Main + references | 20 / 60 / 20 | Reference / centered main / reference |
+| `Mod+Alt+6` | 2×2 Grid | 50 / 50 | Two vertically stacked windows in each of two equal-width columns |
+| `Mod+Alt+7` | Main + split sidebar | 65 / 35 | Focused main window left; two vertically stacked references right |
 
-The percentages are proportions of the available layout width; Niri accounts for the configured gaps. Preset 1 needs at least two tiled windows: the currently focused window becomes the 65%-wide main column, while every other tiled window is consumed into a single 35%-wide tabbed column on the right. Switch between those tabs with the existing vertical focus bindings (`Mod+Alt+Up/Down` or `Mod+Alt+K/J`). Presets 2–4 need at least the number of windows shown; they start with the currently focused tiled window and select subsequent windows to the right, wrapping to the leftmost column when needed. Preset 5 treats the focused window as the main window in the center; its immediate left and right neighbors become the two references, with selection wrapping around the workspace if necessary. For presets 2–5, any tiled windows beyond the preset's selection are moved to columns after the layout and remain reachable by scrolling. Floating windows are ignored. Existing stacks are flattened before rebuilding the selected preset, and the originally focused window is refocused after the layout is applied. If there are too few tiled windows, the script reports the mismatch without changing the layout.
+The percentages are proportions of the available layout width; Niri accounts for the configured gaps. Preset 1 needs at least two tiled windows: the currently focused window becomes the 65%-wide main column, while every other tiled window is consumed into a single 35%-wide tabbed column on the right. Switch between those tabs with the existing vertical focus bindings (`Mod+Alt+Up/Down` or `Mod+Alt+K/J`). Presets 2–4 need at least the number of windows shown; they start with the currently focused tiled window and select subsequent windows to the right, wrapping to the leftmost column when needed. Preset 5 places the focused window in the center, with its immediate left and right neighbors as references. Preset 6 needs four tiled windows and creates a 2×2 arrangement: two vertically stacked windows in each of two 50%-wide columns. Preset 7 needs three tiled windows: the focused window becomes a 65%-wide main column on the left, while the next two windows are stacked vertically in a 35%-wide sidebar on the right. Selection wraps around the workspace when necessary. For presets 2–4 and 6–7, tiled windows beyond the preset's selection remain in columns after the layout and are reachable by scrolling. Floating windows are ignored. Existing stacks are flattened before rebuilding the selected preset, and the originally focused window is refocused after the layout is applied. If there are too few tiled windows, the script reports the mismatch without changing the layout.
 
 These shortcuts are one-shot transformations, not workspace profiles: they do not change the default width for future windows, and they do not affect other workspaces. The regular `Mod+R` width cycling and manual column/window resizing remain available.
 

@@ -63,7 +63,7 @@ write_windows() {
 assert_contains() {
   local needle=$1
   local haystack=$2
-  if ! grep -Fq -- "$needle" <<<"$haystack"; then
+  if [[ "$haystack" != *"$needle"* ]]; then
     printf 'Expected to find: %s\nIn:\n%s\n' "$needle" "$haystack" >&2
     exit 1
   fi
@@ -136,6 +136,56 @@ run_width_test double 5 2 '50%|50%'
 run_width_test triple 6 1 '33.333333%|33.333333%|33.333333%'
 run_width_test quad 6 4 '25%|25%|25%|25%'
 
+# Mod+Alt+6: arrange four windows as a 2x2 grid (two vertical tiles per column).
+run_width_test grid 5 2 '50%|50%'
+write_fixture
+write_windows 5 2
+: >"$NIRI_ACTION_LOG"
+output=$(bash "$script" grid)
+assert_contains 'Applied 2x2 Grid (50 / 50) to 4 of 5 tiled windows; 1 extra windows remain to the right.' "$output"
+actual=$(cat "$NIRI_ACTION_LOG")
+expected_actions=$(cat <<'ACTIONS'
+focus-column 1
+consume-window-into-column
+set-column-width 50%
+set-column-display normal
+reset-window-height --id 102
+reset-window-height --id 103
+focus-column 2
+consume-window-into-column
+set-column-width 50%
+set-column-display normal
+reset-window-height --id 104
+reset-window-height --id 105
+focus-window --id 102
+ACTIONS
+)
+assert_contains "$expected_actions" "$actual"
+
+# Mod+Alt+7: keep the focused main window left and stack two references on the right.
+run_width_test sidebar 5 2 '65%|35%'
+write_fixture
+write_windows 5 2
+: >"$NIRI_ACTION_LOG"
+output=$(bash "$script" sidebar)
+assert_contains 'Applied Main + split sidebar (65 / 35) to 3 of 5 tiled windows; 2 extra windows remain to the right.' "$output"
+actual=$(cat "$NIRI_ACTION_LOG")
+expected_actions=$(cat <<'ACTIONS'
+focus-column 1
+set-column-width 65%
+set-column-display normal
+reset-window-height --id 102
+focus-column 2
+consume-window-into-column
+set-column-width 35%
+set-column-display normal
+reset-window-height --id 103
+reset-window-height --id 104
+focus-window --id 102
+ACTIONS
+)
+assert_contains "$expected_actions" "$actual"
+
 # Main + references: the focused window is central, with its immediate
 # neighbors placed on the left and right. Other windows remain after the trio.
 write_fixture
@@ -190,6 +240,25 @@ JSON
 : >"$NIRI_ACTION_LOG"
 bash "$script" triple >/dev/null
 assert_contains 'set-column-width 33.333333%' "$(cat "$NIRI_ACTION_LOG")"
+
+# Composite presets reject insufficient input without mutating the layout.
+for preset in grid sidebar; do
+  write_fixture
+  if [[ "$preset" == grid ]]; then
+    write_windows 3 1
+  else
+    write_windows 2 1
+  fi
+  : >"$NIRI_ACTION_LOG"
+  if bash "$script" "$preset" >/dev/null 2>&1; then
+    printf 'Expected %s to reject too few windows.\n' "$preset" >&2
+    exit 1
+  fi
+  if [[ -s "$NIRI_ACTION_LOG" ]]; then
+    printf '%s mutated the layout despite too few windows:\n%s\n' "$preset" "$(cat "$NIRI_ACTION_LOG")" >&2
+    exit 1
+  fi
+done
 
 # Too few tiled windows must fail before issuing any mutating action.
 write_fixture

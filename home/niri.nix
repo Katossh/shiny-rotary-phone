@@ -1,6 +1,20 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
+  niriMoveWindowWorkspace = pkgs.writeShellApplication {
+    name = "niri-move-window-workspace";
+    runtimeInputs = [
+      pkgs.jq
+      pkgs.libnotify
+    ];
+    text = builtins.readFile ./scripts/niri-move-window-workspace.sh;
+  };
+
   monitorOutputNodes = lib.mapAttrsToList (outputName: monitor: {
     output = {
       _args = [ outputName ];
@@ -13,6 +27,8 @@ let
   }) config.starforge.user.desktop.monitors;
 in
 {
+  home.packages = [ niriMoveWindowWorkspace ];
+
   wayland.windowManager.niri = {
     enable = true;
 
@@ -342,13 +358,25 @@ in
           "move-column-right" = { };
         };
         "Mod+Ctrl+H"."move-column-left" = { };
+        # Vim keys move the focused window between the five named workspaces;
+        # Up/Down remain dedicated to reordering windows inside a column.
         "Mod+Ctrl+J" = {
           _props."allow-inhibiting" = false;
-          "move-window-down" = { };
+          _props."hotkey-overlay-title" = "Move window to next named workspace";
+          spawn = [
+            "niri-move-window-workspace"
+            "window"
+            "next"
+          ];
         };
         "Mod+Ctrl+K" = {
           _props."allow-inhibiting" = false;
-          "move-window-up" = { };
+          _props."hotkey-overlay-title" = "Move window to previous named workspace";
+          spawn = [
+            "niri-move-window-workspace"
+            "window"
+            "previous"
+          ];
         };
         "Mod+Ctrl+L"."move-column-right" = { };
         "Mod+Ctrl+Home"."move-column-to-first" = { };
@@ -392,15 +420,25 @@ in
           "focus-workspace-previous" = { };
         };
         "Mod+Ctrl+Page_Down" = {
-          _props."hotkey-overlay-title" = "Move column to next workspace";
-          "move-column-to-workspace-down" = { };
+          _props."allow-inhibiting" = false;
+          _props."hotkey-overlay-title" = "Move column to next named workspace";
+          spawn = [
+            "niri-move-window-workspace"
+            "column"
+            "next"
+          ];
         };
         "Mod+Ctrl+Page_Up" = {
-          _props."hotkey-overlay-title" = "Move column to previous workspace";
-          "move-column-to-workspace-up" = { };
+          _props."allow-inhibiting" = false;
+          _props."hotkey-overlay-title" = "Move column to previous named workspace";
+          spawn = [
+            "niri-move-window-workspace"
+            "column"
+            "previous"
+          ];
         };
 
-        # Use names for persistent workspaces 1–5 and indices for additional dynamic workspaces.
+        # The five named workspaces are directly addressable; Niri manages its trailing empty workspace.
         "Mod+1" = {
           _props."hotkey-overlay-title" = "Switch to workspace 1";
           focus-workspace._args = [ "1" ];
@@ -421,20 +459,32 @@ in
           _props."hotkey-overlay-title" = "Switch to workspace 5";
           focus-workspace._args = [ "5" ];
         };
-        "Mod+6".focus-workspace._args = [ 6 ];
-        "Mod+7".focus-workspace._args = [ 7 ];
-        "Mod+8".focus-workspace._args = [ 8 ];
-        "Mod+9".focus-workspace._args = [ 9 ];
-
-        "Mod+Ctrl+1".move-column-to-workspace._args = [ "1" ];
-        "Mod+Ctrl+2".move-column-to-workspace._args = [ "2" ];
-        "Mod+Ctrl+3".move-column-to-workspace._args = [ "3" ];
-        "Mod+Ctrl+4".move-column-to-workspace._args = [ "4" ];
-        "Mod+Ctrl+5".move-column-to-workspace._args = [ "5" ];
-        "Mod+Ctrl+6".move-column-to-workspace._args = [ 6 ];
-        "Mod+Ctrl+7".move-column-to-workspace._args = [ 7 ];
-        "Mod+Ctrl+8".move-column-to-workspace._args = [ 8 ];
-        "Mod+Ctrl+9".move-column-to-workspace._args = [ 9 ];
+        # Move only the focused window to one of the five named workspaces.
+        "Mod+Ctrl+1" = {
+          _props."allow-inhibiting" = false;
+          _props."hotkey-overlay-title" = "Move focused window to workspace 1";
+          move-window-to-workspace._args = [ "1" ];
+        };
+        "Mod+Ctrl+2" = {
+          _props."allow-inhibiting" = false;
+          _props."hotkey-overlay-title" = "Move focused window to workspace 2";
+          move-window-to-workspace._args = [ "2" ];
+        };
+        "Mod+Ctrl+3" = {
+          _props."allow-inhibiting" = false;
+          _props."hotkey-overlay-title" = "Move focused window to workspace 3";
+          move-window-to-workspace._args = [ "3" ];
+        };
+        "Mod+Ctrl+4" = {
+          _props."allow-inhibiting" = false;
+          _props."hotkey-overlay-title" = "Move focused window to workspace 4";
+          move-window-to-workspace._args = [ "4" ];
+        };
+        "Mod+Ctrl+5" = {
+          _props."allow-inhibiting" = false;
+          _props."hotkey-overlay-title" = "Move focused window to workspace 5";
+          move-window-to-workspace._args = [ "5" ];
+        };
 
         "Mod+R"."switch-preset-column-width" = { };
         "Mod+Shift+R"."switch-preset-column-width-back" = { };

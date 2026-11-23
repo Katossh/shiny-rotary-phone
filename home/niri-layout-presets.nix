@@ -69,5 +69,27 @@ in
         "references"
       ];
     };
+    "Mod+Alt+6" = {
+      _props = {
+        repeat = false;
+        "allow-inhibiting" = false;
+        "hotkey-overlay-title" = "Apply 2x2 grid layout (50 / 50)";
+      };
+      spawn = [
+        "niri-layout-preset"
+        "grid"
+      ];
+    };
+    "Mod+Alt+7" = {
+      _props = {
+        repeat = false;
+        "allow-inhibiting" = false;
+        "hotkey-overlay-title" = "Apply main + split sidebar layout (65 / 35)";
+      };
+      spawn = [
+        "niri-layout-preset"
+        "sidebar"
+      ];
+    };
   };
 }

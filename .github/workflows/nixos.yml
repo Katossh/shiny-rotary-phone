@@ -77,8 +77,11 @@ jobs:
           bash -n scripts/nixcfg.sh
           bash -n modules/security/bubblewrap/bwrap.sh
           bash -n home/scripts/niri-layout-preset.sh
+          bash -n home/scripts/niri-move-window-workspace.sh
           bash -n tests/niri-layout-preset.sh
+          bash -n tests/niri-move-window-workspace.sh
           bash tests/niri-layout-preset.sh home/scripts/niri-layout-preset.sh
+          bash tests/niri-move-window-workspace.sh home/scripts/niri-move-window-workspace.sh
 
       - name: Install Nix
         uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31
