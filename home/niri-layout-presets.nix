@@ -18,56 +18,41 @@ in
       _props = {
         repeat = false;
         "allow-inhibiting" = false;
-        "hotkey-overlay-title" = "Apply developer layout (50 / 25 / 25)";
+        "hotkey-overlay-title" = "Apply single-window layout (100%)";
       };
-      spawn = [
-        "niri-layout-preset"
-        "developer"
-      ];
+      spawn = [ "niri-layout-preset" "single" ];
     };
     "Mod+Alt+2" = {
       _props = {
         repeat = false;
         "allow-inhibiting" = false;
-        "hotkey-overlay-title" = "Apply triple layout (33 / 33 / 33)";
+        "hotkey-overlay-title" = "Apply two-window layout (50 / 50)";
       };
-      spawn = [
-        "niri-layout-preset"
-        "triple"
-      ];
+      spawn = [ "niri-layout-preset" "double" ];
     };
     "Mod+Alt+3" = {
       _props = {
         repeat = false;
         "allow-inhibiting" = false;
-        "hotkey-overlay-title" = "Apply asymmetric layout (25 / 37.5 / 37.5)";
+        "hotkey-overlay-title" = "Apply three-window layout (33 / 33 / 33)";
       };
-      spawn = [
-        "niri-layout-preset"
-        "asymmetric"
-      ];
+      spawn = [ "niri-layout-preset" "triple" ];
     };
     "Mod+Alt+4" = {
       _props = {
         repeat = false;
         "allow-inhibiting" = false;
-        "hotkey-overlay-title" = "Apply quad layout (25 / 25 / 25 / 25)";
+        "hotkey-overlay-title" = "Apply four-window layout (25 / 25 / 25 / 25)";
       };
-      spawn = [
-        "niri-layout-preset"
-        "quad"
-      ];
+      spawn = [ "niri-layout-preset" "quad" ];
     };
     "Mod+Alt+5" = {
       _props = {
         repeat = false;
         "allow-inhibiting" = false;
-        "hotkey-overlay-title" = "Apply main + references layout (60 / 20 / 20)";
+        "hotkey-overlay-title" = "Apply centered main + references layout (20 / 60 / 20)";
       };
-      spawn = [
-        "niri-layout-preset"
-        "references"
-      ];
+      spawn = [ "niri-layout-preset" "references" ];
     };
   };
 }
