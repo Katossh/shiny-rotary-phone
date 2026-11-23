@@ -18,11 +18,11 @@ in
       _props = {
         repeat = false;
         "allow-inhibiting" = false;
-        "hotkey-overlay-title" = "Apply single-window layout (100%)";
+        "hotkey-overlay-title" = "Apply focused main + tab stack layout (65 / 35)";
       };
       spawn = [
         "niri-layout-preset"
-        "single"
+        "focus-stack"
       ];
     };
     "Mod+Alt+2" = {

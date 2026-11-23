@@ -88,15 +88,53 @@ run_width_test() {
   : >"$NIRI_ACTION_LOG"
   bash "$script" "$preset" >/dev/null
   local actual_widths
-  actual_widths=$(grep '^set-column-width ' "$NIRI_ACTION_LOG" | sed 's/^set-column-width //')
+  actual_widths=$(grep '^set-column-width ' "$NIRI_ACTION_LOG" | sed 's/^set-column-width //' | paste -sd '|' -)
   assert_equals "$expected_widths" "$actual_widths"
 }
 
-# Numeric presets correspond directly to the number of visible windows.
-run_width_test single 4 3 '100%'
-run_width_test double 5 2 $'50%\n50%'
-run_width_test triple 6 1 $'33.333333%\n33.333333%\n33.333333%'
-run_width_test quad 6 4 $'25%\n25%\n25%\n25%'
+# Mod+Alt+1 prioritizes the focused window and groups every other tiled
+# window into a tabbed side column. All tiled windows are retained.
+write_fixture
+write_windows 5 3
+: >"$NIRI_ACTION_LOG"
+output=$(bash "$script" focus-stack)
+assert_contains 'Applied Main + tab stack (65 / 35) to 5 tiled windows.' "$output"
+actual=$(cat "$NIRI_ACTION_LOG")
+expected_actions=$(cat <<'ACTIONS'
+focus-window --id 103
+move-column-to-first
+focus-column 2
+move-column-to-last
+focus-column 2
+move-column-to-last
+focus-column 1
+set-column-width 65%
+set-column-display normal
+reset-window-height --id 103
+focus-column 2
+consume-window-into-column
+consume-window-into-column
+consume-window-into-column
+set-column-width 35%
+set-column-display tabbed
+reset-window-height --id 104
+reset-window-height --id 105
+reset-window-height --id 101
+reset-window-height --id 102
+focus-window --id 103
+ACTIONS
+)
+assert_contains "$expected_actions" "$actual"
+consume_count=$(grep -c 'consume-window-into-column' "$NIRI_ACTION_LOG" || true)
+if [[ "$consume_count" -ne 3 ]]; then
+  echo "Expected all four side windows to be grouped into one tabbed column." >&2
+  exit 1
+fi
+
+# Numeric presets 2–4 correspond directly to their visible window counts.
+run_width_test double 5 2 '50%|50%'
+run_width_test triple 6 1 '33.333333%|33.333333%|33.333333%'
+run_width_test quad 6 4 '25%|25%|25%|25%'
 
 # Main + references: the focused window is central, with its immediate
 # neighbors placed on the left and right. Other windows remain after the trio.

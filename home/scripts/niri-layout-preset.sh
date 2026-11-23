@@ -5,7 +5,7 @@ usage() {
 Usage: niri-layout-preset PRESET
 
 Apply a layout to tiled windows on the focused Niri workspace.
-PRESET is one of: single, double, triple, quad, references.
+PRESET is one of: focus-stack, double, triple, quad, references.
 USAGE
 }
 
@@ -35,40 +35,55 @@ if (($# != 1)); then
 fi
 
 case "$1" in
-  single)
-    preset_name='Single (100%)'
-    widths=(100)
-    group_sizes=(1)
-    expected_count=1
+  focus-stack)
+    preset_name='Main + tab stack (65 / 35)'
+    widths=(65 35)
+    group_sizes=()
+    display_modes=(normal tabbed)
+    minimum_count=2
+    expected_count=0
     focus_offset=0
+    selection_mode=all
     ;;
   double)
     preset_name='Double (50 / 50)'
     widths=(50 50)
     group_sizes=(1 1)
+    display_modes=(normal normal)
+    minimum_count=2
     expected_count=2
     focus_offset=0
+    selection_mode=preset
     ;;
   triple)
     preset_name='Triple (33.33 / 33.33 / 33.33)'
     widths=(33.333333 33.333333 33.333333)
     group_sizes=(1 1 1)
+    display_modes=(normal normal normal)
+    minimum_count=3
     expected_count=3
     focus_offset=0
+    selection_mode=preset
     ;;
   quad)
     preset_name='Quad (25 / 25 / 25 / 25)'
     widths=(25 25 25 25)
     group_sizes=(1 1 1 1)
+    display_modes=(normal normal normal normal)
+    minimum_count=4
     expected_count=4
     focus_offset=0
+    selection_mode=preset
     ;;
   references)
     preset_name='Main centered (20 / 60 / 20)'
     widths=(20 60 20)
     group_sizes=(1 1 1)
+    display_modes=(normal normal normal)
+    minimum_count=3
     expected_count=3
     focus_offset=1
+    selection_mode=preset
     ;;
   -h|--help)
     usage
@@ -118,8 +133,15 @@ if [[ -n "$window_ids_output" ]]; then
   window_count=${#window_ids[@]}
 fi
 
-if ((window_count < expected_count)); then
-  fail "$preset_name needs at least $expected_count tiled windows on this workspace; found $window_count. No windows were moved."
+if ((window_count < minimum_count)); then
+  fail "$preset_name needs at least $minimum_count tiled windows on this workspace; found $window_count. No windows were moved."
+fi
+
+# The focus-stack preset keeps every tiled window: the focused window is the
+# main column, and all remaining windows become tabs in the right-hand column.
+if [[ "$selection_mode" == all ]]; then
+  expected_count=$window_count
+  group_sizes=(1 $((window_count - 1)))
 fi
 
 # Anchor the preset on the focused window. Most presets start there;
@@ -178,7 +200,7 @@ for column in "${original_columns[@]}"; do
     | .[].id
   ' <<<"$windows_list")
   mapfile -t ids_in_column <<<"$column_ids"
-  if (("${#ids_in_column[@]}" > 1)); then
+  if ((${#ids_in_column[@]} > 1)); then
     run_action focus-window --id "${ids_in_column[0]}"
     for ((index = 1; index < ${#ids_in_column[@]}; index++)); do
       run_action expel-window-from-column
@@ -208,7 +230,7 @@ for index in "${!group_sizes[@]}"; do
   done
 
   run_action set-column-width "${widths[$index]}%"
-  run_action set-column-display normal
+  run_action set-column-display "${display_modes[$index]}"
 
   for ((tile = 0; tile < group_size; tile++)); do
     run_action reset-window-height --id "${window_ids[$((window_offset + tile))]}"
