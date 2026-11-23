@@ -404,7 +404,7 @@ in
           "move-column-to-workspace-up" = { };
         };
 
-        # Use names for persistent workspaces 1–5 and indices for additional dynamic workspaces.
+        # The five named workspaces are directly addressable; Niri manages its trailing empty workspace.
         "Mod+1" = {
           _props."hotkey-overlay-title" = "Switch to workspace 1";
           focus-workspace._args = [ "1" ];
