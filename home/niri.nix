@@ -342,13 +342,17 @@ in
           "move-column-right" = { };
         };
         "Mod+Ctrl+H"."move-column-left" = { };
+        # Arrow keys reorder a window inside its current column. Vim keys move
+        # the focused window between adjacent workspaces instead.
         "Mod+Ctrl+J" = {
           _props."allow-inhibiting" = false;
-          "move-window-down" = { };
+          _props."hotkey-overlay-title" = "Move window to next workspace";
+          "move-window-to-workspace-down" = { };
         };
         "Mod+Ctrl+K" = {
           _props."allow-inhibiting" = false;
-          "move-window-up" = { };
+          _props."hotkey-overlay-title" = "Move window to previous workspace";
+          "move-window-to-workspace-up" = { };
         };
         "Mod+Ctrl+L"."move-column-right" = { };
         "Mod+Ctrl+Home"."move-column-to-first" = { };
@@ -435,6 +439,16 @@ in
         "Mod+Ctrl+7".move-column-to-workspace._args = [ 7 ];
         "Mod+Ctrl+8".move-column-to-workspace._args = [ 8 ];
         "Mod+Ctrl+9".move-column-to-workspace._args = [ 9 ];
+
+        # Alt+6/7 move only the focused window; Ctrl+1–9 still move columns.
+        "Mod+Alt+6" = {
+          _props."hotkey-overlay-title" = "Move focused window to workspace 6";
+          move-window-to-workspace._args = [ 6 ];
+        };
+        "Mod+Alt+7" = {
+          _props."hotkey-overlay-title" = "Move focused window to workspace 7";
+          move-window-to-workspace._args = [ 7 ];
+        };
 
         "Mod+R"."switch-preset-column-width" = { };
         "Mod+Shift+R"."switch-preset-column-width-back" = { };
