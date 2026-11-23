@@ -63,7 +63,7 @@ write_windows() {
 assert_contains() {
   local needle=$1
   local haystack=$2
-  if ! grep -Fq -- "$needle" <<<"$haystack"; then
+  if [[ "$haystack" != *"$needle"* ]]; then
     printf 'Expected to find: %s\nIn:\n%s\n' "$needle" "$haystack" >&2
     exit 1
   fi
@@ -189,6 +189,7 @@ ACTIONS
 assert_contains "$expected_actions" "$actual"
 
 # Main + references: the focused window is central, with its immediate
+# neighbors placed on the left and right. Other windows remain after the trio.
 write_fixture
 write_windows 5 3
 : >"$NIRI_ACTION_LOG"
