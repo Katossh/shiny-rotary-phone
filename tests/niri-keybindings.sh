@@ -42,8 +42,24 @@ assert_spawn_binding 'Mod+Right' right
 # Ctrl+Mod is the movement layer.
 assert_contains '"Mod+Ctrl+H"."move-column-left" = { };'
 assert_contains '"Mod+Ctrl+L"."move-column-right" = { };'
-grep -A5 -F '"Mod+Ctrl+K" = {' "$config" | grep -Fq '"move-window-up" = { };'
-grep -A5 -F '"Mod+Ctrl+J" = {' "$config" | grep -Fq '"move-window-down" = { };'
+
+assert_workspace_move_binding() {
+  local key=$1
+  local direction=$2
+  local block
+  block=$(grep -A8 -F "\"$key\" = {" "$config")
+  if [[ "$block" != *niri-move-window-workspace* || "$block" != *'"window"'* || "$block" != *"\"$direction\""* ]]; then
+    printf 'Expected %s to move the focused window to the %s workspace.\n' "$key" "$direction" >&2
+    exit 1
+  fi
+}
+
+assert_workspace_move_binding 'Mod+Ctrl+K' previous
+assert_workspace_move_binding 'Mod+Ctrl+J' next
+
+# Arrow-key variants remain available for vertical reordering inside the column.
+grep -A5 -F '"Mod+Ctrl+Up" = {' "$config" | grep -Fq '"move-window-up" = { };'
+grep -A5 -F '"Mod+Ctrl+Down" = {' "$config" | grep -Fq '"move-window-down" = { };'
 
 # Alt+Mod is the workspace-navigation layer.
 assert_contains '"Mod+Alt+K"."focus-workspace-up" = { };'
