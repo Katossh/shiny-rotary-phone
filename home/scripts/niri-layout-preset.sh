@@ -170,7 +170,7 @@ fi
 # focus_offset is zero for ordinary presets and one for Main + references:
 # [previous window, focused main window, next window].
 anchor_index=$(((focused_index - focus_offset + window_count) % window_count))
-ordered_window_ids=("${window_ids[@anchor_index]}" "${window_ids[@]:0:anchor_index}")
+ordered_window_ids=("${window_ids[@]:$anchor_index}" "${window_ids[@]:0:$anchor_index}")
 window_ids=("${ordered_window_ids[@]}")
 
 mapfile -t original_columns < <(jq -r --argjson workspace_id "$workspace_id" '
