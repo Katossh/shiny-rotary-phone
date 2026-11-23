@@ -252,7 +252,7 @@ Use `Mod+Alt+1` through `Mod+Alt+5` to apply a complete layout to the tiled wind
 | `Mod+Alt+4` | Quad | 25 / 25 / 25 / 25 | 4 side-by-side windows |
 | `Mod+Alt+5` | Main + references | 60 / 20 / 20 | 3 side-by-side windows |
 
-The percentages are proportions of the available layout width; Niri accounts for the configured gaps. Each preset requires exactly the number of tiled windows shown (three or four) on the focused workspace. If the count does not match, the script reports the mismatch and makes no layout changes. Floating windows are ignored, existing tiled windows are ordered left-to-right and then top-to-bottom, and the previously focused window is refocused after the layout is applied.
+The percentages are proportions of the available layout width; Niri accounts for the configured gaps. Each preset needs at least the number of tiled windows shown (three or four) on the focused workspace. The currently focused tiled window becomes the first selected window; the remaining selected windows follow the existing left-to-right, top-to-bottom order. Any additional tiled windows are left as columns to the right of the preset, outside the initial three- or four-window layout, and remain reachable by scrolling. Floating windows are ignored. Existing stacks are flattened before rebuilding the selected preset, and the previously focused window is refocused after the layout is applied. If there are too few tiled windows, the script reports the mismatch without changing the layout.
 
 These shortcuts are one-shot transformations, not workspace profiles: they do not change the default width for future windows, and they do not affect other workspaces. The regular `Mod+R` width cycling and manual column/window resizing remain available.
 
