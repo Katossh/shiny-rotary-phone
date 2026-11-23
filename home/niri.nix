@@ -379,17 +379,26 @@ in
           "move-column-right" = { };
         };
         "Mod+Ctrl+H"."move-column-left" = { };
-        # Home-row movement layer mirrors the focus layer: Ctrl+H/L moves columns,
-        # while Ctrl+K/J reorders the focused window vertically within its column.
+        # Home-row movement layer: Ctrl+H/L moves columns, Ctrl+K/J moves the
+        # focused window between named workspaces. Ctrl+Up/Down reorders windows
+        # vertically within the current column.
         "Mod+Ctrl+K" = {
           _props."allow-inhibiting" = false;
-          _props."hotkey-overlay-title" = "Move window up within column";
-          "move-window-up" = { };
+          _props."hotkey-overlay-title" = "Move focused window to previous workspace";
+          spawn = [
+            "niri-move-window-workspace"
+            "window"
+            "previous"
+          ];
         };
         "Mod+Ctrl+J" = {
           _props."allow-inhibiting" = false;
-          _props."hotkey-overlay-title" = "Move window down within column";
-          "move-window-down" = { };
+          _props."hotkey-overlay-title" = "Move focused window to next workspace";
+          spawn = [
+            "niri-move-window-workspace"
+            "window"
+            "next"
+          ];
         };
         "Mod+Ctrl+L"."move-column-right" = { };
         "Mod+Ctrl+Home"."move-column-to-first" = { };
