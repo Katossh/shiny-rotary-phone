@@ -15,6 +15,15 @@ let
     text = builtins.readFile ./scripts/niri-move-window-workspace.sh;
   };
 
+  niriFocusAdjacentWindow = pkgs.writeShellApplication {
+    name = "niri-focus-adjacent-window";
+    runtimeInputs = [
+      pkgs.jq
+      pkgs.libnotify
+    ];
+    text = builtins.readFile ./scripts/niri-focus-adjacent-window.sh;
+  };
+
   monitorOutputNodes = lib.mapAttrsToList (outputName: monitor: {
     output = {
       _args = [ outputName ];
@@ -27,7 +36,7 @@ let
   }) config.starforge.user.desktop.monitors;
 in
 {
-  home.packages = [ niriMoveWindowWorkspace ];
+  home.packages = [ niriMoveWindowWorkspace niriFocusAdjacentWindow ];
 
   wayland.windowManager.niri = {
     enable = true;
@@ -314,16 +323,35 @@ in
         };
 
         # Home-row focus layer: H/L moves between columns, K/J between windows in a column.
+        # Horizontal focus selects the vertically nearest tile in the adjacent column.
         "Mod+Left" = {
-          _props."hotkey-overlay-title" = "Focus column to the left";
-          "focus-column-left" = { };
+          _props."hotkey-overlay-title" = "Focus nearest window in column to the left";
+          spawn = [
+            "niri-focus-adjacent-window"
+            "left"
+          ];
         };
         "Mod+Right" = {
-          _props."hotkey-overlay-title" = "Focus column to the right";
-          "focus-column-right" = { };
+          _props."hotkey-overlay-title" = "Focus nearest window in column to the right";
+          spawn = [
+            "niri-focus-adjacent-window"
+            "right"
+          ];
         };
-        "Mod+H"."focus-column-left" = { };
-        "Mod+L"."focus-column-right" = { };
+        "Mod+H" = {
+          _props."hotkey-overlay-title" = "Focus nearest window in column to the left";
+          spawn = [
+            "niri-focus-adjacent-window"
+            "left"
+          ];
+        };
+        "Mod+L" = {
+          _props."hotkey-overlay-title" = "Focus nearest window in column to the right";
+          spawn = [
+            "niri-focus-adjacent-window"
+            "right"
+          ];
+        };
         "Mod+K"."focus-window-up" = { };
         "Mod+J"."focus-window-down" = { };
         "Mod+Home"."focus-column-first" = { };
