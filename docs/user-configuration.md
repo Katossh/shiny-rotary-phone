@@ -199,6 +199,9 @@ of each monitor; on this single-monitor setup it initially occupies position
 `Mod+Ctrl+1` through `Mod+Ctrl+5` move the focused column to the matching
 named workspace. `Mod+6` through `Mod+9` target workspaces by their current
 position, so those bindings remain useful for additional dynamic workspaces.
+`Mod+Alt+6` and `Mod+Alt+7` move only the focused window to workspace 6 or 7;
+the existing `Mod+Ctrl+1` through `Mod+Ctrl+9` bindings continue to move
+the entire focused column.
 
 Named workspaces remain present even when empty. The dynamic workspace is
 separate: when a window is placed there, Niri creates another empty workspace
@@ -232,13 +235,16 @@ or the Vim-style `Mod+K` / `Mod+J` shortcuts. `Mod+Page_Up` and
 `Mod+Page_Down` remain available as alternatives. Vertical window focus is
 available on `Mod+Alt+Up` / `Mod+Alt+Down` and `Mod+Alt+K` / `Mod+Alt+J`.
 
-Reorder windows inside a column with `Mod+Ctrl+Up` / `Mod+Ctrl+Down` or
-the Vim-style `Mod+Ctrl+K` / `Mod+Ctrl+J`. These shortcuts bypass application
-shortcut inhibition. They only visibly reorder windows when the column contains
-multiple windows; Niri otherwise lays windows out as separate horizontal
-columns. Use `Mod+Ctrl+Comma` to consume a neighbouring window into the
-focused column, or `Mod+Period` to expel a window from its column. Dynamic
-workspaces continue to work beyond the initial five.
+Move only the focused window between adjacent workspaces with
+`Mod+Ctrl+K` (previous workspace) and `Mod+Ctrl+J` (next workspace). These
+use Niri's `move-window-to-workspace-up/down` actions; unlike
+`Mod+Ctrl+1` through `Mod+Ctrl+9`, they do not move the entire column.
+Reorder a window vertically inside its current column with
+`Mod+Ctrl+Up` / `Mod+Ctrl+Down`; these arrow bindings retain their original
+meaning. All four movement bindings bypass application shortcut inhibition.
+Use `Mod+Ctrl+Comma` to consume a neighbouring window into the focused column,
+or `Mod+Period` to expel a window from its column. Dynamic workspaces continue
+to work beyond the initial five.
 
 #### One-key layout presets
 
