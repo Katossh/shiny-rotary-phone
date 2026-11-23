@@ -234,12 +234,13 @@ or the Vim-style `Mod+K` / `Mod+J` shortcuts. `Mod+Page_Up` and
 `Mod+Page_Down` remain available as alternatives. Vertical window focus is
 available on `Mod+Alt+Up` / `Mod+Alt+Down` and `Mod+Alt+K` / `Mod+Alt+J`.
 
-Move only the focused window between adjacent workspaces with
-`Mod+Ctrl+K` (previous workspace) and `Mod+Ctrl+J` (next workspace). These
-use Niri's `move-window-to-workspace-up/down` actions and leave the other
-windows in the column on the original workspace. The direct `Mod+Ctrl+1`
-through `Mod+Ctrl+5` bindings also move only the focused window, but target
-a specific named workspace.
+Move only the focused window between adjacent named workspaces with
+`Mod+Ctrl+K` (previous) and `Mod+Ctrl+J` (next). The helper resolves the
+currently focused workspace by its name and targets only workspaces `1`–`5`;
+at either edge it does nothing rather than moving a window into Niri's
+automatically maintained trailing workspace. The direct `Mod+Ctrl+1` through
+`Mod+Ctrl+5` bindings also move only the focused window, but target a specific
+named workspace.
 Reorder windows vertically inside a column with `Mod+Ctrl+Up` /
 `Mod+Ctrl+Down`; these arrow bindings retain their original meaning.
 Use `Mod+Ctrl+Page_Up` / `Mod+Ctrl+Page_Down` when you intend to move the
