@@ -81,9 +81,12 @@ jobs:
           bash -n tests/niri-layout-preset.sh
           bash -n tests/niri-move-window-workspace.sh
           bash -n tests/niri-keybindings.sh
+          bash -n home/scripts/niri-focus-adjacent-window.sh
+          bash -n tests/niri-focus-adjacent-window.sh
           bash tests/niri-layout-preset.sh home/scripts/niri-layout-preset.sh
           bash tests/niri-move-window-workspace.sh home/scripts/niri-move-window-workspace.sh
           bash tests/niri-keybindings.sh home/niri.nix
+          bash tests/niri-focus-adjacent-window.sh home/scripts/niri-focus-adjacent-window.sh
 
       - name: Install Nix
         uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31
