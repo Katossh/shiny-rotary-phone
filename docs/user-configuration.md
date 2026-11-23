@@ -199,8 +199,8 @@ of each monitor; on this single-monitor setup it initially occupies position
 `Mod+Ctrl+1` through `Mod+Ctrl+5` move only the focused window to the
 matching named workspace; other windows in its column stay behind.
 `Mod+Ctrl+Page_Up` / `Mod+Ctrl+Page_Down` move the entire focused column
-to an adjacent workspace. No numeric shortcuts are assigned to additional
-workspaces.
+to the previous/next named workspace. No movement shortcut targets a workspace
+outside the five named workspaces.
 
 The five named workspaces remain present even when empty. Niri also keeps
 its normal empty trailing workspace automatically; it is not one of the
@@ -244,7 +244,8 @@ named workspace.
 Reorder windows vertically inside a column with `Mod+Ctrl+Up` /
 `Mod+Ctrl+Down`; these arrow bindings retain their original meaning.
 Use `Mod+Ctrl+Page_Up` / `Mod+Ctrl+Page_Down` when you intend to move the
-entire focused column to an adjacent workspace. Use `Mod+Ctrl+Comma` to
+entire focused column to the previous/next named workspace; these are bounded
+to workspaces `1`–`5` just like `Mod+Ctrl+J/K`. Use `Mod+Ctrl+Comma` to
 consume a neighbouring window into the focused column, or `Mod+Period` to
 expel a window from its column.
 
