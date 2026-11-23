@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 usage() {
-  printf 'Usage: niri-move-window-workspace {previous|next}\\n' >&2
+  printf 'Usage: niri-move-window-workspace {previous|next}\n' >&2
 }
 
 notify() {
@@ -26,7 +26,7 @@ case "$1" in
 esac
 
 command -v niri >/dev/null 2>&1 || {
-  printf 'niri-move-window-workspace: niri was not found in PATH.\\n' >&2
+  printf 'niri-move-window-workspace: niri was not found in PATH.\n' >&2
   exit 1
 }
 
