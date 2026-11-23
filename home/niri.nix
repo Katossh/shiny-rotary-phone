@@ -420,6 +420,7 @@ in
           "focus-workspace-previous" = { };
         };
         "Mod+Ctrl+Page_Down" = {
+          _props."allow-inhibiting" = false;
           _props."hotkey-overlay-title" = "Move column to next named workspace";
           spawn = [
             "niri-move-window-workspace"
@@ -428,6 +429,7 @@ in
           ];
         };
         "Mod+Ctrl+Page_Up" = {
+          _props."allow-inhibiting" = false;
           _props."hotkey-overlay-title" = "Move column to previous named workspace";
           spawn = [
             "niri-move-window-workspace"
