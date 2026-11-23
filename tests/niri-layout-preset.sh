@@ -55,6 +55,7 @@ write_linear_fixture() {
           layout: {pos_in_scrolling_layout: null}
         }] else [] end)
     ]
+    | add
   ' >"$NIRI_WINDOWS_JSON"
 }
 
@@ -86,7 +87,7 @@ run_width_test() {
   assert_equals "$expected_widths" "$actual_widths"
 }
 
-# Four initially separate windows: developer layout should stack windows 2+3.
+# Four initially separate windows: Developer stacks the next two after focus.
 write_fixture
 cat >"$NIRI_WINDOWS_JSON" <<'JSON'
 [
@@ -122,7 +123,7 @@ EXPECTED
 actual=$(cat "$NIRI_ACTION_LOG")
 assert_equals "$expected" "$actual"
 
-# Existing vertical stack is flattened and rebuilt without changing window order.
+# Existing vertical stacks are flattened; focus becomes the first selected tile.
 write_fixture
 cat >"$NIRI_WINDOWS_JSON" <<'JSON'
 {"Ok":{"Windows":[
@@ -134,11 +135,32 @@ cat >"$NIRI_WINDOWS_JSON" <<'JSON'
 JSON
 : >"$NIRI_ACTION_LOG"
 bash "$script" asymmetric >/dev/null
+expected=$(cat <<'EXPECTED'
+focus-window --id 201
+expel-window-from-column
+focus-window --id 204
+move-column-to-first
+focus-column 1
+consume-window-into-column
+set-column-width 25%
+set-column-display normal
+reset-window-height --id 204
+reset-window-height --id 201
+focus-column 2
+set-column-width 37.5%
+set-column-display normal
+reset-window-height --id 202
+focus-column 3
+set-column-width 37.5%
+set-column-display normal
+reset-window-height --id 203
+focus-window --id 204
+EXPECTED
+)
 actual=$(cat "$NIRI_ACTION_LOG")
-assert_contains 
+assert_equals "$expected" "$actual"
 
-# With surplus windows, start the selection at the focused window and
-# leave every unselected window in a separate column to its right.
+# Surplus windows stay as standalone columns to the right of the focused layout.
 write_fixture
 cat >"$NIRI_WINDOWS_JSON" <<'JSON'
 [
@@ -153,63 +175,8 @@ JSON
 output=$(bash "$script" triple)
 assert_contains 'Applied Triple (33 / 33 / 33) to 3 of 5 tiled windows; 2 extra windows remain to the right.' "$output"
 actual=$(cat "$NIRI_ACTION_LOG")
-assert_contains 
-write_linear_fixture 3 true
-run_width_test triple $'33.333333%\n33.333333%\n33.333333%'
-run_width_test references $'60%\n20%\n20%'
-write_linear_fixture 4
-run_width_test quad $'25%\n25%\n25%\n25%'
-
-# A mismatched window count must fail before issuing any mutating action.
-cat >"$NIRI_WINDOWS_JSON" <<'JSON'
-{"Ok":{"Windows":[
-  {"id":401,"workspace_id":7,"is_focused":false,"is_floating":false,"layout":{"pos_in_scrolling_layout":[1,1]}},
-  {"id":402,"workspace_id":7,"is_focused":true,"is_floating":false,"layout":{"pos_in_scrolling_layout":[2,1]}}
-]}}
-JSON
-: >"$NIRI_ACTION_LOG"
-if bash "$script" triple >/dev/null 2>&1; then
-  echo 'Expected a window-count mismatch to fail.' >&2
-  exit 1
-fi
-if [[ -s "$NIRI_ACTION_LOG" ]]; then
-  printf 'Preset mutated windows despite a count mismatch:\n%s\n' "$(cat "$NIRI_ACTION_LOG")" >&2
-  exit 1
-fi
-
-printf 'Niri layout preset tests passed.\n'
-focus-window --id 201\nexpel-window-from-column\nfocus-window --id 204\nmove-column-to-first\nfocus-column 1\nconsume-window-into-column\nset-column-width 25%' "$actual"
-assert_contains 'reset-window-height --id 204' "$actual"
-assert_contains 'reset-window-height --id 201' "$actual"
-assert_contains 'set-column-width 37.5%' "$actual"
-assert_contains 'focus-window --id 204' "$actual"
-
-# Floating windows are ignored; each preset must produce its declared column widths.
-write_linear_fixture 3 true
-run_width_test triple $'33.333333%\n33.333333%\n33.333333%'
-run_width_test references $'60%\n20%\n20%'
-write_linear_fixture 4
-run_width_test quad $'25%\n25%\n25%\n25%'
-
-# A mismatched window count must fail before issuing any mutating action.
-cat >"$NIRI_WINDOWS_JSON" <<'JSON'
-{"Ok":{"Windows":[
-  {"id":401,"workspace_id":7,"is_focused":false,"is_floating":false,"layout":{"pos_in_scrolling_layout":[1,1]}},
-  {"id":402,"workspace_id":7,"is_focused":true,"is_floating":false,"layout":{"pos_in_scrolling_layout":[2,1]}}
-]}}
-JSON
-: >"$NIRI_ACTION_LOG"
-if bash "$script" triple >/dev/null 2>&1; then
-  echo 'Expected a window-count mismatch to fail.' >&2
-  exit 1
-fi
-if [[ -s "$NIRI_ACTION_LOG" ]]; then
-  printf 'Preset mutated windows despite a count mismatch:\n%s\n' "$(cat "$NIRI_ACTION_LOG")" >&2
-  exit 1
-fi
-
-printf 'Niri layout preset tests passed.\n'
-focus-window --id 503\nmove-column-to-first\nfocus-column 1' "$actual"
+assert_contains 'focus-window --id 503' "$actual"
+assert_contains 'move-column-to-first' "$actual"
 assert_contains 'reset-window-height --id 503' "$actual"
 assert_contains 'reset-window-height --id 501' "$actual"
 assert_contains 'reset-window-height --id 502' "$actual"
@@ -218,14 +185,14 @@ if grep -Eq 'focus-column 4|reset-window-height --id 504|reset-window-height --i
   exit 1
 fi
 
-# Floating windows are ignored; each preset must produce its declared column widths.
+# Floating windows are ignored; every preset keeps its declared column widths.
 write_linear_fixture 3 true
 run_width_test triple $'33.333333%\n33.333333%\n33.333333%'
 run_width_test references $'60%\n20%\n20%'
 write_linear_fixture 4
 run_width_test quad $'25%\n25%\n25%\n25%'
 
-# A mismatched window count must fail before issuing any mutating action.
+# Too few tiled windows must fail before issuing any mutating action.
 cat >"$NIRI_WINDOWS_JSON" <<'JSON'
 {"Ok":{"Windows":[
   {"id":401,"workspace_id":7,"is_focused":false,"is_floating":false,"layout":{"pos_in_scrolling_layout":[1,1]}},
@@ -238,38 +205,7 @@ if bash "$script" triple >/dev/null 2>&1; then
   exit 1
 fi
 if [[ -s "$NIRI_ACTION_LOG" ]]; then
-  printf 'Preset mutated windows despite a count mismatch:\n%s\n' "$(cat "$NIRI_ACTION_LOG")" >&2
-  exit 1
-fi
-
-printf 'Niri layout preset tests passed.\n'
-focus-window --id 201\nexpel-window-from-column\nfocus-window --id 204\nmove-column-to-first\nfocus-column 1\nconsume-window-into-column\nset-column-width 25%' "$actual"
-assert_contains 'reset-window-height --id 204' "$actual"
-assert_contains 'reset-window-height --id 201' "$actual"
-assert_contains 'set-column-width 37.5%' "$actual"
-assert_contains 'focus-window --id 204' "$actual"
-
-# Floating windows are ignored; each preset must produce its declared column widths.
-write_linear_fixture 3 true
-run_width_test triple $'33.333333%\n33.333333%\n33.333333%'
-run_width_test references $'60%\n20%\n20%'
-write_linear_fixture 4
-run_width_test quad $'25%\n25%\n25%\n25%'
-
-# A mismatched window count must fail before issuing any mutating action.
-cat >"$NIRI_WINDOWS_JSON" <<'JSON'
-{"Ok":{"Windows":[
-  {"id":401,"workspace_id":7,"is_focused":false,"is_floating":false,"layout":{"pos_in_scrolling_layout":[1,1]}},
-  {"id":402,"workspace_id":7,"is_focused":true,"is_floating":false,"layout":{"pos_in_scrolling_layout":[2,1]}}
-]}}
-JSON
-: >"$NIRI_ACTION_LOG"
-if bash "$script" triple >/dev/null 2>&1; then
-  echo 'Expected a window-count mismatch to fail.' >&2
-  exit 1
-fi
-if [[ -s "$NIRI_ACTION_LOG" ]]; then
-  printf 'Preset mutated windows despite a count mismatch:\n%s\n' "$(cat "$NIRI_ACTION_LOG")" >&2
+  printf 'Preset mutated windows despite too few windows:\n%s\n' "$(cat "$NIRI_ACTION_LOG")" >&2
   exit 1
 fi
 
