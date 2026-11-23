@@ -36,7 +36,10 @@ let
   }) config.starforge.user.desktop.monitors;
 in
 {
-  home.packages = [ niriMoveWindowWorkspace niriFocusAdjacentWindow ];
+  home.packages = [
+    niriMoveWindowWorkspace
+    niriFocusAdjacentWindow
+  ];
 
   wayland.windowManager.niri = {
     enable = true;
