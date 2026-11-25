@@ -13,8 +13,10 @@ let
       src = pkgs.fetchFromGitHub {
         owner = "amnezia-vpn";
         repo = "amnezia-client";
-        tag = finalAttrs.version;
-        hash = "sha256-CC0pxktunkfCjP53ArftEn6h0Wsw/oWJrGjEpXcxjqM=";
+        # Pin the verified 5.1.0.6 tag commit; the previous hash did not match
+        # the recursively fetched source tree (including its submodules).
+        rev = "ac175c8a8147cfe56f98c8372ec17ea2ba00bb02";
+        hash = "sha256-o09F55FjmlBXtFTWwWmAOsea+56QlJiA4DuRFuBVtRI=";
         fetchSubmodules = true;
 
         # Preserve the metadata consumed by the inherited preConfigure hook.
