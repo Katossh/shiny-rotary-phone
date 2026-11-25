@@ -63,7 +63,7 @@ GPU on an AM5 platform.
 
 - AMD CPU microcode and redistributable firmware are enabled.
 - AMD P-State active mode is enabled for modern Ryzen power/performance scaling.
-- The workstation uses CachyOS `linuxPackages-cachyos-latest-lto-zen4`: Clang ThinLTO and a Zen 4 compiler target, without the BORE patch. Kernel BTF is explicitly enabled so `sched_ext` can expose `/sys/kernel/btf/vmlinux` to `scx_lavd`. Upstream Linux does not permit `CONFIG_RUST` together with BTF and LTO, so in-kernel Rust support is disabled; the NixOS Rust toolchain and Rust applications are unaffected. This custom kernel configuration may not be present in the upstream prebuilt kernel cache and may require a local kernel build.
+- The workstation uses the upstream prebuilt CachyOS `linuxPackages-cachyos-latest-zen4` package: a Zen 4 compiler target, without ThinLTO or the BORE patch. Its release configuration already enables `CONFIG_DEBUG_INFO_BTF`, `CONFIG_BPF`, `CONFIG_BPF_SYSCALL`, and `CONFIG_SCHED_CLASS_EXT`, so `scx_lavd` can use `/sys/kernel/btf/vmlinux` without a custom kernel rebuild.
 - The AMDGPU kernel driver is loaded in the initrd for early KMS.
 - Mesa graphics acceleration and 32-bit graphics support are enabled.
 - Vulkan and VA-API diagnostic tools are installed.
