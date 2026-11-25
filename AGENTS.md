@@ -18,9 +18,10 @@ Treat the checked-out repository as the source of truth. At the time this guide 
 
 - `flake.nix`, `flake.lock` — flake inputs, pinned dependencies, formatter, development shell, and the `workstation` NixOS output.
 - hosts/workstation/ — the current machine-specific host profile. Its
-  hardware-configuration.nix is a local, Git-ignored file that must be prepared
-  manually before running install.sh; the installer validates it but never
-  copies, generates, or overwrites it.
+  hardware-configuration.nix is refreshed by install.sh from
+  /etc/nixos/hardware-configuration.nix (or generated from the current/mounted
+  system), with a backup before replacement. The file is Git-trackable; do not
+  copy its identifiers into documentation or examples.
 - `modules/nixos/` — reusable system-level NixOS modules.
 - `home/` — Home Manager modules for the workstation user; the login name is configured once through `starforge.user.username` in `hosts/workstation/default.nix`.
 - `terminal-dotfiles` — a separate pinned input and the source of truth for terminal configuration and package manifests. Do not duplicate or take ownership of those files in Starforge.
@@ -252,7 +253,7 @@ The project contains machine-specific storage, bootloader, Secure Boot, encrypti
 - Follow the existing formatting and module conventions. Do not reformat unrelated files.
 - Keep `flake.lock` unchanged unless dependency updates are part of the task. Review lock-file changes deliberately.
 - Do not change `system.stateVersion` as a routine maintenance action.
-- Treat hosts/workstation/hardware-configuration.nix as local machine data: never commit it or copy its device identifiers/UUIDs into public docs. It must be created manually before running install.sh; the installer validates the existing file but never copies, generates, or overwrites it. Preserve it during unrelated changes.
+- Treat hosts/workstation/hardware-configuration.nix as machine-specific generated data. install.sh refreshes it from the installed system or mounted target and preserves the previous version as a .bak file before replacing changed content. It is intentionally Git-trackable at the user's request; never place real device identifiers/UUIDs in public documentation or examples. Because this repository is public, warn that committing the file publishes filesystem UUIDs, device paths, and storage topology. Never overwrite it without validating the candidate and preserving a backup.
 - Verify new option names against the project's locked Nixpkgs/Home Manager sources or authoritative upstream documentation.
 - Prefer evaluation and build checks over assuming that syntactically valid Nix is operationally correct.
 

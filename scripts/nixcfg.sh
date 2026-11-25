@@ -698,7 +698,7 @@ run_checks() {
   cd "$repo_root"
 
   if [[ ! -f "$repo_root/hosts/workstation/hardware-configuration.nix" ]]; then
-    printf 'Local hardware configuration is missing. Create hosts/workstation/hardware-configuration.nix manually (see INSTALL.md); install.sh does not copy or generate it.\n' >&2
+    printf 'Local hardware configuration is missing. Run sudo ./install.sh to copy it from /etc/nixos or generate it from the current machine before running checks.\n' >&2
     return 2
   fi
 

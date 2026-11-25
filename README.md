@@ -17,7 +17,7 @@ Terminal packages and dotfiles remain integrated from
 
 ## Installation
 
-Use [`install.sh`](./install.sh) for one-command deployment. See [`INSTALL.md`](./INSTALL.md) for existing-system updates and a fresh install from the NixOS ISO. The installer validates the mounted root and EFI filesystems and requires an existing machine-local hardware configuration; it never copies, generates, or overwrites that file, and never partitions or formats disks.
+Use [`install.sh`](./install.sh) for one-command deployment. See [`INSTALL.md`](./INSTALL.md) for existing-system updates and a fresh install from the NixOS ISO. The installer refreshes the machine hardware configuration from `/etc/nixos` or the current/mounted system, validates it, and backs up the previous repository copy before replacement. It never partitions or formats disks.
 
 A persistent Tor SOCKS5 client using WebTunnel bridges is configured by the workstation profile. Bridge lines are supplied locally rather than committed; see [`docs/tor-proxy.md`](./docs/tor-proxy.md) for setup and usage.
 
@@ -143,12 +143,14 @@ the in-kernel drivers are enabled; verify the detected chipset with
 The host-specific CPU/GPU modules and device udev rules are isolated in
 hosts/workstation/hardware.nix. Common hardware capabilities and diagnostic
 tools remain in modules/nixos/hardware.nix; filesystem mount and Btrfs scrub
-policy live in modules/nixos/storage.nix. The machine-local
-hosts/workstation/hardware-configuration.nix must exist before installation.
-The installer validates and reuses that exact file without copying, generating,
-or overwriting it. If it is missing, the installer stops and prints instructions
-for creating it manually. The file is Git-ignored because it contains
-machine-specific device and filesystem data.
+policy live in modules/nixos/storage.nix. The installer refreshes
+`hosts/workstation/hardware-configuration.nix` from the current machine
+(`/etc/nixos/hardware-configuration.nix`, or `nixos-generate-config` as a
+fallback). On a fresh install it generates the file from the filesystems
+mounted under `/mnt`. A changed existing file is backed up before replacement.
+The file is trackable in Git; review it before committing because it contains
+filesystem UUIDs, device paths, and mount topology. This repository is public,
+so committing it publishes those machine-specific identifiers.
 
 ## Display configuration
 
@@ -166,8 +168,9 @@ and optional logical position. See
 The workstation profile uses Limine in UEFI mode with Secure Boot signing.
 The NixOS `/boot` partition is FAT32 and is configured through the machine-local
 `hosts/workstation/hardware-configuration.nix`; its device path and UUID are
-intentionally not published in this repository. Do not copy or reuse those
-identifiers on another machine.
+specific to this workstation. Do not copy or reuse those identifiers on
+another machine. The file is Git-trackable; because this repository is public,
+committing it publishes the machine's filesystem UUIDs and storage topology.
 
 The bootloader configuration does not rewrite the partition table or resize
 EFI-related partitions. Adding another operating system's boot entry is a
@@ -672,12 +675,24 @@ sudo journalctl -u usbguard -b
 - Noctalia is configured through its Home Manager module and validates its TOML.
 - Noctalia uses the Catppuccin built-in palette and Inter as its system-installed interface font.
 - LocalSend is installed for cross-platform LAN file sharing.
-- Blender is installed per-user through Home Manager.
+- Blender is installed system-wide, exposing both the `blender` command and its desktop launcher.
 - v2rayN is installed per-user through Home Manager for Xray / REALITY proxy profiles.
 - The session locks after five idle minutes, turns displays off after six,
   and locks before suspend with no passwordless grace period.
 - Kitty and Zsh configuration remain owned by terminal-dotfiles to avoid
   competing Home Manager definitions.
+
+After applying the system generation, verify Blender's executable and desktop
+entry:
+
+```sh
+command -v blender
+test -x /run/current-system/sw/bin/blender
+test -f /run/current-system/sw/share/applications/blender.desktop
+```
+
+If the desktop launcher was already running during the update, restart it or
+re-enter the Niri session so it refreshes its application index.
 
 Noctalia is pinned to its `cachix` branch. Its Nixpkgs input deliberately does
 not follow the root Nixpkgs input: this preserves derivation compatibility
@@ -798,13 +813,13 @@ available; language compilers and runtimes are supplied by this shell instead.
 For project-specific work, a project's own flake and lock file should still
 define any different compiler versions or additional native dependencies.
 
-Formatting and static analysis cover tracked Nix files. The generated
-`hosts/workstation/hardware-configuration.nix` stays local and Git-ignored so
-machine-specific device paths and filesystem UUIDs are not published; it is
-still included in local flake evaluation and system builds. Create it manually
-before running the full checks; `install.sh` does not copy or generate it. See
-[`INSTALL.md`](./INSTALL.md) for the generation command. Run these checks
-before opening a PR:
+Formatting and static analysis cover tracked Nix files, including
+`hosts/workstation/hardware-configuration.nix` once you choose to add it.
+`install.sh` refreshes that file from the current system and preserves a
+backup before replacing changed content. Review its hardware identifiers and
+the public-repository privacy implications before committing it. See
+[`INSTALL.md`](./INSTALL.md) for the workflow. Run these checks before opening
+a PR:
 
 ```sh
 mapfile -t nix_files < <(git ls-files "*.nix")

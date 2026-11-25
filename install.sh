@@ -37,11 +37,15 @@ Fresh installation:
   5. Run: sudo ./install.sh --install
 
 With no mode specified, the script selects --install when the clone is at
-/mnt/etc/nixos; otherwise it selects --switch. The installer requires an
-existing hosts/workstation/hardware-configuration.nix. It never copies,
-generates, or overwrites that machine-local file. If it is missing, the script
-stops and prints instructions for creating it manually.
-It does not partition, format, create subvolumes, or alter LUKS keys.
+/mnt/etc/nixos; otherwise it selects --switch. The installer refreshes
+hosts/workstation/hardware-configuration.nix on every run. On an existing
+system it copies /etc/nixos/hardware-configuration.nix when available, falling
+back to nixos-generate-config; a fresh installation generates from the mounted
+target under /mnt. It validates the replacement and backs up any changed
+repository copy before overwriting it. The file is Git-trackable; review it
+before committing because it contains machine-specific device paths and
+filesystem UUIDs. The installer never partitions, formats, creates subvolumes,
+or alters LUKS keys.
 USAGE
 }
 
@@ -214,39 +218,103 @@ validate_hardware_configuration() {
   fi
 }
 
-ensure_hardware_configuration() {
+sync_hardware_configuration() {
   local hardware_file="$REPO_DIR/hosts/workstation/hardware-configuration.nix"
+  local hardware_dir source temp backup timestamp suffix owner group mode
 
   require_command grep
   require_command nix-instantiate
+  require_command nixos-generate-config
+  require_command cp
+  require_command cmp
+  require_command stat
+  require_command chown
+  require_command chmod
+  require_command mv
 
-  if [[ ! -e "$hardware_file" ]]; then
-    cat >&2 <<EOF
-[nixcfg] ERROR: Required machine-local hardware configuration is missing:
-  $hardware_file
+  hardware_dir="$(dirname -- "$hardware_file")"
+  mkdir -p "$hardware_dir"
+  temp="$(mktemp "$hardware_dir/.hardware-configuration.nix.XXXXXX")" \
+    || die "Could not create a temporary hardware-configuration file."
 
-Create this file manually, review the detected filesystems and device identifiers,
-then run install.sh again. The installer will not copy another machine's file,
-generate a replacement, or overwrite an existing configuration.
-
-For an already installed NixOS system, run this from the repository root:
-  sudo nixos-generate-config --show-hardware-config | sudo tee "$hardware_file" >/dev/null
-
-For a fresh installation, first mount the target filesystems under /mnt, then run:
-  sudo nixos-generate-config --root /mnt --show-hardware-config | sudo tee "$hardware_file" >/dev/null
-
-Review the resulting file before continuing. It is Git-ignored because it may
-contain machine-specific filesystem UUIDs and device paths.
-EOF
-    exit 1
+  if [[ "$MODE" == "install" ]]; then
+    source="the mounted target at $INSTALL_ROOT"
+    if ! nixos-generate-config --root "$INSTALL_ROOT" --show-hardware-config > "$temp"; then
+      rm -f -- "$temp"
+      die "Could not generate hardware configuration from the mounted target."
+    fi
+  elif [[ -r /etc/nixos/hardware-configuration.nix ]]; then
+    source="/etc/nixos/hardware-configuration.nix"
+    if ! cat -- "$source" > "$temp"; then
+      rm -f -- "$temp"
+      die "Could not read the current machine hardware configuration from $source."
+    fi
+  else
+    source="nixos-generate-config on the running system"
+    if ! nixos-generate-config --show-hardware-config > "$temp"; then
+      rm -f -- "$temp"
+      die "Could not generate hardware configuration from the running system."
+    fi
   fi
 
-  [[ -f "$hardware_file" ]] || die "$hardware_file exists but is not a regular file."
-  validate_hardware_configuration "$hardware_file" \
-    || die "The existing hardware configuration is invalid. It was left untouched."
+  if ! validate_hardware_configuration "$temp"; then
+    rm -f -- "$temp"
+    die "The refreshed hardware configuration is invalid. The existing repository file was left untouched."
+  fi
 
-  log "Using the existing hardware configuration at $hardware_file (not copied or modified)."
-  log "Hardware configuration presence and syntax were validated; device paths and UUIDs are not compared with $INSTALL_ROOT."
+  if [[ -L "$hardware_file" ]]; then
+    rm -f -- "$temp"
+    die "Refusing to replace a symlink at $hardware_file. Resolve it explicitly first."
+  fi
+
+  if [[ -e "$hardware_file" && ! -f "$hardware_file" ]]; then
+    rm -f -- "$temp"
+    die "Refusing to replace a non-regular file at $hardware_file."
+  fi
+
+  if [[ -f "$hardware_file" ]] && cmp -s -- "$temp" "$hardware_file"; then
+    rm -f -- "$temp"
+    log "Hardware configuration is already up to date; no backup or replacement was needed."
+    return 0
+  fi
+
+  if [[ -e "$hardware_file" ]]; then
+    backup="${hardware_file}.bak"
+    if [[ -e "$backup" || -L "$backup" ]]; then
+      timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+      backup="${hardware_file}.${timestamp}.bak"
+      suffix=1
+      while [[ -e "$backup" || -L "$backup" ]]; do
+        backup="${hardware_file}.${timestamp}.${suffix}.bak"
+        suffix=$((suffix + 1))
+      done
+    fi
+
+    if ! cp -a -- "$hardware_file" "$backup"; then
+      rm -f -- "$temp"
+      die "Could not back up the existing hardware configuration; it was not replaced."
+    fi
+
+    read -r owner group mode < <(stat -c '%u %g %a' -- "$hardware_file")
+    if ! chown "$owner:$group" "$temp" || ! chmod "$mode" "$temp"; then
+      rm -f -- "$temp"
+      die "Could not preserve ownership and permissions on the refreshed hardware configuration."
+    fi
+    log "Backed up the previous hardware configuration to $backup."
+  else
+    chmod 0644 "$temp"
+    if [[ "${SUDO_UID:-}" =~ ^[0-9]+$ && "${SUDO_GID:-}" =~ ^[0-9]+$ ]]; then
+      chown "$SUDO_UID:$SUDO_GID" "$temp"
+    fi
+  fi
+
+  if ! mv -f -- "$temp" "$hardware_file"; then
+    rm -f -- "$temp"
+    die "Could not install the refreshed hardware configuration."
+  fi
+
+  log "Updated $hardware_file from $source."
+  log "The file is no longer Git-ignored and can be tracked with git add."
 }
 check_secure_boot_keys() {
   if grep -Eq 'secureBoot\.enable[[:space:]]*=[[:space:]]*true' "$REPO_DIR/modules/nixos/boot.nix"; then
@@ -282,7 +350,7 @@ run_switch() {
 
   check_supported_root_fs "/"
   check_mount_type "/boot" "vfat"
-  ensure_hardware_configuration
+  sync_hardware_configuration
 
   username="$(get_workstation_username)"
   check_home_manager_target_permissions "$username"
@@ -318,9 +386,9 @@ run_install() {
   [[ "$REPO_DIR" == "$INSTALL_REPO" ]] \
     || die "For a fresh install, clone this repository to $INSTALL_REPO and run the script from there."
 
-  # Require the repository-local hardware configuration. Never copy over it
-  # from /etc/nixos or generate a replacement automatically.
-  ensure_hardware_configuration
+  # Generate hardware details from the mounted target. Existing destination
+  # content is backed up before a validated replacement is installed.
+  sync_hardware_configuration
   username="$(get_workstation_username)"
   check_secure_boot_keys
 

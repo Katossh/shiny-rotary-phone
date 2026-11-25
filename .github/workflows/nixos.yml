@@ -46,16 +46,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Reject tracked machine-local hardware configuration
+      - name: Prepare local hardware configuration fixture when absent
         run: |
-          if git ls-files --error-unmatch hosts/workstation/hardware-configuration.nix >/dev/null 2>&1; then
-            echo "hosts/workstation/hardware-configuration.nix is machine-local and must not be tracked." >&2
-            exit 1
-          fi
-
-      - name: Prepare local hardware configuration fixture
-        run: |
-          cat > hosts/workstation/hardware-configuration.nix <<'NIX'
+          if [[ ! -f hosts/workstation/hardware-configuration.nix ]]; then
+            cat > hosts/workstation/hardware-configuration.nix <<'NIX'
           { modulesPath, ... }:
           {
             imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
@@ -70,6 +64,9 @@ jobs:
             };
           }
           NIX
+          else
+            echo "Using the repository's tracked workstation hardware configuration."
+          fi
 
       - name: Check shell syntax and Niri layout presets
         run: |
@@ -154,6 +151,32 @@ jobs:
             echo "Home Manager emitted a target outside the home directory." >&2
             exit 1
           fi
+
+      - name: Verify Blender is installed as a system application
+        run: |
+          blender_main_program="$(nix eval --raw \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.pkgs.blender.meta.mainProgram" \
+            --no-update-lock-file \
+            --accept-flake-config)"
+          if [[ "$blender_main_program" != "blender" ]]; then
+            echo "Expected Blender's main executable to be 'blender', got '$blender_main_program'." >&2
+            exit 1
+          fi
+
+          system_packages="$(nix eval --json \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.environment.systemPackages" \
+            --apply 'packages: map (package: package.pname or package.name) packages' \
+            --no-update-lock-file \
+            --accept-flake-config)"
+          python3 - "$system_packages" <<'PY'
+          import json
+          import sys
+
+          packages = set(json.loads(sys.argv[1]))
+          if "blender" not in packages:
+              raise SystemExit("Blender is missing from environment.systemPackages.")
+          print("Blender is globally installed and exposes the blender executable.")
+          PY
 
       - name: Run Nix static analysis
         run: |
@@ -354,11 +377,26 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Reject tracked machine-local hardware configuration
+      - name: Prepare local hardware configuration fixture when absent
         run: |
-          if git ls-files --error-unmatch hosts/workstation/hardware-configuration.nix >/dev/null 2>&1; then
-            echo "hosts/workstation/hardware-configuration.nix is machine-local and must not be tracked." >&2
-            exit 1
+          if [[ ! -f hosts/workstation/hardware-configuration.nix ]]; then
+            cat > hosts/workstation/hardware-configuration.nix <<'NIX'
+          { modulesPath, ... }:
+          {
+            imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
+            boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" ];
+            fileSystems."/" = {
+              device = "/dev/disk/by-label/nixos";
+              fsType = "ext4";
+            };
+            fileSystems."/boot" = {
+              device = "/dev/disk/by-label/ESP";
+              fsType = "vfat";
+            };
+          }
+          NIX
+          else
+            echo "Using the repository's tracked workstation hardware configuration."
           fi
 
       - name: Prepare local hardware configuration fixture
