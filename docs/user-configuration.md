@@ -505,9 +505,11 @@ change the kernel `.config`.
 
 ### BTF and sched_ext
 
-BTF is required by `scx_lavd`, and the host enables it explicitly. The NixOS
-`services.scx` module starts `scx_lavd --performance`; Ananicy-cpp is disabled
-to avoid overlapping scheduling policy.
+BTF is required by `scx_lavd`, and the host enables it explicitly. The
+NixOS `services.scx-loader` module starts `scx_lavd` in Auto mode with the
+`--performance` argument. Ananicy-cpp is disabled to avoid overlapping
+scheduling policy. The loader exposes `scxctl` for runtime inspection and
+scheduler management.
 
 After activation and reboot, verify the kernel and scheduler state:
 
@@ -516,7 +518,8 @@ uname -r
 zgrep -E '^(CONFIG_(LTO_CLANG_THIN|MZEN4|SCHED_CLASS_EXT|DEBUG_INFO_BTF)=|# CONFIG_(SCHED_BORE|RUST) is not set)' /proc/config.gz
 test -r /sys/kernel/btf/vmlinux
 cat /sys/kernel/sched_ext/state
-systemctl status scx.service
+systemctl status scx_loader.service
+scxctl get
 pgrep -af scx_lavd
 ```
 
