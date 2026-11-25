@@ -22,6 +22,7 @@
     stateVersion = "26.05";
 
     packages = with pkgs; [
+      blender
       brightnessctl
       discord
       grim
