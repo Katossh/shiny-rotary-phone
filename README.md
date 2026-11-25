@@ -19,6 +19,8 @@ Terminal packages and dotfiles remain integrated from
 
 Use [`install.sh`](./install.sh) for one-command deployment. See [`INSTALL.md`](./INSTALL.md) for existing-system updates and a fresh install from the NixOS ISO. The installer validates the mounted root and EFI filesystems and requires an existing machine-local hardware configuration; it never copies, generates, or overwrites that file, and never partitions or formats disks.
 
+A persistent Tor SOCKS5 client using WebTunnel bridges is configured by the workstation profile. Bridge lines are supplied locally rather than committed; see [`docs/tor-proxy.md`](./docs/tor-proxy.md) for setup and usage.
+
 ## User configuration
 
 Personal appearance and selected desktop preferences are managed in
