@@ -262,24 +262,29 @@ sync_hardware_configuration() {
     die "The refreshed hardware configuration is invalid. The existing repository file was left untouched."
   fi
 
+  if [[ -L "$hardware_file" ]]; then
+    rm -f -- "$temp"
+    die "Refusing to replace a symlink at $hardware_file. Resolve it explicitly first."
+  fi
+
+  if [[ -e "$hardware_file" && ! -f "$hardware_file" ]]; then
+    rm -f -- "$temp"
+    die "Refusing to replace a non-regular file at $hardware_file."
+  fi
+
   if [[ -f "$hardware_file" ]] && cmp -s -- "$temp" "$hardware_file"; then
     rm -f -- "$temp"
     log "Hardware configuration is already up to date; no backup or replacement was needed."
     return 0
   fi
 
-  if [[ -L "$hardware_file" ]]; then
-    rm -f -- "$temp"
-    die "Refusing to replace a symlink at $hardware_file. Resolve it explicitly first."
-  fi
-
   if [[ -e "$hardware_file" ]]; then
     backup="${hardware_file}.bak"
-    if [[ -e "$backup" ]]; then
+    if [[ -e "$backup" || -L "$backup" ]]; then
       timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
       backup="${hardware_file}.${timestamp}.bak"
       suffix=1
-      while [[ -e "$backup" ]]; do
+      while [[ -e "$backup" || -L "$backup" ]]; do
         backup="${hardware_file}.${timestamp}.${suffix}.bak"
         suffix=$((suffix + 1))
       done
