@@ -17,12 +17,22 @@ _:
       trusted-users = [ "root" ];
       require-sigs = true;
 
-      extra-substituters = [
-        "https://noctalia.cachix.org"
+      # Use only the official Nix cache and the upstream-documented CachyOS mirror.
+      # The Lantian endpoint and its signing key are intentionally not trusted.
+      substituters = [
+        "https://cache.nixos.org"
+        "https://cache.xinux.uz"
       ];
-      extra-trusted-public-keys = [
-        "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
+      trusted-public-keys = [
+        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+        "cache.xinux.uz:BXCrtqejFjWzWEB9YuGB7X2MV4ttBur1N8BkwQRdH+0="
       ];
+
+      # Avoid waiting on unresponsive cache connections or stalled downloads.
+      accept-flake-config = false;
+      connect-timeout = 5;
+      stalled-download-timeout = 15;
+      download-attempts = 2;
     };
 
     # Collect unreferenced store paths; system generations remain available
