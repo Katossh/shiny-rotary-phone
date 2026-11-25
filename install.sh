@@ -89,7 +89,16 @@ configure_nix() {
   local nix_config
   nix_config="${NIX_CONFIG:-}"
   nix_config+=$'\n'"experimental-features = nix-command flakes"
-  nix_config+=$'\n'"accept-flake-config = true"
+  # Bootstrap with the same cache policy as modules/nixos/nix.nix. The running
+  # daemon cannot activate its new nix.conf until this switch has completed.
+  nix_config+=$'\n'"substituters = https://cache.nixos.org https://cache.xinux.uz"
+  nix_config+=$'\n'"trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.xinux.uz:BXCrtqejFjWzWEB9YuGB7X2MV4ttBur1N8BkwQRdH+0="
+  nix_config+=$'\n'"extra-substituters ="
+  nix_config+=$'\n'"extra-trusted-public-keys ="
+  nix_config+=$'\n'"accept-flake-config = false"
+  nix_config+=$'\n'"connect-timeout = 5"
+  nix_config+=$'\n'"stalled-download-timeout = 15"
+  nix_config+=$'\n'"download-attempts = 2"
   export NIX_CONFIG="$nix_config"
 }
 
