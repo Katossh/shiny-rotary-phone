@@ -4,8 +4,7 @@ let
   # Nix does not propagate nixConfig from nested flake inputs into the root
   # flake. Read the cache declarations from the exact locked upstream source
   # instead of duplicating its substituter URLs and signing keys here.
-  cachyosNixConfig =
-    (import (inputs.nix-cachyos-kernel.outPath + "/flake.nix")).nixConfig;
+  cachyosNixConfig = (import (inputs.nix-cachyos-kernel.outPath + "/flake.nix")).nixConfig;
 in
 {
   nix = {
@@ -24,12 +23,14 @@ in
       trusted-users = [ "root" ];
       require-sigs = true;
 
-      extra-substituters =
-        [ "https://noctalia.cachix.org" ]
-        ++ (cachyosNixConfig.extra-substituters or [ ]);
-      extra-trusted-public-keys =
-        [ "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=" ]
-        ++ (cachyosNixConfig.extra-trusted-public-keys or [ ]);
+      extra-substituters = [
+        "https://noctalia.cachix.org"
+      ]
+      ++ (cachyosNixConfig.extra-substituters or [ ]);
+      extra-trusted-public-keys = [
+        "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
+      ]
+      ++ (cachyosNixConfig.extra-trusted-public-keys or [ ]);
     };
 
     # Collect unreferenced store paths; system generations remain available
