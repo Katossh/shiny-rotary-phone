@@ -1,7 +1,6 @@
 {
   config,
   inputs,
-  lib,
   pkgs,
   ...
 }:
@@ -14,24 +13,11 @@
     inputs.nixos-hardware.nixosModules.common-gpu-amd
   ];
 
-  # Keep CachyOS Clang ThinLTO + Zen 4, without the BORE scheduler patch.
-  # sched_ext needs vmlinux BTF. nix-cachyos-kernel disables BTF for LTO when
-  # pahole is older than 1.33; explicitly restore BTF and disable in-kernel
-  # Rust, which upstream Kconfig forbids in a BTF + LTO kernel.
-  #
-  # This is a custom kernel configuration, so the upstream prebuilt kernel
-  # cache may not contain the resulting kernel derivation.
+  # Use the upstream prebuilt non-LTO CachyOS kernel for Zen 4. Its release
+  # configuration already enables BTF, BPF, and sched_ext; do not override it,
+  # so the kernel derivation continues to match the published binary cache.
   nixpkgs.overlays = [ inputs.nix-cachyos-kernel.overlays.pinned ];
-  boot.kernelPackages = pkgs.cachyosKernels."linuxPackages-cachyos-latest-lto-zen4".extend (
-    _final: prev: {
-      kernel = prev.kernel.override {
-        structuredExtraConfig = prev.kernel.structuredExtraConfig // {
-          DEBUG_INFO_BTF = lib.mkForce lib.kernel.yes;
-          RUST = lib.mkForce lib.kernel.no;
-        };
-      };
-    }
-  );
+  boot.kernelPackages = pkgs.cachyosKernels."linuxPackages-cachyos-latest-zen4";
 
   # Enable the kernel NT synchronization primitive used by Wine/Proton.
   boot.kernelModules = [ "ntsync" ];
