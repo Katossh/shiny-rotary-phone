@@ -589,16 +589,14 @@ not change the kernel configuration.
 
 ### Binary cache and updates
 
-The upstream `release` branch contains kernels already built by its Hydra CI
-and published to the project's Attic binary cache. The root flake and the
-installed Nix daemon configure `https://cache.lantian.pub/lantian` with its
-public signing key. Keep the `release` input pinned and retain the
-`pinned` overlay; using a different Nixpkgs revision or customizing the
-kernel changes the derivation and can force a local kernel build.
-
-If the cache is unreachable, Nix may be unable to download the substitute;
-`--fallback` allows it to continue by building from source, which is much
-more expensive than downloading the prebuilt kernel.
+This repository does not configure or trust the third-party Lantian binary
+cache. The workstation still selects the CachyOS kernel from the pinned
+`release` input and uses the matching `pinned` overlay. Other configured
+substituters may provide a matching build, but a cache hit is not guaranteed.
+If the exact kernel derivation is unavailable from the configured caches,
+Nix will build it from source, which can require substantial time and disk
+space. Keep a known-good system generation available until the new kernel
+has booted successfully.
 
 Update only this input when reviewing a new CachyOS kernel:
 
