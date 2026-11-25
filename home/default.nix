@@ -41,13 +41,13 @@
       (writeShellScriptBin "v2rayn-ru-routing" ''
         set -euo pipefail
 
-        rules_file="'''${XDG_CONFIG_HOME:-$HOME/.config}/v2rayN/routing-ru.json"
+        rules_file="''${XDG_CONFIG_HOME:-$HOME/.config}/v2rayN/routing-ru.json"
         if [[ ! -r "$rules_file" ]]; then
           printf 'v2rayn-ru-routing: rules file not found: %s\n' "$rules_file" >&2
           exit 1
         fi
 
-        if [[ -z "'''${WAYLAND_DISPLAY:-}" ]]; then
+        if [[ -z "''${WAYLAND_DISPLAY:-}" ]]; then
           printf '%s\n' "v2rayn-ru-routing: run this command inside the Wayland session." >&2
           exit 1
         fi
