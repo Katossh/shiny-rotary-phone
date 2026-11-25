@@ -1,17 +1,6 @@
 {
   description = "NixOS workstation configuration with Niri and Noctalia";
 
-  nixConfig = {
-    extra-substituters = [
-      "https://noctalia.cachix.org"
-      "https://ezkea.cachix.org"
-    ];
-    extra-trusted-public-keys = [
-      "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
-      "ezkea.cachix.org-1:ioBmUbJTZIKsHmWWXPe1FSFbeVe+afhfgqgTSNd34eI="
-    ];
-  };
-
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
