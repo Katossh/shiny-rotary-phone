@@ -682,6 +682,18 @@ sudo journalctl -u usbguard -b
 - Kitty and Zsh configuration remain owned by terminal-dotfiles to avoid
   competing Home Manager definitions.
 
+After applying the system generation, verify Blender's executable and desktop
+entry:
+
+```sh
+command -v blender
+test -x /run/current-system/sw/bin/blender
+test -f /run/current-system/sw/share/applications/blender.desktop
+```
+
+If the desktop launcher was already running during the update, restart it or
+re-enter the Niri session so it refreshes its application index.
+
 Noctalia is pinned to its `cachix` branch. Its Nixpkgs input deliberately does
 not follow the root Nixpkgs input: this preserves derivation compatibility
 with the Noctalia Cachix binary cache. The nested Nixpkgs revision is pinned
