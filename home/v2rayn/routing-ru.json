@@ -1,0 +1,40 @@
+[
+  {
+    "outboundTag": "direct",
+    "ip": [
+      "geoip:private"
+    ],
+    "enabled": true,
+    "remarks": "Private IP networks → direct"
+  },
+  {
+    "outboundTag": "direct",
+    "domain": [
+      "geosite:private"
+    ],
+    "enabled": true,
+    "remarks": "Private domains → direct"
+  },
+  {
+    "outboundTag": "direct",
+    "domain": [
+      "geosite:category-ru"
+    ],
+    "enabled": true,
+    "remarks": "Russian domains → direct"
+  },
+  {
+    "outboundTag": "direct",
+    "ip": [
+      "geoip:ru"
+    ],
+    "enabled": true,
+    "remarks": "Russian IP addresses → direct"
+  },
+  {
+    "outboundTag": "proxy",
+    "enabled": true,
+    "remarks": "Everything else → proxy",
+    "network": "tcp,udp"
+  }
+]

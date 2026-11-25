@@ -51,6 +51,11 @@ let
   );
 in
 {
+  # v2rayN's TUN mode needs the kernel TUN device. The GUI remains an
+  # unprivileged user process; v2rayN elevates only the selected core when
+  # creating the tunnel and changing routes.
+  boot.kernelModules = [ "tun" ];
+
   networking = {
     networkmanager = {
       enable = true;

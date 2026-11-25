@@ -36,13 +36,32 @@
       localsend
       kalker
       wl-clipboard
+
+      # Copy the declarative Russia-direct routing rules to the Wayland
+      # clipboard for import through v2rayN's Routing Settings UI.
+      (writeShellScriptBin "v2rayn-ru-routing" ''
+        set -euo pipefail
+
+        rules_file="''${XDG_CONFIG_HOME:-$HOME/.config}/v2rayN/routing-ru.json"
+        if [[ ! -r "$rules_file" ]]; then
+          printf 'v2rayn-ru-routing: rules file not found: %s\n' "$rules_file" >&2
+          exit 1
+        fi
+
+        if [[ -z "''${WAYLAND_DISPLAY:-}" ]]; then
+          printf '%s\n' "v2rayn-ru-routing: run this command inside the Wayland session." >&2
+          exit 1
+        fi
+
+        ${pkgs.wl-clipboard}/bin/wl-copy < "$rules_file"
+        printf '%s\n' "Copied Russia-direct routing rules. Import them in v2rayN → Routing Settings."
+      '')
     ];
 
     file = {
       "Pictures/Screenshots/.keep".text = "";
 
-      # v2rayN resolves Xray from this per-user core directory, not from PATH.
-      # Keep the binary and routing databases declaratively managed.
+      # Keep the v2rayN Xray core and routing databases declaratively managed.
       ".local/share/v2rayN/bin/xray/xray" = {
         source = "${pkgs.xray}/bin/xray";
         force = true;
@@ -55,6 +74,10 @@
         source = "${pkgs.v2ray-rules-dat}/share/v2ray/geosite.dat";
         force = true;
       };
+
+      # v2rayN stores active routing profiles in its own database. This
+      # declarative JSON is the import source, not a replacement for that DB.
+      ".config/v2rayN/routing-ru.json".source = ./v2rayn/routing-ru.json;
     };
 
   };
