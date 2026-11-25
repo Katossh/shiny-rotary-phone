@@ -4,5 +4,6 @@
 .devenv/
 *.swp
 *.tmp
-/hosts/workstation/hardware-configuration.nix
+/hosts/workstation/hardware-configuration.nix*.bak
+/hosts/workstation/.hardware-configuration.nix.*
 /tasks.md
