@@ -152,6 +152,32 @@ jobs:
             exit 1
           fi
 
+      - name: Verify Blender is installed as a system application
+        run: |
+          blender_main_program="$(nix eval --raw \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.pkgs.blender.meta.mainProgram" \
+            --no-update-lock-file \
+            --accept-flake-config)"
+          if [[ "$blender_main_program" != "blender" ]]; then
+            echo "Expected Blender's main executable to be 'blender', got '$blender_main_program'." >&2
+            exit 1
+          fi
+
+          system_packages="$(nix eval --json \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.environment.systemPackages" \
+            --apply 'packages: map (package: package.pname or package.name) packages' \
+            --no-update-lock-file \
+            --accept-flake-config)"
+          python3 - "$system_packages" <<'PY'
+          import json
+          import sys
+
+          packages = set(json.loads(sys.argv[1]))
+          if "blender" not in packages:
+              raise SystemExit("Blender is missing from environment.systemPackages.")
+          print("Blender is globally installed and exposes the blender executable.")
+          PY
+
       - name: Run Nix static analysis
         run: |
           nix develop "path:$GITHUB_WORKSPACE#default" --no-update-lock-file --command bash -euo pipefail -c '
