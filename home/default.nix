@@ -29,6 +29,7 @@
       playerctl
       pavucontrol
       slurp
+      telegram-desktop
       tor-browser
       v2rayn
       xray
