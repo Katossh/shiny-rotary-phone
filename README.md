@@ -691,6 +691,7 @@ sudo journalctl -u usbguard -b
 - Noctalia is configured through its Home Manager module and validates its TOML.
 - Noctalia uses the Catppuccin built-in palette and Inter as its system-installed interface font.
 - LocalSend is installed for cross-platform LAN file sharing.
+- Blender is installed per-user through Home Manager.
 - v2rayN is installed per-user through Home Manager for Xray / REALITY proxy profiles.
 - The session locks after five idle minutes, turns displays off after six,
   and locks before suspend with no passwordless grace period.
