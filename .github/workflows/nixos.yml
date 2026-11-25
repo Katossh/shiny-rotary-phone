@@ -169,8 +169,8 @@ jobs:
           old_cache_url+="/lantian"
           old_cache_key="lantian:WVGO7vs"
           old_cache_key+="RMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ="
-          if grep -Fq "$old_cache_url" flake.nix modules/nixos install.sh scripts/nixcfg.sh .github/workflows ||
-             grep -Fq "$old_cache_key" flake.nix modules/nixos install.sh scripts/nixcfg.sh .github/workflows; then
+          if grep -R -Fq "$old_cache_url" flake.nix modules/nixos install.sh scripts/nixcfg.sh .github/workflows ||
+             grep -R -Fq "$old_cache_key" flake.nix modules/nixos install.sh scripts/nixcfg.sh .github/workflows; then
             echo "The old third-party cache URL or signing key is still configured." >&2
             exit 1
           fi
