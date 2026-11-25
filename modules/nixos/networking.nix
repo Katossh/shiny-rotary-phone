@@ -7,7 +7,7 @@ let
   # additionally needs libagw and Qt HttpServer, so this is a source override,
   # not just a version-string change.
   amneziaVpn = pkgs.amnezia-vpn.overrideAttrs (
-    finalAttrs: previousAttrs: {
+    _: previousAttrs: {
       version = "5.1.0.6";
 
       src = pkgs.fetchFromGitHub {
