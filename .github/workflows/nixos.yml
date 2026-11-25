@@ -90,9 +90,12 @@ jobs:
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
-            accept-flake-config = true
-            extra-substituters = https://noctalia.cachix.org
-            extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=
+            accept-flake-config = false
+            substituters = https://cache.nixos.org https://cache.xinux.uz
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.xinux.uz:BXCrtqejFjWzWEB9YuGB7X2MV4ttBur1N8BkwQRdH+0=
+            connect-timeout = 5
+            stalled-download-timeout = 15
+            download-attempts = 2
 
       - name: Check formatting
         run: |
@@ -109,22 +112,75 @@ jobs:
           nix flake check \
             --no-build \
             --no-update-lock-file \
-            --accept-flake-config \
+            --no-accept-flake-config \
             --show-trace \
             "path:$GITHUB_WORKSPACE"
 
           nix eval --raw \
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.system.build.toplevel.drvPath" \
             --no-update-lock-file \
-            --accept-flake-config \
+            --no-accept-flake-config \
             --show-trace
+
+      - name: Verify configured Nix caches and network timeouts
+        run: |
+          settings_json="$(nix eval --json \
+            "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.nix.settings" \
+            --apply 'settings: {
+              substituters = settings.substituters;
+              trusted-public-keys = settings."trusted-public-keys";
+              accept-flake-config = settings."accept-flake-config";
+              connect-timeout = settings."connect-timeout";
+              stalled-download-timeout = settings."stalled-download-timeout";
+              download-attempts = settings."download-attempts";
+            }' \
+            --no-update-lock-file \
+            --no-accept-flake-config)"
+          python3 - "$settings_json" <<'PY'
+          import json
+          import sys
+
+          expected = {
+              "substituters": [
+                  "https://cache.nixos.org",
+                  "https://cache.xinux.uz",
+              ],
+              "trusted-public-keys": [
+                  "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=",
+                  "cache.xinux.uz:BXCrtqejFjWzWEB9YuGB7X2MV4ttBur1N8BkwQRdH+0=",
+              ],
+              "accept-flake-config": False,
+              "connect-timeout": 5,
+              "stalled-download-timeout": 15,
+              "download-attempts": 2,
+          }
+          actual = json.loads(sys.argv[1])
+          if actual != expected:
+              raise SystemExit(
+                  "Unexpected Nix cache policy.\n"
+                  f"Expected: {json.dumps(expected, indent=2)}\n"
+                  f"Actual:   {json.dumps(actual, indent=2)}"
+              )
+          print("Nix cache policy matches the reviewed substituters, keys, and timeouts.")
+          PY
+
+          old_cache_url="cache."
+          old_cache_url+="lantian.pub"
+          old_cache_url+="/lantian"
+          old_cache_key="lantian:WVGO7vs"
+          old_cache_key+="RMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ="
+          if grep -Fq "$old_cache_url" flake.nix modules/nixos install.sh scripts/nixcfg.sh .github/workflows ||
+             grep -Fq "$old_cache_key" flake.nix modules/nixos install.sh scripts/nixcfg.sh .github/workflows; then
+            echo "The old third-party cache URL or signing key is still configured." >&2
+            exit 1
+          fi
 
       - name: Build pinned Xray core
         run: |
           xray_version="$(nix eval --raw \
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.pkgs.xray.version" \
             --no-update-lock-file \
-            --accept-flake-config)"
+            --no-accept-flake-config)"
           if [[ "$xray_version" != "26.11.9" ]]; then
             echo "Expected Xray 26.11.9, got $xray_version" >&2
             exit 1
@@ -133,11 +189,11 @@ jobs:
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.pkgs.xray" \
             --no-link \
             --no-update-lock-file \
-            --accept-flake-config
+            --no-accept-flake-config
 
       - name: Verify Home Manager target enumeration
         run: |
-          username="$(nix eval --raw "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.starforge.user.username" --no-update-lock-file --accept-flake-config)"
+          username="$(nix eval --raw "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.starforge.user.username" --no-update-lock-file --no-accept-flake-config)"
           managed_targets="$(nix eval --raw \
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.home-manager.users.\"$username\".home.file" \
             --apply '
@@ -148,7 +204,7 @@ jobs:
               )
             ' \
             --no-update-lock-file \
-            --accept-flake-config)"
+            --no-accept-flake-config)"
           grep -Fxq '.config/niri/config.kdl' <<< "$managed_targets"
           grep -Fxq '.cache/.keep' <<< "$managed_targets"
           if grep -q '^/' <<< "$managed_targets"; then
@@ -161,7 +217,7 @@ jobs:
           blender_main_program="$(nix eval --raw \
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.pkgs.blender.meta.mainProgram" \
             --no-update-lock-file \
-            --accept-flake-config)"
+            --no-accept-flake-config)"
           if [[ "$blender_main_program" != "blender" ]]; then
             echo "Expected Blender's main executable to be 'blender', got '$blender_main_program'." >&2
             exit 1
@@ -171,7 +227,7 @@ jobs:
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.environment.systemPackages" \
             --apply 'packages: map (package: package.pname or package.name) packages' \
             --no-update-lock-file \
-            --accept-flake-config)"
+            --no-accept-flake-config)"
           python3 - "$system_packages" <<'PY'
           import json
           import sys
@@ -201,7 +257,7 @@ jobs:
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.boot.kernelParams" \
             --apply 'params: builtins.concatStringsSep "\n" params' \
             --no-update-lock-file \
-            --accept-flake-config)"
+            --no-accept-flake-config)"
           if grep -Eq '^lockdown=' <<< "$kernel_params"; then
             echo "A lockdown= kernel parameter is still configured:" >&2
             grep -E '^lockdown=' <<< "$kernel_params" >&2
@@ -214,7 +270,7 @@ jobs:
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.security.apparmor.policies" \
             --apply 'policies: builtins.mapAttrs (_: policy: policy.state) policies' \
             --no-update-lock-file \
-            --accept-flake-config)"
+            --no-accept-flake-config)"
           python3 - "$policy_states" <<'PY'
           import json
           import sys
@@ -251,7 +307,7 @@ jobs:
           vscode_profile="$(nix eval --raw \
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.security.apparmor.policies.vscode.profile" \
             --no-update-lock-file \
-            --accept-flake-config)"
+            --no-accept-flake-config)"
           if ! grep -Eq '^profile /nix/store/[^[:space:]]+/bin/code[[:space:]]*[{]' <<< "$vscode_profile"; then
             echo "VS Code AppArmor profile must target the FHS /bin/code launcher." >&2
             exit 1
@@ -260,7 +316,7 @@ jobs:
           ozone_wayland="$(nix eval --raw \
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.environment.sessionVariables.NIXOS_OZONE_WL" \
             --no-update-lock-file \
-            --accept-flake-config)"
+            --no-accept-flake-config)"
           if [[ "$ozone_wayland" != "1" ]]; then
             echo "NIXOS_OZONE_WL must be enabled for the Niri desktop session." >&2
             exit 1
@@ -270,7 +326,7 @@ jobs:
             profile="$(nix eval --raw \
               "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.security.apparmor.policies.$policy.profile" \
               --no-update-lock-file \
-              --accept-flake-config)"
+              --no-accept-flake-config)"
             for protected_path in \
               '.ssh/**' \
               '.gnupg/**' \
@@ -305,7 +361,7 @@ jobs:
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.boot.kernelParams" \
             --apply 'params: builtins.concatStringsSep "\n" params' \
             --no-update-lock-file \
-            --accept-flake-config)"
+            --no-accept-flake-config)"
           if ! grep -Fxq 'mitigations=auto,nosmt' <<< "$kernel_params"; then
             echo "Full CPU vulnerability mitigations are not configured:" >&2
             grep -E '^mitigations=' <<< "$kernel_params" >&2 || true
@@ -316,7 +372,7 @@ jobs:
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.boot.kernel.sysctl.\"kernel.split_lock_mitigate\"" \
             --apply 'value: toString value' \
             --no-update-lock-file \
-            --accept-flake-config)"
+            --no-accept-flake-config)"
           if [[ "$split_lock_mitigate" != "1" ]]; then
             echo "kernel.split_lock_mitigate must remain enabled (expected 1)." >&2
             exit 1
@@ -359,14 +415,14 @@ jobs:
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.services.snapper.configs" \
             --apply 'configs: builtins.concatStringsSep "," (builtins.attrNames configs)' \
             --no-update-lock-file \
-            --accept-flake-config)"
+            --no-accept-flake-config)"
           printf 'Snapper configs: %s\n' "$configs"
           grep -qE '(^|,)root(,|$)' <<< "$configs"
           grep -qE '(^|,)home(,|$)' <<< "$configs"
           nix eval --raw \
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.system.build.toplevel.drvPath" \
             --no-update-lock-file \
-            --accept-flake-config >/dev/null
+            --no-accept-flake-config >/dev/null
 
   # The regular PR/push checks intentionally stop at evaluation and static
   # validation. Building the complete closure can compile the custom kernel
@@ -450,9 +506,12 @@ jobs:
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
-            accept-flake-config = true
-            extra-substituters = https://noctalia.cachix.org
-            extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=
+            accept-flake-config = false
+            substituters = https://cache.nixos.org https://cache.xinux.uz
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.xinux.uz:BXCrtqejFjWzWEB9YuGB7X2MV4ttBur1N8BkwQRdH+0=
+            connect-timeout = 5
+            stalled-download-timeout = 15
+            download-attempts = 2
 
       # Cache names are public configuration. Only check for the write token
       # on trusted pushes to main; never expose it to pull-request workflows.
@@ -521,7 +580,7 @@ jobs:
             --max-jobs 1 \
             --cores 1 \
             --no-update-lock-file \
-            --accept-flake-config \
+            --no-accept-flake-config \
             "path:$GITHUB_WORKSPACE#nixosConfigurations.workstation.config.system.build.toplevel" \
             --no-link \
             --fallback
