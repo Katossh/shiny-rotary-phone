@@ -94,7 +94,7 @@ these ordered rules:
 2. Private domains (`geosite:private`) go direct.
 3. Russian domains (`geosite:category-ru`) go direct.
 4. Russian destination IPs (`geoip:ru`) go direct.
-5. Every remaining destination port (`0-65535`) goes through `proxy`.
+5. Every remaining TCP/UDP connection goes through `proxy`.
 
 The domain rule is intentional: a Russian domain hosted on a foreign CDN can
 still use the direct connection. GeoIP rules are also used for non-Russian
