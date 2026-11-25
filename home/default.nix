@@ -52,7 +52,7 @@
           exit 1
         fi
 
-        ${wl-clipboard}/bin/wl-copy < "$rules_file"
+        ${pkgs.wl-clipboard}/bin/wl-copy < "$rules_file"
         printf '%s\n' "Copied Russia-direct routing rules. Import them in v2rayN → Routing Settings."
       '')
     ];
