@@ -36,11 +36,12 @@
   # Enable the kernel NT synchronization primitive used by Wine/Proton.
   boot.kernelModules = [ "ntsync" ];
 
-  # Let the NVMe controller manage its own I/O scheduling. Restrict ntsync
-  # access to the active local seat through logind-managed uaccess ACLs.
+  # Let the NVMe controller manage its own I/O scheduling. Grant the
+  # NTSync device exclusively to the configured workstation user: the uaccess
+  # tag was applied, but logind did not create the required session ACL.
   services.udev.extraRules = ''
     ACTION=="add|change", KERNEL=="nvme[0-9]*", ATTR{queue/scheduler}="none"
-    KERNEL=="ntsync", MODE="0660", TAG+="uaccess"
+    KERNEL=="ntsync", OWNER="${config.starforge.user.username}", MODE="0600"
   '';
 
   hardware.cpu.amd.updateMicrocode = true;
