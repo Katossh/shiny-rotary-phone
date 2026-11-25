@@ -588,13 +588,7 @@ Expected results: `CONFIG_LTO_CLANG_THIN=y`, `CONFIG_MZEN4=y`,
 Rust are not enabled. `/sys/kernel/btf/vmlinux` is readable, sched_ext is
 enabled, and `scx_lavd` is running.
 
-### Binary cache and updates
 
-The CachyOS kernel flake publishes signed binaries through
-`https://cache.lantian.pub/lantian`. The repository configures that cache and
-its public signing key in both the flake and the Nix daemon. Nix verifies
-downloaded substitutes against the configured public key, but this does not
-make the third-party cache operator part of the NixOS project.
 
 Update only this input when reviewing a new CachyOS kernel:
 
@@ -604,6 +598,16 @@ git diff -- flake.lock
 nix flake check path:. --no-build --no-update-lock-file --show-trace
 nix build path:.#nixosConfigurations.workstation.config.system.build.toplevel --no-link
 ```
+
+### Binary cache and updates
+
+The workstation flake and Nix daemon do not configure the Lantian cache.
+When a CachyOS kernel output is unavailable from the configured NixOS or
+project caches, Nix builds it locally. CI retains the Lantian cache as an
+additional read-only substitute for full system-closure builds, where it can
+avoid a costly kernel rebuild; it is not added to the installed system's
+Nix daemon configuration. Nix verifies cached outputs against the configured
+public signing keys.
 
 ### AutoFDO and Propeller are not enabled
 
