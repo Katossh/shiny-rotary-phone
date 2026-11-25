@@ -92,11 +92,12 @@ cd ~/nixos-config
 sudo ./install.sh
 ~~~
 
-The script runs \`nixos-rebuild switch\` against the local flake directory.
-It uses a \`path:\` flake reference so the Git-ignored hardware configuration
-is included during evaluation. Nix evaluates and builds the new generation
-before activating it. The existing \`flake.lock\` is used; dependencies are not
-deliberately updated as part of installation.
+The script refreshes and validates the hardware configuration first,
+then runs \`nixos-rebuild switch\` against the local flake directory. It uses a
+\`path:\` flake reference so Nix evaluates the working tree directly, including
+the refreshed hardware file. Nix builds the new generation before activating
+it. The existing \`flake.lock\` is used; dependencies are not deliberately
+updated as part of installation.
 
 For a temporary activation that does not change the default boot generation:
 
