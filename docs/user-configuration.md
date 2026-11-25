@@ -540,33 +540,27 @@ sudo nixos-rebuild test --flake .#workstation
 
 ## CachyOS kernel
 
-The workstation uses the `nix-cachyos-kernel` flake input, pinned in
-`flake.lock`. The host selects `linuxPackages-cachyos-latest-lto-zen4` and
-extends it in `hosts/workstation/hardware.nix`:
+The workstation uses the upstream prebuilt
+`linuxPackages-cachyos-latest-zen4` package from the `release` branch of
+`nix-cachyos-kernel`. The input is pinned in `flake.lock`, and the host uses
+`inputs.nix-cachyos-kernel.overlays.pinned` to select the exact Nixpkgs
+revision used for the published kernel binaries. Do not replace it with the
+`default` overlay or override the kernel derivation if binary substitution
+is desired.
 
-- Clang/LLD ThinLTO and the explicit Zen 4 compiler target.
-- No BORE scheduler patch.
-- `CONFIG_DEBUG_INFO_BTF=y` and in-kernel Rust disabled. Upstream Kconfig
-  does not permit `CONFIG_RUST` together with BTF and LTO; the NixOS Rust
-  toolchain and Rust applications are unaffected.
-
-The input deliberately does **not** follow the root Nixpkgs input. The pinned
-overlay uses the exact Nixpkgs revision against which the CachyOS kernel and
-its matching kernel-module set were built; replacing it or adding
-`nixpkgs.follows` can cause cache misses and patch mismatches.
-
-Because this is a custom kernel configuration, the upstream prebuilt CachyOS
-cache may not contain the resulting kernel derivation. A build can therefore
-compile the kernel locally; allow enough disk space and build time, and keep a
-known-good generation until the new kernel has booted. The final
-certificate-embedding image rebuild is a separate repackaging step: it
-disables `CONFIG_X86_DECODER_SELFTEST` only for that image build and does not
-change the kernel `.config`.
+This is the latest CachyOS kernel with the explicit Zen 4 compiler target
+(`CONFIG_MZEN4=y`), without ThinLTO or the BORE scheduler patch. The pinned
+release's CachyOS defconfig enables `CONFIG_DEBUG_INFO_BTF`, `CONFIG_BPF`,
+`CONFIG_BPF_SYSCALL`, and `CONFIG_SCHED_CLASS_EXT`. No local
+`structuredExtraConfig` override is needed: the unmodified package matches
+the derivation published by the upstream release cache.
 
 ### BTF and sched_ext
 
-BTF is required by `scx_lavd`, and the host enables it explicitly. The
-NixOS `services.scx-loader` module starts `scx_lavd` in Auto mode with the
+BTF is required by `scx_lavd`. It is enabled in the upstream non-LTO Zen 4
+kernel configuration together with BPF and `sched_ext`; the host does not
+need to patch or rebuild the kernel to restore it. The NixOS
+`services.scx-loader` module starts `scx_lavd` in Auto mode with the
 `--performance` argument. Ananicy-cpp is disabled to avoid overlapping
 scheduling policy. The loader exposes `scxctl` for runtime inspection and
 scheduler management.
@@ -575,7 +569,7 @@ After activation and reboot, verify the kernel and scheduler state:
 
 ```sh
 uname -r
-zgrep -E '^(CONFIG_(LTO_CLANG_THIN|MZEN4|SCHED_CLASS_EXT|DEBUG_INFO_BTF)=|# CONFIG_(SCHED_BORE|RUST) is not set)' /proc/config.gz
+zgrep -E '^(CONFIG_(LTO_NONE|MZEN4|BPF|BPF_SYSCALL|SCHED_CLASS_EXT|DEBUG_INFO_BTF)=|# CONFIG_(LTO_CLANG_THIN|SCHED_BORE) is not set)' /proc/config.gz
 test -r /sys/kernel/btf/vmlinux
 cat /sys/kernel/sched_ext/state
 systemctl status scx_loader.service
@@ -583,18 +577,28 @@ scxctl get
 pgrep -af scx_lavd
 ```
 
-Expected results: `CONFIG_LTO_CLANG_THIN=y`, `CONFIG_MZEN4=y`,
-`CONFIG_SCHED_CLASS_EXT=y`, and `CONFIG_DEBUG_INFO_BTF=y`; BORE and in-kernel
-Rust are not enabled. `/sys/kernel/btf/vmlinux` is readable, sched_ext is
-enabled, and `scx_lavd` is running.
+Expected results: `CONFIG_LTO_NONE=y`, `CONFIG_MZEN4=y`,
+`CONFIG_BPF=y`, `CONFIG_BPF_SYSCALL=y`,
+`CONFIG_SCHED_CLASS_EXT=y`, and `CONFIG_DEBUG_INFO_BTF=y`;
+ThinLTO and BORE are not enabled. `/sys/kernel/btf/vmlinux` is readable,
+sched_ext is enabled, and `scx_lavd` is running.
+
+The final certificate-embedding image rebuild is a separate repackaging step:
+it disables `CONFIG_X86_DECODER_SELFTEST` only for that image build and does
+not change the kernel configuration.
 
 ### Binary cache and updates
 
-The CachyOS kernel flake publishes signed binaries through
-`https://cache.lantian.pub/lantian`. The repository configures that cache and
-its public signing key in both the flake and the Nix daemon. Nix verifies
-downloaded substitutes against the configured public key, but this does not
-make the third-party cache operator part of the NixOS project.
+The upstream `release` branch contains kernels already built by its Hydra CI
+and published to the project's Attic binary cache. The root flake and the
+installed Nix daemon configure `https://cache.lantian.pub/lantian` with its
+public signing key. Keep the `release` input pinned and retain the
+`pinned` overlay; using a different Nixpkgs revision or customizing the
+kernel changes the derivation and can force a local kernel build.
+
+If the cache is unreachable, Nix may be unable to download the substitute;
+`--fallback` allows it to continue by building from source, which is much
+more expensive than downloading the prebuilt kernel.
 
 Update only this input when reviewing a new CachyOS kernel:
 
@@ -607,10 +611,9 @@ nix build path:.#nixosConfigurations.workstation.config.system.build.toplevel --
 
 ### AutoFDO and Propeller are not enabled
 
-ThinLTO is enabled, but this package selection does not enable AutoFDO or
-Propeller. The CachyOS Nix builder exposes AutoFDO separately and defaults it
-to disabled; enabling it requires a compatible profile. Do not describe this
-build as profile-guided unless a profile has actually been supplied and used.
+The selected kernel is non-LTO; AutoFDO and Propeller are not enabled. The
+CachyOS builder exposes AutoFDO separately and requires an LTO build and a
+compatible profile. Do not describe this kernel as profile-guided.
 
 ### CPU mitigations
 
