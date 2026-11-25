@@ -152,12 +152,12 @@ test -x ~/.local/share/v2rayN/bin/xray/xray
 ls -l ~/.local/share/v2rayN/bin/{geoip.dat,geosite.dat}
 ```
 
-Installing the core does not create a system service or enable TUN mode.
-
-Installing the client does not connect to a server, enable TUN mode, install
-a system-wide VPN service, or change the machine's default routing. Do not
-run the desktop application as root. TUN mode requires separate privileged
-network setup and should be reviewed independently before use.
+Installing the core does not create a system service, connect to a
+server, enable TUN mode, or change the machine's default routing. The
+networking module loads the kernel `tun` device, but TUN remains an explicit
+runtime choice in v2rayN. On Linux, v2rayN starts the core through `sudo`
+when it needs to create the tunnel and change routes; the GUI itself should
+remain an ordinary user process.
 
 There is currently no dedicated AppArmor policy for v2rayN in
 `modules/nixos/apparmor.nix`; this installation must not be treated as an
