@@ -589,14 +589,31 @@ not change the kernel configuration.
 
 ### Binary cache and updates
 
-This repository does not configure or trust the third-party Lantian binary
-cache. The workstation still selects the CachyOS kernel from the pinned
-`release` input and uses the matching `pinned` overlay. Other configured
-substituters may provide a matching build, but a cache hit is not guaranteed.
-If the exact kernel derivation is unavailable from the configured caches,
-Nix will build it from source, which can require substantial time and disk
-space. Keep a known-good system generation available until the new kernel
-has booted successfully.
+The workstation uses two binary substituters:
+
+- `https://cache.nixos.org` — the official NixOS cache.
+- `https://cache.xinux.uz` — a third-party mirror of the CachyOS kernel builds,
+  documented as an alternative by the upstream
+  [nix-cachyos-kernel project](https://github.com/xddxdd/nix-cachyos-kernel#binary-cache).
+
+The mirror is not operated by the CachyOS-kernel flake maintainer, who does not
+guarantee its availability or security. Trusting its signing key allows Nix to
+accept store paths signed by that mirror; use it only if you accept that
+third-party trust. The Lantian cache URL and signing key are not configured.
+
+The policy is owned by `modules/nixos/nix.nix`. Flake-provided Nix settings
+are disabled with `accept-flake-config = false`, so a flake cannot silently
+append another substituter. The installer applies the same cache list
+temporarily during the first switch because the running daemon does not adopt
+the new `nix.conf` until the new system generation is activated.
+
+Connection setup is limited to 5 seconds, stalled downloads are cancelled
+after 15 seconds without data, and each file download gets 2 attempts. These
+are failure/idle timeouts, not a 15-second maximum for a complete download.
+When neither configured cache has the exact kernel derivation, Nix must build
+the kernel from source; this can require substantial time and disk space.
+Keep a known-good system generation available until the new kernel has booted
+successfully.
 
 Update only this input when reviewing a new CachyOS kernel:
 
