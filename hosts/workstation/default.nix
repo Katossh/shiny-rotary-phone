@@ -49,6 +49,7 @@
     ../../modules/nixos/locale.nix
 
     ../../modules/nixos/networking.nix
+    ../../modules/nixos/tor.nix
     ../../modules/nixos/security.nix
     ../../modules/nixos/apparmor.nix
     ../../modules/security/bubblewrap
