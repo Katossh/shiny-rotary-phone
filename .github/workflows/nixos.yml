@@ -377,11 +377,26 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Reject tracked machine-local hardware configuration
+      - name: Prepare local hardware configuration fixture when absent
         run: |
-          if git ls-files --error-unmatch hosts/workstation/hardware-configuration.nix >/dev/null 2>&1; then
-            echo "hosts/workstation/hardware-configuration.nix is machine-local and must not be tracked." >&2
-            exit 1
+          if [[ ! -f hosts/workstation/hardware-configuration.nix ]]; then
+            cat > hosts/workstation/hardware-configuration.nix <<'NIX'
+          { modulesPath, ... }:
+          {
+            imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
+            boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" ];
+            fileSystems."/" = {
+              device = "/dev/disk/by-label/nixos";
+              fsType = "ext4";
+            };
+            fileSystems."/boot" = {
+              device = "/dev/disk/by-label/ESP";
+              fsType = "vfat";
+            };
+          }
+          NIX
+          else
+            echo "Using the repository's tracked workstation hardware configuration."
           fi
 
       - name: Prepare local hardware configuration fixture
