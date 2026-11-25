@@ -589,14 +589,26 @@ not change the kernel configuration.
 
 ### Binary cache and updates
 
-This repository does not configure or trust the third-party Lantian binary
-cache. The workstation still selects the CachyOS kernel from the pinned
-`release` input and uses the matching `pinned` overlay. Other configured
-substituters may provide a matching build, but a cache hit is not guaranteed.
-If the exact kernel derivation is unavailable from the configured caches,
-Nix will build it from source, which can require substantial time and disk
-space. Keep a known-good system generation available until the new kernel
-has booted successfully.
+The workstation uses the upstream CachyOS kernel flake's own cache
+declarations. The NixOS module reads `nixConfig.extra-substituters` and
+`nixConfig.extra-trusted-public-keys` directly from the locked
+`nix-cachyos-kernel` input and merges them into the system Nix daemon
+settings. This avoids copying the cache URL or signing key into this
+repository.
+
+That bridge is necessary because Nix does not automatically propagate
+`nixConfig` from a nested flake input into the consuming root flake. The
+currently locked upstream `release` revision declares the Lantian binary
+cache. Trusting its key allows Nix to accept store paths signed for that
+cache; it does not guarantee that the server is reachable or that a matching
+kernel build is present. If no configured cache can provide the exact
+derivation, Nix may have to build the kernel from source, which can require
+substantial time and disk space. Keep a known-good system generation
+available until the new kernel has booted successfully.
+
+The selected package remains the upstream non-LTO Zen 4 kernel,
+`linuxPackages-cachyos-latest-zen4`, through the matching `pinned` overlay.
+Its BTF, BPF, and `sched_ext` configuration is not overridden locally.
 
 Update only this input when reviewing a new CachyOS kernel:
 
