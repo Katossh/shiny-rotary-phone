@@ -96,7 +96,11 @@ jobs:
 
       - name: Check formatting
         run: |
-          mapfile -t nix_files < <(git ls-files '*.nix')
+          # This file is generated from the target machine's storage layout.
+          # Its formatting is owned by nixos-generate-config, not nixfmt.
+          mapfile -t nix_files < <(
+            git ls-files '*.nix' ':!hosts/workstation/hardware-configuration.nix'
+          )
           nix fmt -- "${nix_files[@]}"
           git diff --exit-code -- "${nix_files[@]}"
 
