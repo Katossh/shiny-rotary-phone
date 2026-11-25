@@ -150,6 +150,25 @@ or overwriting it. If it is missing, the installer stops and prints instructions
 for creating it manually. The file is Git-ignored because it contains
 machine-specific device and filesystem data.
 
+## Gaming
+
+GameMode is enabled through `programs.gamemode.enable` in
+`modules/nixos/gaming.nix`. This installs `gamemoderun` and configures the
+per-user GameMode daemon so launchers such as Anime Game Launcher can request
+optimisations for individual game sessions. Enable the GameMode switch in
+AAGL after applying the NixOS configuration; restart AAGL first if it was
+already open so it can detect the newly installed executable.
+
+Verify availability with:
+
+```sh
+command -v gamemoderun
+gamemoded -s
+```
+
+GameMode adjusts system behaviour while a game is running; it does not change
+the game's graphics settings or guarantee a higher frame rate.
+
 ## Display configuration
 
 The current host's Niri output preference is defined in
