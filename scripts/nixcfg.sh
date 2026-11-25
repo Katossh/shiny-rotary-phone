@@ -707,7 +707,7 @@ run_checks() {
 
   printf '\n== Statix and Deadnix ==\n'
   # shellcheck disable=SC2016
-  nix develop "path:$repo_root#default" --no-update-lock-file --accept-flake-config --command bash -euo pipefail -c '
+  nix develop "path:$repo_root#default" --no-update-lock-file --no-accept-flake-config --command bash -euo pipefail -c '
     mapfile -t nix_files < <(
       git ls-files --cached --others --exclude-standard -- "*.nix"
     )
@@ -721,13 +721,13 @@ run_checks() {
   nix flake check "path:$repo_root" \
     --no-build \
     --no-update-lock-file \
-    --accept-flake-config \
+    --no-accept-flake-config \
     --show-trace
 
   printf '\n== Full NixOS system build ==\n'
   nix build "path:$repo_root#nixosConfigurations.workstation.config.system.build.toplevel" \
     --no-update-lock-file \
-    --accept-flake-config \
+    --no-accept-flake-config \
     --no-link \
     --fallback \
     --print-build-logs
