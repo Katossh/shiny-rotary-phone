@@ -84,6 +84,66 @@ managed core through v2rayN's core downloader: update the pinned version and
 hashes in the package expression, then rebuild the configuration instead.
 Select the Xray core in v2rayN for VLESS + REALITY profiles.
 
+### Russia-direct split routing
+
+The repository installs a v2rayN import file at
+`~/.config/v2rayN/routing-ru.json`. It defines one routing profile with
+these ordered rules:
+
+1. Private IP ranges (`geoip:private`) go direct.
+2. Private domains (`geosite:private`) go direct.
+3. Russian domains (`geosite:category-ru`) go direct.
+4. Russian destination IPs (`geoip:ru`) go direct.
+5. Every remaining destination port (`0-65535`) goes through `proxy`.
+
+The domain rule is intentional: a Russian domain hosted on a foreign CDN can
+still use the direct connection. GeoIP rules are also used for non-Russian
+domains whose resolved destination IP is in Russia. Set the Xray routing
+profile's **Domain strategy** to `IPOnDemand` so Xray resolves domain names
+when it needs an IP match.
+
+Home Manager installs the `v2rayn-ru-routing` command. Run it from the
+Wayland desktop session to copy the JSON to the clipboard:
+
+```sh
+v2rayn-ru-routing
+```
+
+In v2rayN:
+
+1. Open **Settings → Routing Settings** and create a new routing profile,
+   for example `Russia direct, rest proxy`.
+2. Open that profile's rule editor and choose **Import Rules From Clipboard**.
+3. Confirm **No / Replace**. This replaces the rules in the newly created
+   profile with the five rules above; it does not change other profiles.
+4. Set **Domain strategy** to `IPOnDemand`, save the profile, then select it
+   as the active routing profile.
+
+The helper only copies the file. It deliberately does not edit v2rayN's
+SQLite-backed profile database or silently replace the currently active
+profile. Re-run the command and repeat the import after intentionally changing
+the declarative rules file.
+
+These rules decide the outbound for traffic that reaches the v2rayN core.
+For applications that honor the desktop proxy, use **System Proxy → Set
+system proxy automatically**. To capture applications that ignore proxy
+settings and other system traffic, enable **TUN** in v2rayN. The NixOS
+networking module loads the kernel `tun` module for this purpose.
+
+On Linux, v2rayN launches the core through `sudo` when TUN needs privileged
+network changes. Keep the GUI running as the ordinary user and enter the
+password when v2rayN asks; do not add passwordless sudo rules or grant
+capabilities to the entire GUI. Check that the device exists with
+`test -c /dev/net/tun`. Disconnect AmneziaVPN before enabling v2rayN TUN so
+two VPN clients do not compete for the default route.
+
+The routing profile does not independently configure DNS. DNS transport and
+resolution policy are separate v2rayN settings; verify them separately if
+you need DNS queries to use an encrypted resolver or a particular outbound.
+Also remember that the profile does not force an application into the proxy:
+without TUN, an application that ignores the system proxy can still connect
+directly outside v2rayN.
+
 After applying the configuration, restart v2rayN and verify the managed files:
 
 ```sh
