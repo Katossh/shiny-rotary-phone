@@ -91,8 +91,8 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
             accept-flake-config = true
-            extra-substituters = https://noctalia.cachix.org https://cache.lantian.pub/lantian
-            extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4= lantian:WVGO7vsRMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ=
+            extra-substituters = https://noctalia.cachix.org
+            extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=
 
       - name: Check formatting
         run: |
@@ -375,7 +375,7 @@ jobs:
     name: Build workstation system
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_full_system }}
     runs-on: ubuntu-24.04
-    # Keep a long fallback timeout in case the pinned CachyOS kernel cache misses.
+    # Keep a long timeout because a CachyOS kernel source build may be required.
     timeout-minutes: 360
 
     steps:
@@ -451,8 +451,8 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
             accept-flake-config = true
-            extra-substituters = https://noctalia.cachix.org https://cache.lantian.pub/lantian
-            extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4= lantian:WVGO7vsRMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ=
+            extra-substituters = https://noctalia.cachix.org
+            extra-trusted-public-keys = noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=
 
       # Cache names are public configuration. Only check for the write token
       # on trusted pushes to main; never expose it to pull-request workflows.
