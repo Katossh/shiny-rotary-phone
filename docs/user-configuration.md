@@ -587,6 +587,22 @@ The final certificate-embedding image rebuild is a separate repackaging step:
 it disables `CONFIG_X86_DECODER_SELFTEST` only for that image build and does
 not change the kernel configuration.
 
+### Nix download timeouts and retries
+
+The system-wide Nix settings in `modules/nixos/nix.nix` apply these limits
+to downloads across all configured substituters and other Nix file transfers:
+
+| Setting | Value | Effect |
+|---|---:|---|
+| `connect-timeout` | 10 seconds | Maximum time to establish a connection to a binary-cache server. |
+| `stalled-download-timeout` | 30 seconds | Abort a download when no data is received for this interval; this is an idle timeout, not a cap on the duration of a continuously transferring large file. |
+| `download-attempts` | 3 | Maximum transfer attempts before Nix gives up on a transient download failure. |
+
+This replaces Nix's 300-second stalled-download default and five-attempt
+default. The settings are global rather than specific to the CachyOS cache, so
+a slow or unavailable cache is abandoned promptly before Nix proceeds to
+other configured sources or reports the transfer failure.
+
 ### Binary cache and updates
 
 The workstation uses the upstream CachyOS kernel flake's own cache
