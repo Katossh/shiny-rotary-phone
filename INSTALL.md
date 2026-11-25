@@ -15,41 +15,72 @@ NixOS system or the official NixOS installer environment.
 The script never partitions disks, formats filesystems, creates Btrfs
 subvolumes, changes LUKS keys, or enrolls Secure Boot keys.
 
-Before evaluating the flake, the installer requires the machine-local
-hosts/workstation/hardware-configuration.nix file to already exist. It
-validates the file but never copies it from /etc/nixos, generates it
-automatically, or overwrites it. If it is missing, installation stops and
-prints the appropriate command for creating it manually. This local file is
-Git-ignored and is not part of the repository. For an encrypted fresh-install
-root, open the LUKS container before mounting it so nixos-generate-config can
-detect the mapping.
+Before evaluating the flake, the installer refreshes the machine-specific
+hosts/workstation/hardware-configuration.nix. On an existing NixOS system it
+copies /etc/nixos/hardware-configuration.nix when that file exists, otherwise
+it runs nixos-generate-config on the running system. On a fresh installation it
+generates the file from the filesystems mounted under /mnt. It validates the
+candidate first and preserves a changed existing repository copy as
+hardware-configuration.nix.bak (later backups receive timestamps) before
+replacing it.
+
+The file is no longer ignored by Git. It can be committed with the host
+configuration, but it contains filesystem UUIDs, device paths, and mount
+topology. This repository is public: committing the file publishes those
+machine-specific identifiers. They are not encryption keys or passwords, but
+use a private repository or keep the file out of commits if you do not want
+that information public. install.sh does not stage it automatically because
+the installer runs as root; review and stage it as your normal user.
+
+The script never partitions disks, formats filesystems, creates Btrfs
+subvolumes, changes LUKS keys, or enrolls Secure Boot keys. For an encrypted
+fresh-install root, open the LUKS container before mounting it so
+nixos-generate-config can detect the mapping.
 
 
 ## Machine-local hardware configuration
 
-Create this file yourself before running the installer:
-`hosts/workstation/hardware-configuration.nix`. The installer validates the
-existing file and leaves it untouched. It does not copy from `/etc/nixos`,
-generate a replacement, or overwrite anything.
+The installer refreshes
+`hosts/workstation/hardware-configuration.nix` before evaluating the
+workstation profile.
 
-For an existing NixOS installation, run from the repository root:
-
-~~~sh
-sudo nixos-generate-config --show-hardware-config | sudo tee hosts/workstation/hardware-configuration.nix >/dev/null
-~~~
-
-For a fresh installation, first mount the target filesystems under `/mnt`,
-clone this repository into `/mnt/etc/nixos`, then run:
+For an existing NixOS installation, it copies
+`/etc/nixos/hardware-configuration.nix` when available. If that file does not
+exist, it runs:
 
 ~~~sh
-sudo nixos-generate-config --root /mnt --show-hardware-config | sudo tee /mnt/etc/nixos/hosts/workstation/hardware-configuration.nix >/dev/null
+sudo nixos-generate-config --show-hardware-config
 ~~~
 
-Review the generated file and its filesystem identifiers before continuing.
-The file is Git-ignored because it contains machine-specific device paths and
-filesystem UUIDs. If it already exists at the required path, do not regenerate
-it just to run the installer.
+For a fresh installation, it runs the equivalent command against the mounted
+target:
 
+~~~sh
+sudo nixos-generate-config --root /mnt --show-hardware-config
+~~~
+
+The installer writes the output to a temporary file, verifies that it parses
+and contains root and `/boot` filesystem declarations, and only then replaces
+the repository copy. If the contents differ, the old copy is preserved as
+`hardware-configuration.nix.bak`; if that backup already exists, a
+timestamped `.bak` file is created instead. If the candidate is invalid or
+generation fails, the existing file is left untouched. If the content is
+already identical, no backup is created.
+
+The file is trackable in Git. After reviewing it, stage it as your normal
+user:
+
+~~~sh
+git diff -- hosts/workstation/hardware-configuration.nix
+git add hosts/workstation/hardware-configuration.nix
+git commit -m "chore: track workstation hardware configuration"
+~~~
+
+**Privacy:** this repository is public. Committing the generated file publishes
+filesystem UUIDs, device paths, and mount layout. Those values are not
+credentials, but they disclose details about the machine and storage. Keep the
+repository private or do not commit the file if that disclosure is unwanted.
+Backup files remain Git-ignored.
 
 ## Existing NixOS installation
 
@@ -137,12 +168,11 @@ cd /mnt/etc/nixos
 
 With no mode specified, install.sh detects the clone at /mnt/etc/nixos
 and selects fresh-install mode. It verifies the supported root filesystem,
-the FAT32 ESP at /mnt/boot, and UEFI boot. The required
-hosts/workstation/hardware-configuration.nix must already exist in the
-clone. If it is missing, the installer stops and prints the command to create
-it from the filesystems mounted under /mnt; it does not copy a file from
-/etc/nixos or generate one itself. Review the generated file before
-rerunning the installer. The local file is ignored by Git. It does not need a
+the FAT32 ESP at /mnt/boot, and UEFI boot. Before evaluation, it generates
+hosts/workstation/hardware-configuration.nix from the filesystems mounted
+under /mnt and validates the result. Any previous repository copy is backed
+up before replacement. The file is Git-trackable; review the privacy warning
+above before committing it to this public repository. It does not need a
 Windows ESP or any Windows partition. The boot menu is configured for NixOS
 single boot.
 
@@ -164,9 +194,10 @@ they are restored or Secure Boot signing is temporarily disabled in
 
 ## Scope and limitations
 
-The installer uses the existing machine-local hardware configuration; it does
-not discover or rewrite the storage layout, automatically partition disks, or
-decide which disk to erase. The workstation profile itself
+The installer discovers and refreshes the machine-local hardware configuration
+from the running system or mounted installation target. It does not
+automatically partition disks, format filesystems, create subvolumes, or decide
+which disk to erase. The workstation profile itself
 still contains hardware-specific AMD GPU, CPU, display, and peripheral
 settings. A different computer needs a separately reviewed hardware profile.
 
