@@ -25,8 +25,7 @@
   # The upstream service module already grants /dev/kvm device access and
   # libvirt socket access. The kvm group is separately needed for the device
   # node's Unix permissions when QEMU runs as the unprivileged gns3 account.
-  systemd.services.gns3-server.serviceConfig.SupplementaryGroups =
-    lib.mkAfter [ "kvm" ];
+  systemd.services.gns3-server.serviceConfig.SupplementaryGroups = lib.mkAfter [ "kvm" ];
 
   # Install the Qt application and delegate packet capture to dumpcap's
   # capability-limited wrapper rather than running Wireshark as root.
