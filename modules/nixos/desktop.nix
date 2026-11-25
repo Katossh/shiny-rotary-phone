@@ -13,9 +13,11 @@
     };
   };
 
-  # Xwayland support is part of the compositor/desktop stack, not the
-  # portable terminal environment.
+  # Install Blender system-wide so its executable is on the global PATH
+  # and its upstream desktop entry is visible to every desktop launcher.
+  # The Nixpkgs package provides both /bin/blender and blender.desktop.
   environment.systemPackages = [
+    pkgs.blender
     pkgs.chromium
     pkgs.kdePackages.dolphin
     pkgs.seahorse
