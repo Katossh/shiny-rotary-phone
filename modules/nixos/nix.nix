@@ -23,6 +23,11 @@ in
       trusted-users = [ "root" ];
       require-sigs = true;
 
+      # Apply bounded network timeouts and retries to Nix transfers globally.
+      connect-timeout = 10;
+      stalled-download-timeout = 30;
+      filetransfer-retry-attempts = 3;
+
       extra-substituters = [
         "https://noctalia.cachix.org"
       ]
