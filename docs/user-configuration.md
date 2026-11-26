@@ -605,23 +605,43 @@ Transient failures are retried, while permanent HTTP errors are not.
 
 ### Binary cache and updates
 
-The system Nix daemon uses the Noctalia cache only:
+The system Nix daemon uses the upstream CachyOS/Lantian cache and the
+Noctalia cache:
 
-- Substituter: `https://noctalia.cachix.org`
-- Signing key: `noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=`
+- CachyOS substituter: `https://cache.lantian.pub/lantian`
+- CachyOS signing key: `lantian:WVGO7vsRMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ=`
+- Noctalia substituter: `https://noctalia.cachix.org`
+- Noctalia signing key: `noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=`
 
-The NixOS module deliberately does not import the nested `nixConfig` from
-`nix-cachyos-kernel`, because that configuration adds the Lantian cache.
-This removes both `https://cache.lantian.pub/lantian` and its signing key
-from the daemon settings without changing the selected kernel package,
-overlay, or kernel configuration.
+The Lantian URL and key above are the replacement values published by the
+maintainer of `nix-cachyos-kernel` and embedded in the exact kernel flake
+revision pinned in `flake.lock`. The previous Lantian cache host was taken
+offline after its infrastructure was compromised in October 2026. Do not
+restore the former `attic.xuyh0120.win/lantian` endpoint or its old signing
+key.
 
-Nix reuses kernel and other store paths that are already present locally. If
-a required output is missing from the local store and no remaining substituter
-has it, Nix builds that output locally; building the CachyOS kernel from
-source can take substantial time and disk space. This change does not make
-the kernel derivation a different one. Keep a known-good system generation
-available until the new kernel has booted successfully.
+A Nix cache signing key is a security trust decision: Nix accepts store paths
+signed by that key, including executable software. Keep this key only while
+you trust the upstream CachyOS-kernel cache maintainer, and verify any future
+URL/key rotation against the upstream
+[nix-cachyos-kernel repository](https://github.com/xddxdd/nix-cachyos-kernel).
+The NixOS module and the root flake both configure the new cache; the CI
+workflow uses the same URL/key so a manually requested full-system build can
+download the published kernel instead of compiling it locally.
+
+The cache does not alter the kernel derivation or its configuration. The
+workstation continues to use the non-LTO Zen 4 package through the matching
+`pinned` overlay. In particular, BTF must remain enabled for the configured
+`scx_lavd` scheduler: the upstream CachyOS defconfig supplies
+`CONFIG_DEBUG_INFO_BTF=y`, `CONFIG_BPF=y`,
+`CONFIG_BPF_SYSCALL=y`, and `CONFIG_SCHED_CLASS_EXT=y`. No local
+`structuredExtraConfig` override is needed or added.
+
+A cache hit is not guaranteed: network errors, unavailable artifacts, or a
+different kernel derivation can still cause Nix to build locally. Keep the
+`release` branch input and `overlays.pinned` together; upstream documents
+that the pinned overlay matches the Nixpkgs revision used to build its cached
+kernels.
 
 Verify the effective daemon settings after applying the configuration:
 
@@ -629,10 +649,8 @@ Verify the effective daemon settings after applying the configuration:
 nix show-config | grep -E '^(substituters|extra-substituters|trusted-public-keys|extra-trusted-public-keys) ='
 ```
 
-The output should not contain `cache.lantian.pub` or the `lantian:` signing
-key. The selected package remains the upstream non-LTO Zen 4 kernel,
-`linuxPackages-cachyos-latest-zen4`, through the matching `pinned` overlay.
-Its BTF, BPF, and `sched_ext` configuration is not overridden locally.
+The output should include `https://cache.lantian.pub/lantian` and the
+`lantian:` key, in addition to the Noctalia cache and its key.
 
 Update only this input when reviewing a new CachyOS kernel:
 
