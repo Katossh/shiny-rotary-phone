@@ -7,6 +7,14 @@ virtual machines, host security baseline, and user-level desktop settings.
 Terminal packages and dotfiles remain integrated from
 [terminal-dotfiles](https://github.com/Katossh/terminal-dotfiles).
 
+## Ephemeral Nix packages
+
+The system's `,` command uses `nix-index-database`'s pre-generated command
+index through the existing NixOS `programs.comma` integration. Commands such
+as `, nft` can therefore resolve against the indexed Nixpkgs package set
+without generating `~/.cache/nix-index/files` locally. The database revision
+is pinned in `flake.lock` and refreshed when the flake input is updated.
+
 ## Repository layout
 
 - `flake.nix`, `flake.lock`: inputs, pinned dependencies, formatter, and host profile output.
