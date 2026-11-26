@@ -3,10 +3,12 @@
 
   nixConfig = {
     extra-substituters = [
+      "https://cache.lantian.pub/lantian"
       "https://noctalia.cachix.org"
       "https://ezkea.cachix.org"
     ];
     extra-trusted-public-keys = [
+      "lantian:WVGO7vsRMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ="
       "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
       "ezkea.cachix.org-1:ioBmUbJTZIKsHmWWXPe1FSFbeVe+afhfgqgTSNd34eI="
     ];

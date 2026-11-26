@@ -22,14 +22,15 @@ _:
       stalled-download-timeout = 30;
       filetransfer-retry-attempts = 3;
 
-      # Do not inherit the CachyOS flake's nested nixConfig: it adds the
-      # Lantian cache, which is intentionally not used on this workstation.
-      # Existing kernel store paths are reused; missing outputs use another
-      # configured substituter or are built locally.
+      # Use the upstream CachyOS kernel cache with its current signing key.
+      # The release branch and pinned overlay are kept in sync with these
+      # prebuilt artifacts; a cache miss can still fall back to a local build.
       extra-substituters = [
+        "https://cache.lantian.pub/lantian"
         "https://noctalia.cachix.org"
       ];
       extra-trusted-public-keys = [
+        "lantian:WVGO7vsRMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ="
         "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
       ];
     };
