@@ -540,20 +540,20 @@ sudo nixos-rebuild test --flake .#workstation
 
 ## CachyOS kernel
 
-The workstation uses the upstream prebuilt
-`linuxPackages-cachyos-latest-zen4` package from the `release` branch of
+The workstation uses the upstream CachyOS
+`linuxPackages-cachyos-latest-zen4` derivation from the `release` branch of
 `nix-cachyos-kernel`. The input is pinned in `flake.lock`, and the host uses
-`inputs.nix-cachyos-kernel.overlays.pinned` to select the exact Nixpkgs
-revision used for the published kernel binaries. Do not replace it with the
-`default` overlay or override the kernel derivation if binary substitution
-is desired.
+`inputs.nix-cachyos-kernel.overlays.pinned` to select the Nixpkgs revision
+associated with that upstream package. Keep this matching overlay and avoid
+overriding the kernel derivation unless intentionally changing the kernel
+build.
 
-This is the latest CachyOS kernel with the explicit Zen 4 compiler target
+This is the CachyOS kernel with the explicit Zen 4 compiler target
 (`CONFIG_MZEN4=y`), without ThinLTO or the BORE scheduler patch. The pinned
 release's CachyOS defconfig enables `CONFIG_DEBUG_INFO_BTF`, `CONFIG_BPF`,
 `CONFIG_BPF_SYSCALL`, and `CONFIG_SCHED_CLASS_EXT`. No local
-`structuredExtraConfig` override is needed: the unmodified package matches
-the derivation published by the upstream release cache.
+`structuredExtraConfig` override is needed: the upstream kernel package
+already provides the required BTF, BPF, and `sched_ext` configuration.
 
 ### BTF and sched_ext
 
