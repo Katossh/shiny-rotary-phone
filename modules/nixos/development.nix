@@ -8,7 +8,7 @@
     # Editors and workstation-wide developer utilities.
     zed-editor.fhs
     vscode.fhs
-    llama-cpp
+    # llama.cpp is intentionally built and managed outside the NixOS profile.
     jq
 
     # Rust.

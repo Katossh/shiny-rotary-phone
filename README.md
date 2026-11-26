@@ -72,6 +72,7 @@ GPU on an AM5 platform.
 - GCC, Clang, Rust, Go, Python, and Node.js toolchains are available in the
   reusable flake development shell; jq, yt-dlp, and mpv provide JSON processing,
   media downloading, and playback.
+- llama.cpp is intentionally not installed by NixOS; its build and runtime are managed separately by the workstation user.
 - Bluetooth, NetworkManager, UPower, and power-profiles-daemon remain enabled.
 - `fwupd` is enabled for firmware updates on devices supported by LVFS.
 - `smartd` automatically monitors detected SMART-capable storage devices.
