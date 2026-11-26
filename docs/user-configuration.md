@@ -605,24 +605,32 @@ Transient failures are retried, while permanent HTTP errors are not.
 
 ### Binary cache and updates
 
-The workstation uses the upstream CachyOS kernel flake's own cache
-declarations. The NixOS module reads `nixConfig.extra-substituters` and
-`nixConfig.extra-trusted-public-keys` directly from the locked
-`nix-cachyos-kernel` input and merges them into the system Nix daemon
-settings. This avoids copying the cache URL or signing key into this
-repository.
+The system Nix daemon uses the Noctalia cache only:
 
-That bridge is necessary because Nix does not automatically propagate
-`nixConfig` from a nested flake input into the consuming root flake. The
-currently locked upstream `release` revision declares the Lantian binary
-cache. Trusting its key allows Nix to accept store paths signed for that
-cache; it does not guarantee that the server is reachable or that a matching
-kernel build is present. If no configured cache can provide the exact
-derivation, Nix may have to build the kernel from source, which can require
-substantial time and disk space. Keep a known-good system generation
+- Substituter: `https://noctalia.cachix.org`
+- Signing key: `noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=`
+
+The NixOS module deliberately does not import the nested `nixConfig` from
+`nix-cachyos-kernel`, because that configuration adds the Lantian cache.
+This removes both `https://cache.lantian.pub/lantian` and its signing key
+from the daemon settings without changing the selected kernel package,
+overlay, or kernel configuration.
+
+Nix reuses kernel and other store paths that are already present locally. If
+a required output is missing from the local store and no remaining substituter
+has it, Nix builds that output locally; building the CachyOS kernel from
+source can take substantial time and disk space. This change does not make
+the kernel derivation a different one. Keep a known-good system generation
 available until the new kernel has booted successfully.
 
-The selected package remains the upstream non-LTO Zen 4 kernel,
+Verify the effective daemon settings after applying the configuration:
+
+```sh
+nix show-config | grep -E '^(substituters|extra-substituters|trusted-public-keys|extra-trusted-public-keys) ='
+```
+
+The output should not contain `cache.lantian.pub` or the `lantian:` signing
+key. The selected package remains the upstream non-LTO Zen 4 kernel,
 `linuxPackages-cachyos-latest-zen4`, through the matching `pinned` overlay.
 Its BTF, BPF, and `sched_ext` configuration is not overridden locally.
 
