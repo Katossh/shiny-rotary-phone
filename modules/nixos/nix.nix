@@ -24,7 +24,8 @@
 
       # Do not inherit the CachyOS flake's nested nixConfig: it adds the
       # Lantian cache, which is intentionally not used on this workstation.
-      # Existing kernel store paths are reused; missing outputs are built locally.
+      # Existing kernel store paths are reused; missing outputs use another
+      # configured substituter or are built locally.
       extra-substituters = [
         "https://noctalia.cachix.org"
       ];
