@@ -24,8 +24,7 @@
   # Zsh command-not-found integration.
   programs.comma = {
     enable = true;
-    package =
-      inputs.nix-index-database.packages.${pkgs.stdenv.hostPlatform.system}."comma-with-db";
+    package = inputs.nix-index-database.packages.${pkgs.stdenv.hostPlatform.system}."comma-with-db";
     enableZshIntegration = true;
   };
 
