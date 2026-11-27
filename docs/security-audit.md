@@ -190,22 +190,27 @@ not an unreviewed generated policy.
 
 The current configuration sets the following kernel parameters:
 
-- `mitigations=auto,nosmt`
+- `mitigations=off`
 - `slab_nomerge`
 - `page_alloc.shuffle=1`
 - `randomize_kstack_offset=on`
 
-`mitigations=auto,nosmt` enables the kernel's available CPU-vulnerability
-mitigations and full cross-thread protection. The kernel disables SMT only
-when a mitigation requires it for the detected CPU; otherwise SMT remains
-available. On an affected CPU this can reduce parallel throughput, which is
-an intentional security trade-off. The CachyOS kernel configuration enables
-`CONFIG_CPU_MITIGATIONS` and its supported x86 mitigation options.
+`mitigations=off` disables the optional CPU-vulnerability mitigations
+supported by the running kernel. On x86 this includes the applicable
+Spectre-family, speculative-store-bypass, MDS/TAA, and related protections.
+It also removes the prior policy that could disable SMT, allowing Linux to
+use the logical CPUs exposed by firmware. The CachyOS kernel configuration
+enables `CONFIG_CPU_MITIGATIONS`, so the kernel recognizes this parameter.
 
-The configuration also sets `kernel.split_lock_mitigate=1`. This keeps
-split-lock detection and throttling enabled to prevent unprivileged workloads
-from causing system-wide denial of service through split-lock operations;
-those workloads may incur a performance penalty.
+This is an intentional performance-over-security choice. Untrusted local
+processes, browser content, and virtual machines may be able to exploit CPU
+side channels to cross isolation boundaries. Review the live vulnerability
+status under `/sys/devices/system/cpu/vulnerabilities/` after boot.
+
+The configuration also sets `kernel.split_lock_mitigate=0`. Split-lock
+detection can still report events, but the kernel no longer applies its
+intentional throttling. A local split-lock workload can therefore create
+system-wide contention or denial of service.
 
 The configuration also sets kernel pointer/dmesg restrictions, Yama ptrace scope,
 unprivileged BPF restrictions, and filesystem protections in
