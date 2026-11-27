@@ -669,13 +669,18 @@ compatible profile. Do not describe this kernel as profile-guided.
 
 ### CPU mitigations
 
-The configured kernel command line uses `mitigations=auto,nosmt`, enabling the
-kernel's available CPU-vulnerability mitigations and full cross-thread
-protection. SMT is disabled only if the detected CPU requires it for a
-complete mitigation; affected processors may therefore expose fewer logical
-CPUs and lower parallel throughput. Verify the active command line with
-`cat /proc/cmdline` and keep the previous boot generation until the new kernel
-has booted.
+The configured kernel command line uses `mitigations=off`. This disables the
+kernel's optional CPU-vulnerability mitigations, including the applicable
+Spectre-family, speculative-store-bypass, MDS/TAA, and related protections
+supported by the running kernel. It also removes the previous `nosmt` policy,
+so Linux no longer disables SMT as part of CPU vulnerability mitigation;
+actual SMT availability still depends on firmware and BIOS settings.
+
+This favors performance over isolation. Untrusted local code, browser content,
+or virtual machines may be able to exploit CPU side channels to access data
+across security boundaries. Check the active policy with
+`cat /proc/cmdline` and `grep . /sys/devices/system/cpu/vulnerabilities/*`.
+Keep the previous boot generation until the new kernel has booted.
 
 ## Kernel runtime tuning
 
@@ -690,12 +695,14 @@ The existing `boot.kernel.sysctl` set is extended with these values:
 "vm.page-cluster" = 0;
 "vm.dirty_background_bytes" = 67108864;
 "vm.dirty_bytes" = 268435456;
-"kernel.split_lock_mitigate" = 1;
+"kernel.split_lock_mitigate" = 0;
 ```
 
-The split-lock mitigation is explicitly enabled with
-`kernel.split_lock_mitigate=1`; this is independent of the CPU vulnerability
-mitigations selected by `mitigations=auto,nosmt`. The NVMe udev rule sets the
+Split-lock throttling is disabled with
+`kernel.split_lock_mitigate=0`; this is independent of the CPU vulnerability
+mitigations selected by `mitigations=off`. Split-lock events are still logged,
+but local split-lock workloads are no longer throttled and can cause system-wide
+contention. The NVMe udev rule sets the
 scheduler to `none`, delegating request scheduling to the device. The `ntsync` module
 is loaded for Wine/Proton, and its device node uses mode `0660` plus the
 `uaccess` tag so logind can grant access to the active local seat rather
