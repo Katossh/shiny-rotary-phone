@@ -66,11 +66,11 @@
   # until its runtime trust path and required external modules are verified.
   # Secure Boot remains configured separately in modules/nixos/boot.nix.
   #
-  # Enable all supported CPU vulnerability mitigations, including full
-  # cross-thread protection. SMT is disabled only if the detected CPU needs
-  # that for a complete mitigation.
+  # Favor CPU throughput over speculative-execution vulnerability protection.
+  # This disables the kernel's optional CPU mitigations and no longer requests
+  # SMT shutdown. The security trade-off is documented in docs/security-audit.md.
   boot.kernelParams = [
-    "mitigations=auto,nosmt"
+    "mitigations=off"
     "slab_nomerge"
     "page_alloc.shuffle=1"
     "randomize_kstack_offset=on"
@@ -103,7 +103,8 @@
     "vm.page-cluster" = 0;
     "vm.dirty_background_bytes" = 67108864;
     "vm.dirty_bytes" = 268435456;
-    # Keep split-lock detection and throttling enabled to mitigate local DoS.
-    "kernel.split_lock_mitigate" = 1;
+    # Avoid intentional split-lock throttling; split-lock events remain logged.
+    # This allows a local split-lock workload to cause system-wide contention.
+    "kernel.split_lock_mitigate" = 0;
   };
 }
